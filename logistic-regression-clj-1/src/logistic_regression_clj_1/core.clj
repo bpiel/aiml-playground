@@ -1,12 +1,50 @@
 (ns logistic-regression-clj-1.core
   (:gen-class))
 
+
+;; args must be vector of vectors -- no lists!!!
+(defn normalize-dataset
+  [dataset minmax]
+  (for [row dataset]
+    (for [i (range (count row))]
+      (let [[mm0 mm1] (nth minmax i)]
+        (/ (- (nth row i)
+              mm0)
+           (- mm1 mm0))))))
+
+(defn cross-validation-split
+  [dataset n-folds]
+  (let [fold-size (int (/ (count dataset) n-folds))
+        dataset-count (count dataset)]
+    (for [_ (range n-folds)]
+      (for [_ (range fold-size)]
+        (nth dataset
+             (rand-int dataset-count))))))
+
+;; Calculate accuracy percentage
+(defn accuracy-metric
+  [actual predicted]
+  (/ (* 100.0 (apply + (map #(if (= % %2) 1 0)
+                            actual predicted)))
+     (count actual)))
+
 ;; Evaluate an algorithm using a cross validation split
-(def evaluate-algorithm
+(defn evaluate-algorithm
   [dataset algorithm n-folds & args]
   (let [folds (cross-validation-split dataset n-folds)]
-    )
-  )
+    (for [fold folds]
+      (let [train-set (->> folds
+                           (remove #{fold})
+                           (apply concat))
+            test-set (mapv #(-> %
+                                drop-last
+                                (concat [nil]))
+                           fold)
+            predicted (algorithm train-set
+                                 test-set
+                                 args)
+            actual (mapv last fold)]
+        (accuracy-metric actual predicted)))))
 
 ;; Make a prediction with coefficients
 (defn predict
@@ -41,18 +79,6 @@
   "I don't do a whole lot ... yet."
   [& args]
   (println "Hello, World!"))
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
