@@ -4,20 +4,14 @@
             [mikera.image.colours :as img-clr])
   (:gen-class))
 
+(def letters ["A" "B" "C" "D" "E" "F" "G" "H" "I" "J"])
+(def letters-count 3 #_(count letters))
+
 (file-seq (io/resource "notMNIST_small"))
 
 (def xx (io/resource "notMNIST_small/A"))
 
 (.isFile (second (file-seq (io/file (.getFile xx)))))
-
-(defn load-csv
-  [filename]
-  (mapv (fn [line]
-          (mapv #(Double/parseDouble %)
-           (clojure.string/split line
-                                 #",")))
-        (clojure.string/split-lines
-         (slurp filename))))
 
 (defn load-random-pngs*
   [letter n]
@@ -37,22 +31,26 @@
 
 (defn suffix-all
   [colls suffix]
-  (map #(conj % suffix)
+  (map #(vector % suffix)
        colls))
 
 (defn load-random-pngs
   [n]
-  (let [half-n (quot n 2)]
-    (shuffle
-     (concat (suffix-all (load-random-pngs* "A" half-n) 0)
-             (suffix-all (load-random-pngs* "C" half-n) 1)))))
+  (let [tenth (quot n letters-count)]
+    (->> letters-count
+         range
+         (mapv #(suffix-all (load-random-pngs* (nth letters %)
+                                               tenth)
+                            %))
+         (apply concat)
+         shuffle)))
 
 ;; Find the min and max values for each column
 (defn dataset-minmax
   [dataset]
-  (mapv (fn [x]
-          [(apply min x)
-           (apply max x)])
+  (mapv (fn [[v]]
+          [(apply min v)
+           (apply max v)])
         (apply mapv vector dataset)))
 
 ;; args must be vector of vectors -- no lists!!!
@@ -101,6 +99,15 @@
             actual (mapv last fold)]
         (accuracy-metric actual predicted)))))
 
+(defn predict*
+  [row coefficients]
+  (let [[bias & weights] coefficients
+        r' (drop-last row)
+        yhat (->> r'
+                  (map * weights)
+                  (apply + bias))]
+    yhat))
+
 ;; Make a prediction with coefficients
 (defn predict
   [row coefficients]
@@ -112,6 +119,12 @@
     (/ 1.0 (+ 1.0
               (Math/exp (- yhat))))))
 
+(defn predict2
+  [row coef-matrix]
+  (apply max-key
+         (partial nth (map #(predict* row %)
+                           coef-matrix))
+         (range letters-count)))
 
 (defn coefficients-sgd*
   [coef l-rate error yhat row]
@@ -124,7 +137,7 @@
                 coef-rest row))))
 
 ;; Estimate logistic regression coefficients using stochastic gradient descent
-(defn coefficients-sgd
+#_(defn coefficients-sgd
   [train l-rate n-epoch]
   (loop [coef (-> train
                   first
@@ -140,18 +153,40 @@
                tail))
       coef)))
 
+(defn same?
+  [a b]
+  (if (zero? (- a b))
+    1 0))
+
+(defn coefficients-sgd
+  [target train l-rate n-epoch]
+  (loop [coef (-> train
+                  first
+                  count
+                  (repeat 0)
+                  vec)
+         [row & tail] (apply concat
+                             (repeat n-epoch train))]
+    (if row
+      (let [yhat (predict row coef)
+            error (- (same? target (last row)) yhat)]
+        (recur (coefficients-sgd* coef l-rate error yhat row)
+               tail))
+      coef)))
+
 (def last-coef (atom nil))
 
 ;; Linear Regression Algorithm With Stochastic Gradient Descent
 (defn logistic-regression
   [train test l-rate n-epoch]
-  (let [coef (coefficients-sgd train l-rate n-epoch)]
+  (let [coef (mapv #(coefficients-sgd % train l-rate n-epoch)
+                   (range letters-count))]
     (reset! last-coef coef)
     (loop [predictions []
            [row & tail] test]
       (let [yhat (-> row
-                     (predict coef)
-                     Math/round)]
+                     (predict2 coef)
+                     #_ Math/round)]
         (if row
           (recur (conj predictions yhat)
                  tail)
@@ -160,12 +195,12 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (let [ds (load-random-pngs 1000)
+  (let [ds (load-random-pngs 100)
         mm (dataset-minmax ds)
         ds' (normalize-dataset ds mm)
         n-folds 5
         l-rate 0.1
-        n-epoch 3
+        n-epoch 1
         scores (evaluate-algorithm ds'
                                    logistic-regression
                                    n-folds
@@ -176,8 +211,8 @@
 
 #_ (-main)
 
-#_ (predict (first (load-random-pngs* "C" 1))
-         @last-coef)
+#_ (nth letters (predict2 (first (load-random-pngs* "C" 1))
+                  @last-coef))
 
 
 
