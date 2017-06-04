@@ -1,0 +1,22 @@
+x constant
+- variable
+- tf.global_variables_initializer
+ -- this is tricky
+ -- make a new class (ns/record/type???) to handle things handled in python class????
+- add
+- matmul
+- sigmoid
+- sub
+- pow
+- div
+- mult
+- transpose
+- truncated_normal
+- zeros
+- reduce_mean
+- tf.nn.softmax_cross_entropy_with_logits
+- tf.train.GradientDescentOptimizer
+- tf.nn.softmax
+- .eval()
+- compile java jar/so
+- add TF_addGradient to java jni api
