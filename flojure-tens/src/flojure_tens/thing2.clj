@@ -162,6 +162,57 @@
   {:op (op-builder g "Transpose" [(first inputs)
                                   (:op (const* g {:value [1 0]}))])})
 
+(defn mean [input idxs] {:op :mean
+                         :inputs [input]
+                         :idxs idxs})
+(defn- mean* [g {:keys [inputs idxs]}]
+  {:op (op-builder g
+                   "Mean"
+                   [(first inputs)
+                    (:op (const* g {:value idxs}))])})
+
+(defn truncated-normal
+  [shape]
+  {:op :truncated-normal
+   :shape shape})
+(defn- truncated-normal*
+  [g {:keys [shape]}]
+  {:op (op-builder g
+                   "TruncatedNormal"
+                   [(:op (const* g {:value shape}))]
+                   {:dtype (.dataType (clj->tensor [1.]))})})
+
+(defn mk-const
+  [g value]
+  (:op (const* g {:value value})))
+
+(defn softmax-cross-entropy-with-logits
+  [features labels]
+  {:op :softmax-cross-entropy-with-logits
+   :features features
+   :labels labels})
+(defn- softmax-cross-entropy-with-logits*
+  [g {:keys [features labels]}]
+  {:op (op-builder g
+                   "SoftmaxCrossEntropyWithLogits"
+                   [(mk-const g features)
+                    (mk-const g labels)])})
+
+
+(defn apply-gradient-descent
+  [vari alpha delta]
+  {:op :apply-gradient-descent
+   :inputs [vari]
+   :alpha alpha
+   :delta delta})
+(defn- apply-gradient-descent*
+  [g {:keys [inputs alpha delta]}]
+  {:op (op-builder g
+                   "ApplyGradientDescent"
+                   [(first inputs)
+                    (mk-const g alpha)
+                    (mk-const g delta)])})
+
 
 (defn assign [vari val] {:op :assign
                          :inputs [vari val]})
@@ -201,7 +252,11 @@
    :pow #'pow*
    :sub #'sub*
    :mul #'mul*
-   :transpose #'transpose*})
+   :transpose #'transpose*
+   :mean #'mean*
+   :truncated-normal #'truncated-normal*
+   :softmax-cross-entropy-with-logits #'softmax-cross-entropy-with-logits*
+   :apply-gradient-descent #'apply-gradient-descent*})
 
 ;; ======================================
 

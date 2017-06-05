@@ -294,8 +294,6 @@
 
 ;; ======================================================
 
-;; GOAL???
-
 (def training-data
   ;; input => output
   [ [0. 0. 1.]   [0.]
@@ -376,119 +374,33 @@
 (t/run (t/add (t/variable 10.) (t/variable 2.)))
 
 
-(def inputs (constant (take-nth 2 training-data)))
-(def outputs (constant (take-nth 2 (rest training-data))))
-
 ;; ======================================================
 
-#_ ((def tensor-2
-      (let [tensor
-            (Tensor/create
-             (int-array [5 9 2 1 7 3 8 2 9 2 3 8 8]))]
-        (-> graph
-            (.opBuilder "Const" "tensor-2")
-            (.setAttr "dtype" (.dataType tensor))
-            (.setAttr "value" tensor)
-            .build
-            (.output 0))))
+;; 2_fullyconnected
 
-    (def divide
-      (->
-       (.opBuilder graph "Div" "my-dividing-operation")
-       (.addInput tensor-1)
-       (.addInput tensor-2)
-       .build
-       (.output 0)
-       ))
+(def image-size 28)
+(def num-labels 10)
 
-
-    (def session (new Session graph))
-
-    (def result
-      (-> session
-          .runner
-          (.fetch "my-dividing-operation")
-          .run
-          (.get 0)
-          (.copyTo (int-array 13))
-          ))
-
-    (def result-1
-      (-> session
-          .runner
-          (.fetch "tensor-1")
-          .run
-          (.get 0)
-          (.copyTo (int-array 13))
-          ))
-
-
-    (apply str (map char result))
-    )
-
-
-
-;; ======================================================
-
-;;dreams
-#_
-(let [weights [:var (tf/truncated-normal )]
-      biases [:var (tf/zeros num-labels)]
-      logits [:+ [:mx*  tf-train-ds weights]
-              biases]
-      loss nil
-      optmzr (-> (grad-desc/optimizer 0.5)
-                 (minimize loss))
-      train-prediction [:nn-softmax logits]
-      f1 (fn [ds] [:nn-softmax [:+ [:mx* ds weights]
-                               biases]])
-      valid-prediction (f1 tf-valid-ds)
-      test-prediction (f1 tf-test-ds)])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(let [tf-train-ds (t/c [1 2 3])
+      tf-train-lbls (t/c [4 5 6])
+      tf-valid-ds (t/c [7 8 9])
+      tf-test-ds (t/c [10 11 12])
+      weight (t/id :weights
+                   (t/variable (t/truncated-normal [2 3])))
+      biases (t/id :biases
+                   (t/variable (repeat num-labels 0.)))
+      logits (t/add (t/matmul tf-train-ds weights)
+                    biases)
+      loss (t/mean #_t/reduce-mean (t/softmax-cross-entropy-with-logits tf-train-lbls
+                                                               logits))
+      optimizer (t/min-optimizer (t/gradient-descent-optimizer 0.5)
+                                 loss)
+      train-prediction (t/softmax logits)
+      valid-prediction (t/softmax (t/add (t/matmul tf-valid-ds
+                                                   weights)
+                                         biases))
+      test-prediction (t/softmax (t/add (t/matmul tf-test-ds
+                                                  weights)
+                                        biases))]
+  (t/run train-prediction))
 
