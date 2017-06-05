@@ -33,6 +33,10 @@
 
 (def clj->tensor #(Tensor/create (tf-vals %)))
 
+(defn tf-obj? [x]
+  (if (re-find #"org.tensorflow" (.getName (class x)))
+    true false))
+
 (def array?
   "Works like coll? but returns true if argument is array"
   #(= \[ (first (.getName (.getClass %)))))
@@ -109,53 +113,170 @@
                          (set-attrs attrs')
                          (add-inputs inputs)
                          build
-                         (output 0))
-        ]
+                         (output 0))]
     tf-operation))
 
 ;; ======================================
 
-(defn add [& args] (apply vector :add args))
+(defn add [& inputs] [:add (vec inputs)])
+(defn- add* [g inputs] {:op (op-builder g "Add" inputs)})
 
-(defn c [value] [:const value])
-
-(defn- add* [g & args] (op-builder g "Add" args))
-
-(defn- const* [g value]
+(defn c [value] [:const [] value])
+(defn- const* [g _ value]
   (let [tensor (clj->tensor value)]
-    (op-builder g
-                "Const"
-                []
-                {:dtype (.dataType tensor)
-                 :value tensor})))
+    {:op (op-builder g
+                     "Const"
+                     []
+                     {:dtype (.dataType tensor)
+                      :value tensor})}))
+
+(defn assign [vari val] [:assign [] vari val])
+(defn- assign* [g _ vari val]
+  {:op (op-builder g
+                    "Assign"
+                    [vari
+                     (if (tf-obj? val)
+                       val
+                       (:op (const* g nil val)))])})
+
+(defn variable [value & [opts]] [:variable [] value (or opts {})])
+(defn- variable* [g _ value opts]
+  (let [tensor (clj->tensor value)
+        op (op-builder g
+                       "Variable"
+                       []
+                       {:shape (tensor->shape tensor)
+                        :dtype (.dataType tensor)})]
+    {:op op
+     :init-varis [[op value]]}))
+
 
 (def kw->fn
   {:add #'add*
-   :const #'const*})
+   :const #'const*
+   :assign #'assign*
+   :variable #'variable*})
+
+;; ======================================
+
+(defn call-op-builder
+  [op graph-map inputs args]
+  (-> op
+      kw->fn
+      (apply (:graph graph-map)
+             inputs
+             args)))
+
+(defn merge-op-ret-with-graph-map
+  [graph-map {:keys [op init-varis]}]
+  (-> graph-map
+      (assoc :op op)
+      (update :init-varis
+              into
+              init-varis)))
+
+(declare ->graph-obj*)
+
+(defn graph-def-reducer
+  [[gm inputs] todo]
+  (let [{:keys [op] :as gm'} (->graph-obj* gm todo)]
+    [gm' (conj inputs op)]))
 
 (defn ->graph-obj*
-  [graph [head & body]]
-  (case head
-    :const (const* graph (first body))
-    (let [body' (map (partial ->graph-obj* graph)
-                     body)]
-      (-> head
-          kw->fn
-          (apply graph body')))))
+  [graph-map v]
+  (let [[gm' op] (if (vector? v)
+                   (let [[head inputs & args] v
+                         [gm inputs'] (reduce graph-def-reducer
+                                              [graph-map []]
+                                              inputs)]
+                     [gm (call-op-builder head
+                                          gm
+                                          inputs'
+                                          args)])
+                   [graph-map (call-op-builder :const
+                                               graph-map
+                                               nil
+                                               [v])])]
+    (merge-op-ret-with-graph-map gm'
+                                 op)))
 
 (defn ->graph-obj
   [graph-def]
-  (let [g (org.tensorflow.Graph.)]
-    [(->graph-obj* g graph-def)
-     g]))
+  (->graph-obj* {:graph (org.tensorflow.Graph.)
+                 :init-varis []}
+                graph-def))
+
+(defn init-variable-assignments
+  [graph sess pairs]
+  (doseq [[vari val] pairs]
+    (let [{:keys [op]} (assign* graph nil vari val)]
+      (-> sess
+          .runner
+          (.fetch (.name (.op op)))
+          .run))))
 
 (defn run
   [graph-def]
-  (let [[output g] (->graph-obj graph-def)
-        s  (Session. g)]
+  (let [{:keys [graph op init-varis]} (->graph-obj graph-def)
+        s  (Session. graph)]
+    (init-variable-assignments graph s init-varis)
     (-> s
         .runner
-        (.fetch output)
+        (.fetch op)
         .run
         (.get 0)
         tensor->clj)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

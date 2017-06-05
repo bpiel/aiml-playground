@@ -334,8 +334,10 @@
                          (assign weights))]
   (run train-network))
 
-(t/run (t/add (t/c 1.)
-              (t/c 2.)))
+(t/run (t/add 1. 2.))
+
+(t/run (t/add (t/variable 10.) (t/variable 2.)))
+
 
 (def inputs (constant (take-nth 2 training-data)))
 (def outputs (constant (take-nth 2 (rest training-data))))
