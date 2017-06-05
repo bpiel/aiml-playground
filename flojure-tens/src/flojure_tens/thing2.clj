@@ -1,4 +1,4 @@
-(ns flojure-tens.thing
+(ns flojure-tens.thing2
   (:import [org.tensorflow Graph Tensor Shape DataType Session]))
 
 (defn recursively
@@ -118,31 +118,37 @@
 
 ;; ======================================
 
-(defn add [& inputs] [:add (vec inputs)])
-(defn- add* [g inputs] {:op (op-builder g "Add" inputs)})
+(defn id [id-kw op]
+  (assoc op
+         :id id-kw))
 
-(defn sigmoid [& inputs] [:sigmoid (vec inputs)])
-(defn- sigmoid* [g inputs] {:op (op-builder g "Sigmoid" inputs)})
+(defmacro def-simple-op
+  [name1 name2 kw tf-op]
+  `[(defn ~name1 [& ~'inputs] {:op ~kw :inputs (vec ~'inputs)})
+    (defn- ~name2 [~'g {:keys [~'inputs]}] {:op (op-builder ~'g ~tf-op ~'inputs)})])
 
-(defn matmul [& inputs] [:matmul (vec inputs)])
-(defn- matmul* [g inputs] {:op (op-builder g "MatMul" inputs)})
+(defmacro def-super-simple-op
+  [name1]
+  (let [name-str (name name1)
+        name2 (-> name-str
+                  (str "*")
+                  symbol)
+        op-kw (keyword name-str)
+        tf-op (apply str
+                     (-> name-str first clojure.string/upper-case)
+                     (rest name-str))]
+    `(def-simple-op ~name1 ~name2 ~op-kw ~tf-op)))
 
-(defn div [& inputs] [:div (vec inputs)])
-(defn- div* [g inputs] {:op (op-builder g "Div" inputs)})
+(def-super-simple-op add)
+(def-super-simple-op sub)
+(def-super-simple-op sigmoid)
+(def-simple-op matmul matmul* :matmul "MatMul")
+(def-super-simple-op div)
+(def-super-simple-op pow)
+(def-super-simple-op mul)
 
-(defn pow [& inputs] [:pow (vec inputs)])
-(defn- pow* [g inputs] {:op (op-builder g "Pow" inputs)})
-
-(defn sub [& inputs] [:sub (vec inputs)])
-(defn- sub* [g inputs] {:op (op-builder g "Sub" inputs)})
-
-(defn mul [& inputs] [:mul (vec inputs)])
-(defn- mul* [g inputs] {:op (op-builder g "Mul" inputs)})
-
-
-
-(defn c [value] [:const [] value])
-(defn- const* [g _ value]
+(defn c [value] {:op :const :value value})
+(defn- const* [g {:keys [value]}]
   (let [tensor (clj->tensor value)]
     {:op (op-builder g
                      "Const"
@@ -151,22 +157,32 @@
                       :value tensor})}))
 
 
-(defn transpose [input] [:transpose [input]])
-(defn- transpose* [g [input]] {:op (op-builder g "Transpose" [input (:op (const* g nil [1 0]))])})
+(defn transpose [input] {:op :transpose
+                         :input input})
+(defn- transpose* [g {:keys [input]}]
+  {:op (op-builder g "Transpose" [input (:op (const* g nil [1 0]))])})
 
 
-(defn assign [vari val] [:assign [vari val]])
-(defn- assign* [g [vari val]]
+(defn assign [vari val] {:op :assign
+                         :vari vari
+                         :val val})
+(defn- assign* [g {:keys [vari val]}]
+  (def i1 [vari val])
   {:op (op-builder g
                    "Assign"
                    [vari
 #_                    val
                     (if (tf-obj? val)
                       val
-                      (:op (const* g nil val)))])})
+                      (:op (const* g {:value val})))])})
 
-(defn variable [value & [opts]] [:variable [] value (or opts {})])
-(defn- variable* [g _ value opts]
+(defn variable [value & [opts]] {:op :variable
+                                 :value value
+                                 :opts (or opts {})})
+(defn- variable* [g {:keys [value opts]}]
+  (def g1 g)
+  (def v1 value)
+  (def o1 opts)
   (let [tensor (clj->tensor value)
         op (op-builder g
                        "Variable"
@@ -175,7 +191,6 @@
                         :dtype (.dataType tensor)})]
     {:op op
      :init-varis [[op value]]}))
-
 
 (def kw->fn
   {:add #'add*
@@ -193,12 +208,11 @@
 ;; ======================================
 
 (defn call-op-builder
-  [op graph-map inputs args]
-  (-> op
-      kw->fn
-      (apply (:graph graph-map)
-             inputs
-             args)))
+  [{:keys [op] :as args} graph-map & [inputs]]
+  ((kw->fn op)
+   (:graph graph-map)
+   (assoc args
+          :inputs inputs)))
 
 (defn merge-op-ret-with-graph-map
   [graph-map {:keys [op init-varis]}]
@@ -217,19 +231,16 @@
 
 (defn ->graph-obj*
   [graph-map v]
-  (let [[gm' op] (if (vector? v)
-                   (let [[head inputs & args] v
+  (let [[gm' op] (if (map? v)
+                   (let [{:keys [inputs]} v
                          [gm inputs'] (reduce graph-def-reducer
                                               [graph-map []]
                                               inputs)]
-                     [gm (call-op-builder head
+                     [gm (call-op-builder v
                                           gm
-                                          inputs'
-                                          args)])
-                   [graph-map (call-op-builder :const
-                                               graph-map
-                                               nil
-                                               [v])])]
+                                          inputs')])
+                   [graph-map (call-op-builder (c v)
+                                               graph-map)])]
     (merge-op-ret-with-graph-map gm'
                                  op)))
 
@@ -242,7 +253,7 @@
 (defn init-variable-assignments
   [graph sess pairs]
   (doseq [[vari val] pairs]
-    (let [{:keys [op]} (assign* graph [vari val])]
+    (let [{:keys [op]} (assign* graph {:vari vari :val val})]
       (-> sess
           .runner
           (.fetch (.name (.op op)))
@@ -259,57 +270,3 @@
         .run
         (.get 0)
         tensor->clj)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

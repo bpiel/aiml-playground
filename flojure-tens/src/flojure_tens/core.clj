@@ -1,6 +1,7 @@
 (ns flojure-tens.core
-  (:require [flojure-tens.thing :as t])
+  (:require [flojure-tens.thing2 :as t])
   (:import [org.tensorflow Graph Tensor Shape DataType Session]))
+
 
 
 
@@ -304,6 +305,37 @@
 
 ;; dreams
 
+(let [inputs (t/c (take-nth 2 training-data))
+      outputs (t/c (take-nth 2 (rest training-data)))
+      weights (t/variable (repeatedly 3 (fn [] (repeatedly 1 #(dec (rand 2))))))
+      network (fn [x]
+                (-> x
+                    (t/matmul weights)
+                    t/sigmoid))
+      network-inputs (network inputs)
+      error (fn [network-output]
+              (-> outputs
+                  (t/sub network-output)
+                  (t/pow 2.)
+                  (t/div 2.)))
+      error' (fn [network-output]
+               (t/sub network-output
+                      outputs))
+      sigmoid' (fn [x]
+                 (->> x
+                      (t/sub 1.)
+                      (t/mul x)))
+      deltas (fn [network-output]
+               (->> (sigmoid' network-inputs)
+                    (t/mul (error' network-inputs))
+                    (t/matmul (t/transpose inputs))))
+      train-network (->> network-inputs
+                         deltas
+                         (t/sub weights)
+                         (t/assign weights))]
+  (t/run train-network))
+
+;; TODO: add ids!!!
 (let [inputs (t/c (take-nth 2 training-data))
       outputs (t/c (take-nth 2 (rest training-data)))
       weights (t/variable (repeatedly 3 (fn [] (repeatedly 1 #(dec (rand 2))))))
