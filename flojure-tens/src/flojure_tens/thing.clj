@@ -121,6 +121,29 @@
 (defn add [& inputs] [:add (vec inputs)])
 (defn- add* [g inputs] {:op (op-builder g "Add" inputs)})
 
+(defn sigmoid [& inputs] [:sigmoid (vec inputs)])
+(defn- sigmoid* [g inputs] {:op (op-builder g "Sigmoid" inputs)})
+
+(defn matmul [& inputs] [:matmul (vec inputs)])
+(defn- matmul* [g inputs] {:op (op-builder g "MatMul" inputs)})
+
+(defn div [& inputs] [:div (vec inputs)])
+(defn- div* [g inputs] {:op (op-builder g "Div" inputs)})
+
+(defn pow [& inputs] [:pow (vec inputs)])
+(defn- pow* [g inputs] {:op (op-builder g "Pow" inputs)})
+
+(defn sub [& inputs] [:sub (vec inputs)])
+(defn- sub* [g inputs] {:op (op-builder g "Sub" inputs)})
+
+(defn mul [& inputs] [:mul (vec inputs)])
+(defn- mul* [g inputs] {:op (op-builder g "Mul" inputs)})
+
+(defn transpose [input] [:transpose [input]])
+(defn- transpose* [g [input]] {:op (op-builder g "Transpose" [input (:op (const* g nil [1 0]))])})
+
+
+
 (defn c [value] [:const [] value])
 (defn- const* [g _ value]
   (let [tensor (clj->tensor value)]
@@ -130,14 +153,15 @@
                      {:dtype (.dataType tensor)
                       :value tensor})}))
 
-(defn assign [vari val] [:assign [] vari val])
-(defn- assign* [g _ vari val]
+(defn assign [vari val] [:assign [vari val]])
+(defn- assign* [g [vari val]]
   {:op (op-builder g
-                    "Assign"
-                    [vari
-                     (if (tf-obj? val)
-                       val
-                       (:op (const* g nil val)))])})
+                   "Assign"
+                   [vari
+#_                    val
+                    (if (tf-obj? val)
+                      val
+                      (:op (const* g nil val)))])})
 
 (defn variable [value & [opts]] [:variable [] value (or opts {})])
 (defn- variable* [g _ value opts]
@@ -155,7 +179,14 @@
   {:add #'add*
    :const #'const*
    :assign #'assign*
-   :variable #'variable*})
+   :variable #'variable*
+   :sigmoid #'sigmoid*
+   :matmul #'matmul*
+   :div #'div*
+   :pow #'pow*
+   :sub #'sub*
+   :mul #'mul*
+   :transpose #'transpose*})
 
 ;; ======================================
 
@@ -209,7 +240,7 @@
 (defn init-variable-assignments
   [graph sess pairs]
   (doseq [[vari val] pairs]
-    (let [{:keys [op]} (assign* graph nil vari val)]
+    (let [{:keys [op]} (assign* graph [vari val])]
       (-> sess
           .runner
           (.fetch (.name (.op op)))

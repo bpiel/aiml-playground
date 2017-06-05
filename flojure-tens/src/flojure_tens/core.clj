@@ -303,36 +303,36 @@
    [1. 0. 1.]   [0.] ])
 
 ;; dreams
-#_
-(let [inputs (constant (take-nth 2 training-data))
-      outputs (constant (take-nth 2 (rest training-data)))
-      weights (variable (repeatedly 3 (fn [] (repeatedly 1 #(dec (rand 2))))))
+
+(let [inputs (t/c (take-nth 2 training-data))
+      outputs (t/c (take-nth 2 (rest training-data)))
+      weights (t/variable (repeatedly 3 (fn [] (repeatedly 1 #(dec (rand 2))))))
       network (fn [x]
                 (-> x
-                    (matmul weights)
-                    sigmoid))
+                    (t/matmul weights)
+                    t/sigmoid))
       network-inputs (network inputs)
       error (fn [network-output]
               (-> outputs
-                  (sub network-output)
-                  (pow (constant 2.))
-                  (div (constant 2.))))
+                  (t/sub network-output)
+                  (t/pow 2.)
+                  (t/div 2.)))
       error' (fn [network-output]
-               (sub network-output
-                    outputs))
+               (t/sub network-output
+                      outputs))
       sigmoid' (fn [x]
                  (->> x
-                      (sub (constant 1.))
-                      (mult x)))
+                      (t/sub 1.)
+                      (t/mul x)))
       deltas (fn [network-output]
-               (-> (sigmoid' network-inputs)
-                   (mult (error' network-inputs))
-                   (matmul (transpose inputs))))
+               (->> (sigmoid' network-inputs)
+                    (t/mul (error' network-inputs))
+                    (t/matmul (t/transpose inputs))))
       train-network (->> network-inputs
                          deltas
-                         (sub weights)
-                         (assign weights))]
-  (run train-network))
+                         (t/sub weights)
+                         (t/assign weights))]
+  (t/run train-network))
 
 (t/run (t/add 1. 2.))
 
