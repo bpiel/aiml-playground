@@ -212,14 +212,6 @@
    (assoc args
           :inputs inputs)))
 
-;; if no id:
-;;   make hash
-;;   lookup id by hash
-;;   if no id:
-;;      make id (inc atom??)
-;;      assoc hash->id
-;; assoc id->tf-op
-
 (defn merge-stuff-into-graph-map
   [graph-map op-ret hsh id]
   (let [{:keys [op init-varis]} op-ret]
@@ -248,15 +240,6 @@
                                  hsh
                                  id')
      (:op op-ret)]))
-
-
-(defn merge-op-ret-with-graph-map
-  [graph-map {:keys [op init-varis]}]
-  (-> graph-map
-      (assoc :op op)
-      (update :init-varis
-              into
-              init-varis)))
 
 (declare ->graph-map*)
 
@@ -309,8 +292,10 @@
 
 (defn setup
   [graph-defs]
-  (apply-defs-to-graph-map (init-graph-map)
-                           graph-defs))
+  (let [gm (apply-defs-to-graph-map (init-graph-map)
+                                    graph-defs)]
+    [gm
+     (Session. (:graph gm))]))
 
 (defn run-session-ops
   [graph-map session graph-defs]
