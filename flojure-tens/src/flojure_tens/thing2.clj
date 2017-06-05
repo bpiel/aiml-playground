@@ -156,18 +156,16 @@
                      {:dtype (.dataType tensor)
                       :value tensor})}))
 
-
 (defn transpose [input] {:op :transpose
-                         :input input})
-(defn- transpose* [g {:keys [input]}]
-  {:op (op-builder g "Transpose" [input (:op (const* g nil [1 0]))])})
+                         :inputs [input]})
+(defn- transpose* [g {:keys [inputs]}]
+  {:op (op-builder g "Transpose" [(first inputs)
+                                  (:op (const* g {:value [1 0]}))])})
 
 
 (defn assign [vari val] {:op :assign
-                         :vari vari
-                         :val val})
-(defn- assign* [g {:keys [vari val]}]
-  (def i1 [vari val])
+                         :inputs [vari val]})
+(defn- assign* [g {[vari val] :inputs}]
   {:op (op-builder g
                    "Assign"
                    [vari
@@ -214,6 +212,44 @@
    (assoc args
           :inputs inputs)))
 
+;; if no id:
+;;   make hash
+;;   lookup id by hash
+;;   if no id:
+;;      make id (inc atom??)
+;;      assoc hash->id
+;; assoc id->tf-op
+
+(defn merge-stuff-into-graph-map
+  [graph-map op-ret hsh id]
+  (let [{:keys [op init-varis]} op-ret]
+    (-> graph-map
+        (assoc :op op)
+        (update :init-varis
+                into
+                init-varis)
+        (update :hash->id assoc hsh id)
+        (update :id->tf assoc id op))))
+
+(defn build-run-op
+  [{:keys [id op] :as op-def} graph-map & [inputs]]
+  (let [{:keys [hash->id id->tf]} graph-map
+        hsh (hash op-def)
+        id' (or id
+                (hash->id hsh)
+                (gensym op))
+        op-ret (if-let [tf-op (id->tf id')]
+                 {:op tf-op}
+                 (call-op-builder op-def
+                                  graph-map
+                                  inputs))]
+    [(merge-stuff-into-graph-map graph-map
+                                 op-ret
+                                 hsh
+                                 id')
+     (:op op-ret)]))
+
+
 (defn merge-op-ret-with-graph-map
   [graph-map {:keys [op init-varis]}]
   (-> graph-map
@@ -222,48 +258,76 @@
               into
               init-varis)))
 
-(declare ->graph-obj*)
+(declare ->graph-map*)
 
 (defn graph-def-reducer
   [[gm inputs] todo]
-  (let [{:keys [op] :as gm'} (->graph-obj* gm todo)]
+  (let [{:keys [op] :as gm'} (->graph-map* gm todo)]
     [gm' (conj inputs op)]))
 
-(defn ->graph-obj*
+(defn ->graph-map*
   [graph-map v]
-  (let [[gm' op] (if (map? v)
+  (let [[gm' op] (cond
+                   (map? v)
                    (let [{:keys [inputs]} v
                          [gm inputs'] (reduce graph-def-reducer
                                               [graph-map []]
                                               inputs)]
-                     [gm (call-op-builder v
-                                          gm
-                                          inputs')])
-                   [graph-map (call-op-builder (c v)
-                                               graph-map)])]
-    (merge-op-ret-with-graph-map gm'
-                                 op)))
+                     (build-run-op v gm inputs'))
+                   (tf-obj? v) v
+                   :else
+                   (build-run-op (c v) graph-map))]
+    gm'))
 
-(defn ->graph-obj
-  [graph-def]
-  (->graph-obj* {:graph (org.tensorflow.Graph.)
-                 :init-varis []}
+(defn init-graph-map []
+  {:graph (org.tensorflow.Graph.)
+   :init-varis []
+   :hash->id {}
+   :id->tf {}})
+
+(defn ->graph-map
+  [graph-def & [graph-map]]
+  (->graph-map* (or graph-map
+                    (init-graph-map))
                 graph-def))
 
 (defn init-variable-assignments
-  [graph sess pairs]
-  (doseq [[vari val] pairs]
-    (let [{:keys [op]} (assign* graph {:vari vari :val val})]
+  [{:keys [graph init-varis]} sess]
+  (doseq [[vari val] init-varis]
+    (let [{:keys [op]} (assign* graph {:inputs [vari val]})]
       (-> sess
           .runner
           (.fetch (.name (.op op)))
           .run))))
 
+(defn apply-defs-to-graph-map
+  [graph-map graph-defs]
+  (let [f #(->graph-map %2 %)]
+    (reduce f
+            graph-map
+            graph-defs)))
+
+(defn setup
+  [graph-defs]
+  (apply-defs-to-graph-map (init-graph-map)
+                           graph-defs))
+
+(defn run-session-ops
+  [graph-map session graph-defs]
+  (let [{:keys [op]} (apply-defs-to-graph-map graph-map
+                                              graph-defs)]
+    (-> session
+        .runner
+        (.fetch op)
+        .run
+        (.get 0)
+        tensor->clj)))
+
 (defn run
   [graph-def]
-  (let [{:keys [graph op init-varis]} (->graph-obj graph-def)
+  (let [{:keys [graph op init-varis] :as graph-map} (->graph-map graph-def)
         s  (Session. graph)]
-    (init-variable-assignments graph s init-varis)
+    (init-variable-assignments graph-map s)
     (-> s
         .runner
         (.fetch op)
