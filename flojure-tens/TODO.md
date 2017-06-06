@@ -1,22 +1,17 @@
-x constant
-- variable
-- tf.global_variables_initializer
- -- this is tricky
- -- make a new class (ns/record/type???) to handle things handled in python class????
-- add
-- matmul
-- sigmoid
-- sub
-- pow
-- div
-- mult
-- transpose
-- truncated_normal
-- zeros
-- reduce_mean
-- tf.nn.softmax_cross_entropy_with_logits
-- tf.train.GradientDescentOptimizer
-- tf.nn.softmax
-- .eval()
-- compile java jar/so
-- add TF_addGradient to java jni api
+make GraphUtils in c++, java
+copy/write one dummy static func
+
+
+
+- c++ stub
+- java loader -- copy from TF's NativeLib
+- java stub
+- compliment or replace java/c++ api?
+ -- prob replace????????
+  -- prob a nightmare?!?!?!? alternatives??
+ -- how to reference tf libs from c++?
+   -- how does tf_scala do it?
+- gradient descent optimizer
+
+
+g++ -std=c++11 -Iinclude/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o xxxx.so *.cc
