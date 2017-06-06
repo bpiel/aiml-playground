@@ -23,20 +23,20 @@ extern "C" {
 #endif  // __cplusplus
 
 /*
- *  Class:     org_tensorflow_TensorFlow
+ *  Class:     tfnative_TensorFlow
  *  Method:    version
  *  Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_org_tensorflow_TensorFlow_version(JNIEnv*,
+JNIEXPORT jstring JNICALL Java_tfnative_TensorFlow_version(JNIEnv*,
                                                                  jclass);
 
 /*
- * Class:     org_tensorflow_TensorFlow
+ * Class:     tfnative_TensorFlow
  * Method:    registeredOpList
  * Signature: ()[B
  */
 JNIEXPORT jbyteArray JNICALL
-Java_org_tensorflow_TensorFlow_registeredOpList(JNIEnv*, jclass);
+Java_tfnative_TensorFlow_registeredOpList(JNIEnv*, jclass);
 
 #ifdef __cplusplus
 }  // extern "C"

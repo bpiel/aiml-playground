@@ -23,44 +23,44 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_Graph
+ * Class:     tfnative_Graph
  * Method:    allocate
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Graph_allocate(JNIEnv *, jclass);
+JNIEXPORT jlong JNICALL Java_tfnative_Graph_allocate(JNIEnv *, jclass);
 
 /*
- * Class:     org_tensorflow_Graph
+ * Class:     tfnative_Graph
  * Method:    delete
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Graph_delete(JNIEnv *, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Graph_delete(JNIEnv *, jclass,
                                                         jlong);
 
 /*
- * Class:     org_tensorflow_Graph
+ * Class:     tfnative_Graph
  * Method:    operation
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Graph_operation(JNIEnv *, jclass,
+JNIEXPORT jlong JNICALL Java_tfnative_Graph_operation(JNIEnv *, jclass,
                                                             jlong, jstring);
 
 /*
- * Class:     org_tensorflow_Graph
+ * Class:     tfnative_Graph
  * Method:    importGraphDef
  * Signature: (J[BLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Graph_importGraphDef(JNIEnv *,
+JNIEXPORT void JNICALL Java_tfnative_Graph_importGraphDef(JNIEnv *,
                                                                 jclass, jlong,
                                                                 jbyteArray,
                                                                 jstring);
 
 /*
- * Class:     org_tensorflow_Graph
+ * Class:     tfnative_Graph
  * Method:    toGraphDef
  * Signature: (J)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Graph_toGraphDef(JNIEnv *,
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Graph_toGraphDef(JNIEnv *,
                                                                   jclass,
                                                                   jlong);
 

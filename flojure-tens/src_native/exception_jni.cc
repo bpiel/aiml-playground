@@ -17,8 +17,8 @@ limitations under the License.
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
 
 const char kIllegalArgumentException[] = "java/lang/IllegalArgumentException";
 const char kIllegalStateException[] = "java/lang/IllegalStateException";

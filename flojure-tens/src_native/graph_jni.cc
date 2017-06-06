@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/java/src/main/native/graph_jni.h"
+#include "graph_jni.h"
 
 #include <limits>
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
 
 namespace {
 TF_Graph* requireHandle(JNIEnv* env, jlong handle) {
@@ -32,17 +32,17 @@ TF_Graph* requireHandle(JNIEnv* env, jlong handle) {
 }
 }  // namespace
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Graph_allocate(JNIEnv*, jclass) {
+JNIEXPORT jlong JNICALL Java_tfnative_Graph_allocate(JNIEnv*, jclass) {
   return reinterpret_cast<jlong>(TF_NewGraph());
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Graph_delete(JNIEnv*, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Graph_delete(JNIEnv*, jclass,
                                                         jlong handle) {
   if (handle == 0) return;
   TF_DeleteGraph(reinterpret_cast<TF_Graph*>(handle));
 }
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Graph_operation(JNIEnv* env,
+JNIEXPORT jlong JNICALL Java_tfnative_Graph_operation(JNIEnv* env,
                                                             jclass clazz,
                                                             jlong handle,
                                                             jstring name) {
@@ -54,7 +54,7 @@ JNIEXPORT jlong JNICALL Java_org_tensorflow_Graph_operation(JNIEnv* env,
   return reinterpret_cast<jlong>(op);
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Graph_importGraphDef(
+JNIEXPORT void JNICALL Java_tfnative_Graph_importGraphDef(
     JNIEnv* env, jclass clazz, jlong handle, jbyteArray graph_def,
     jstring prefix) {
   TF_Graph* g = requireHandle(env, handle);
@@ -85,7 +85,7 @@ JNIEXPORT void JNICALL Java_org_tensorflow_Graph_importGraphDef(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_org_tensorflow_Graph_toGraphDef(JNIEnv* env, jclass clazz, jlong handle) {
+Java_tfnative_Graph_toGraphDef(JNIEnv* env, jclass clazz, jlong handle) {
   jbyteArray ret = nullptr;
   TF_Graph* g = requireHandle(env, handle);
   if (g == nullptr) return ret;

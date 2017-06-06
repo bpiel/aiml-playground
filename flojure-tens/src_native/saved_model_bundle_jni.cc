@@ -16,11 +16,11 @@ limitations under the License.
 #include <limits>
 #include <memory>
 
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
-#include "tensorflow/java/src/main/native/saved_model_bundle_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
+#include "saved_model_bundle_jni.h"
 
-JNIEXPORT jobject JNICALL Java_org_tensorflow_SavedModelBundle_load(
+JNIEXPORT jobject JNICALL Java_tfnative_SavedModelBundle_load(
     JNIEnv* env, jclass clazz, jstring export_dir, jobjectArray tags,
     jbyteArray run_options) {
   TF_Status* status = TF_NewStatus();

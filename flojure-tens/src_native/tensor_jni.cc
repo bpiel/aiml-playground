@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/java/src/main/native/tensor_jni.h"
+#include "tensor_jni.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -21,8 +21,8 @@ limitations under the License.
 #include <algorithm>
 #include <memory>
 
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
 
 namespace {
 
@@ -215,7 +215,7 @@ size_t readNDArray(JNIEnv* env, TF_DataType dtype, const char* src,
 }
 }  // namespace
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_allocate(JNIEnv* env,
+JNIEXPORT jlong JNICALL Java_tfnative_Tensor_allocate(JNIEnv* env,
                                                             jclass clazz,
                                                             jint dtype,
                                                             jlongArray shape,
@@ -254,7 +254,7 @@ JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_allocate(JNIEnv* env,
   return reinterpret_cast<jlong>(t);
 }
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_allocateScalarBytes(
+JNIEXPORT jlong JNICALL Java_tfnative_Tensor_allocateScalarBytes(
     JNIEnv* env, jclass clazz, jbyteArray value) {
   // TF_STRING tensors are encoded with a table of 8-byte offsets followed by
   // TF_StringEncode-encoded bytes.
@@ -284,14 +284,14 @@ JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_allocateScalarBytes(
   return reinterpret_cast<jlong>(t);
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_delete(JNIEnv* env,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_delete(JNIEnv* env,
                                                          jclass clazz,
                                                          jlong handle) {
   if (handle == 0) return;
   TF_DeleteTensor(reinterpret_cast<TF_Tensor*>(handle));
 }
 
-JNIEXPORT jobject JNICALL Java_org_tensorflow_Tensor_buffer(JNIEnv* env,
+JNIEXPORT jobject JNICALL Java_tfnative_Tensor_buffer(JNIEnv* env,
                                                               jclass clazz,
                                                               jlong handle) {
   TF_Tensor* t = requireHandle(env, handle);
@@ -302,7 +302,7 @@ JNIEXPORT jobject JNICALL Java_org_tensorflow_Tensor_buffer(JNIEnv* env,
   return env->NewDirectByteBuffer(data, static_cast<jlong>(sz));
 }
 
-JNIEXPORT jint JNICALL Java_org_tensorflow_Tensor_dtype(JNIEnv* env,
+JNIEXPORT jint JNICALL Java_tfnative_Tensor_dtype(JNIEnv* env,
                                                         jclass clazz,
                                                         jlong handle) {
   static_assert(sizeof(jint) >= sizeof(TF_DataType),
@@ -312,7 +312,7 @@ JNIEXPORT jint JNICALL Java_org_tensorflow_Tensor_dtype(JNIEnv* env,
   return static_cast<jint>(TF_TensorType(t));
 }
 
-JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Tensor_shape(JNIEnv* env,
+JNIEXPORT jlongArray JNICALL Java_tfnative_Tensor_shape(JNIEnv* env,
                                                               jclass clazz,
                                                               jlong handle) {
   TF_Tensor* t = requireHandle(env, handle);
@@ -329,7 +329,7 @@ JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Tensor_shape(JNIEnv* env,
   return ret;
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_setValue(JNIEnv* env,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_setValue(JNIEnv* env,
                                                            jclass clazz,
                                                            jlong handle,
                                                            jobject value) {
@@ -348,7 +348,7 @@ JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_setValue(JNIEnv* env,
 }
 
 #define DEFINE_GET_SCALAR_METHOD(jtype, dtype, method_suffix)                  \
-  JNIEXPORT jtype JNICALL Java_org_tensorflow_Tensor_scalar##method_suffix(    \
+  JNIEXPORT jtype JNICALL Java_tfnative_Tensor_scalar##method_suffix(    \
       JNIEnv* env, jclass clazz, jlong handle) {                               \
     jtype ret = 0;                                                             \
     TF_Tensor* t = requireHandle(env, handle);                                 \
@@ -370,7 +370,7 @@ DEFINE_GET_SCALAR_METHOD(jlong, TF_INT64, Long);
 DEFINE_GET_SCALAR_METHOD(jboolean, TF_BOOL, Boolean);
 #undef DEFINE_GET_SCALAR_METHOD
 
-JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Tensor_scalarBytes(
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Tensor_scalarBytes(
     JNIEnv* env, jclass clazz, jlong handle) {
   TF_Tensor* t = requireHandle(env, handle);
   if (t == nullptr) return nullptr;
@@ -408,7 +408,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Tensor_scalarBytes(
   return ret;
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_readNDArray(JNIEnv* env,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_readNDArray(JNIEnv* env,
                                                               jclass clazz,
                                                               jlong handle,
                                                               jobject value) {

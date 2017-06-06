@@ -16,9 +16,9 @@ limitations under the License.
 #include <string.h>
 #include <memory>
 
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
-#include "tensorflow/java/src/main/native/session_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
+#include "session_jni.h"
 
 namespace {
 TF_Session* requireHandle(JNIEnv* env, jlong handle) {
@@ -100,13 +100,13 @@ unique_tf_buffer MakeUniqueBuffer(TF_Buffer* buf) {
 
 }  // namespace
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Session_allocate(
+JNIEXPORT jlong JNICALL Java_tfnative_Session_allocate(
     JNIEnv* env, jclass clazz, jlong graph_handle) {
-  return Java_org_tensorflow_Session_allocate2(env, clazz, graph_handle,
+  return Java_tfnative_Session_allocate2(env, clazz, graph_handle,
                                                nullptr, nullptr);
 }
 
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Session_allocate2(
+JNIEXPORT jlong JNICALL Java_tfnative_Session_allocate2(
     JNIEnv* env, jclass clazz, jlong graph_handle, jstring target,
     jbyteArray config) {
   if (graph_handle == 0) {
@@ -144,7 +144,7 @@ JNIEXPORT jlong JNICALL Java_org_tensorflow_Session_allocate2(
   return ok ? reinterpret_cast<jlong>(session) : 0;
 }
 
-JNIEXPORT void JNICALL Java_org_tensorflow_Session_delete(JNIEnv* env,
+JNIEXPORT void JNICALL Java_tfnative_Session_delete(JNIEnv* env,
                                                           jclass clazz,
                                                           jlong handle) {
   TF_Session* session = requireHandle(env, handle);
@@ -157,7 +157,7 @@ JNIEXPORT void JNICALL Java_org_tensorflow_Session_delete(JNIEnv* env,
   TF_DeleteStatus(status);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Session_run(
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Session_run(
     JNIEnv* env, jclass clazz, jlong handle, jbyteArray jrun_options,
     jlongArray input_tensor_handles, jlongArray input_op_handles,
     jintArray input_op_indices, jlongArray output_op_handles,

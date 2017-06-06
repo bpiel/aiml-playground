@@ -23,122 +23,122 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    allocate
  * Signature: (I[JJ)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_allocate(JNIEnv *, jclass,
+JNIEXPORT jlong JNICALL Java_tfnative_Tensor_allocate(JNIEnv *, jclass,
                                                             jint, jlongArray, jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    allocateScalarBytes
  * Signature: ([B)J
  */
 JNIEXPORT jlong JNICALL
-Java_org_tensorflow_Tensor_allocateScalarBytes(JNIEnv *, jclass, jbyteArray);
+Java_tfnative_Tensor_allocateScalarBytes(JNIEnv *, jclass, jbyteArray);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    delete
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_delete(JNIEnv *, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_delete(JNIEnv *, jclass,
                                                          jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    buffer
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_org_tensorflow_Tensor_buffer(JNIEnv *, jclass,
+JNIEXPORT jobject JNICALL Java_tfnative_Tensor_buffer(JNIEnv *, jclass,
                                                               jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    dtype
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_org_tensorflow_Tensor_dtype(JNIEnv *, jclass,
+JNIEXPORT jint JNICALL Java_tfnative_Tensor_dtype(JNIEnv *, jclass,
                                                         jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    shape
  * Signature: (J)[J
  */
-JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Tensor_shape(JNIEnv *, jclass,
+JNIEXPORT jlongArray JNICALL Java_tfnative_Tensor_shape(JNIEnv *, jclass,
                                                               jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    setValue
  * Signature: (JLjava/lang/Object;)V
  *
  * REQUIRES: The jobject's type and shape are compatible the with the DataType
  * and shape of the Tensor referred to by the jlong handle.
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_setValue(JNIEnv *, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_setValue(JNIEnv *, jclass,
                                                            jlong, jobject);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarFloat
  * Signature: (J)F
  *
  */
-JNIEXPORT jfloat JNICALL Java_org_tensorflow_Tensor_scalarFloat(JNIEnv *,
+JNIEXPORT jfloat JNICALL Java_tfnative_Tensor_scalarFloat(JNIEnv *,
                                                                 jclass, jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarDouble
  * Signature: (J)D
  */
-JNIEXPORT jdouble JNICALL Java_org_tensorflow_Tensor_scalarDouble(JNIEnv *,
+JNIEXPORT jdouble JNICALL Java_tfnative_Tensor_scalarDouble(JNIEnv *,
                                                                   jclass,
                                                                   jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarInt
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_org_tensorflow_Tensor_scalarInt(JNIEnv *, jclass,
+JNIEXPORT jint JNICALL Java_tfnative_Tensor_scalarInt(JNIEnv *, jclass,
                                                             jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarLong
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Tensor_scalarLong(JNIEnv *, jclass,
+JNIEXPORT jlong JNICALL Java_tfnative_Tensor_scalarLong(JNIEnv *, jclass,
                                                               jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarBoolean
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_tensorflow_Tensor_scalarBoolean(JNIEnv *,
+JNIEXPORT jboolean JNICALL Java_tfnative_Tensor_scalarBoolean(JNIEnv *,
                                                                     jclass,
                                                                     jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    scalarBytes
  * Signature: (J)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Tensor_scalarBytes(JNIEnv *,
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Tensor_scalarBytes(JNIEnv *,
                                                                     jclass,
                                                                     jlong);
 
 /*
- * Class:     org_tensorflow_Tensor
+ * Class:     tfnative_Tensor
  * Method:    readNDArray
  * Signature: (JLjava/lang/Object;)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Tensor_readNDArray(JNIEnv *, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Tensor_readNDArray(JNIEnv *, jclass,
                                                               jlong, jobject);
 
 #ifdef __cplusplus

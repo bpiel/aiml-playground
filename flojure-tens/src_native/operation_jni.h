@@ -23,54 +23,54 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    name
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_name(JNIEnv *, jclass,
+JNIEXPORT jstring JNICALL Java_tfnative_Operation_name(JNIEnv *, jclass,
                                                              jlong);
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    type
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_type(JNIEnv *, jclass,
+JNIEXPORT jstring JNICALL Java_tfnative_Operation_type(JNIEnv *, jclass,
                                                              jlong);
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    numOutputs
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_numOutputs(JNIEnv *,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_numOutputs(JNIEnv *,
                                                                 jclass, jlong);
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    outputListLength
  * Signature: (JLjava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_outputListLength(JNIEnv *,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_outputListLength(JNIEnv *,
                                                                       jclass,
                                                                       jlong,
                                                                       jstring);
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    shape
  * Signature: (JJI)[J
  */
-JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Operation_shape(JNIEnv *,
+JNIEXPORT jlongArray JNICALL Java_tfnative_Operation_shape(JNIEnv *,
                                                                  jclass, jlong,
                                                                  jlong, jint);
 
 /*
- * Class:     org_tensorflow_Operation
+ * Class:     tfnative_Operation
  * Method:    dtype
  * Signature: (JJI)I
  */
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_dtype(JNIEnv *, jclass,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_dtype(JNIEnv *, jclass,
                                                            jlong, jlong, jint);
 
 #ifdef __cplusplus

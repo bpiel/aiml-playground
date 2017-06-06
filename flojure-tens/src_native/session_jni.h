@@ -23,36 +23,36 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_Session
+ * Class:     tfnative_Session
  * Method:    allocate
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Session_allocate(JNIEnv *, jclass,
+JNIEXPORT jlong JNICALL Java_tfnative_Session_allocate(JNIEnv *, jclass,
                                                              jlong);
 
 /*
- * Class:     org_tensorflow_Session
+ * Class:     tfnative_Session
  * Method:    allocate2
  * Signature: (JLjava/lang/String;[B)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_Session_allocate2(JNIEnv *, jclass,
+JNIEXPORT jlong JNICALL Java_tfnative_Session_allocate2(JNIEnv *, jclass,
                                                               jlong, jstring,
                                                               jbyteArray);
 
 /*
- * Class:     org_tensorflow_Session
+ * Class:     tfnative_Session
  * Method:    delete
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_Session_delete(JNIEnv *, jclass,
+JNIEXPORT void JNICALL Java_tfnative_Session_delete(JNIEnv *, jclass,
                                                           jlong);
 
 /*
- * Class:     org_tensorflow_Session
+ * Class:     tfnative_Session
  * Method:    run
  * Signature: (J[B[J[J[I[J[I[JZ[J)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_org_tensorflow_Session_run(
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Session_run(
     JNIEnv *, jclass, jlong, jbyteArray, jlongArray, jlongArray, jintArray,
     jlongArray, jintArray, jlongArray, jboolean, jlongArray);
 

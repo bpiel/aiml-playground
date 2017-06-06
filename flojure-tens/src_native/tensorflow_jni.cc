@@ -13,16 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/java/src/main/native/tensorflow_jni.h"
-#include "tensorflow/c/c_api.h"
+#include "tensorflow_jni.h"
+#include "include/c_api.h"
 
-JNIEXPORT jstring JNICALL Java_org_tensorflow_TensorFlow_version(JNIEnv* env,
+JNIEXPORT jstring JNICALL Java_tfnative_TensorFlow_version(JNIEnv* env,
                                                                  jclass clazz) {
   return env->NewStringUTF(TF_Version());
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_org_tensorflow_TensorFlow_registeredOpList(JNIEnv* env, jclass clazz) {
+Java_tfnative_TensorFlow_registeredOpList(JNIEnv* env, jclass clazz) {
   TF_Buffer* buf = TF_GetAllOpList();
   jint length = static_cast<int>(buf->length);
   jbyteArray ret = env->NewByteArray(length);

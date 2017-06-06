@@ -23,12 +23,12 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_SavedModelBundle
+ * Class:     tfnative_SavedModelBundle
  * Method:    load
  * Signature:
  * (Ljava/lang/String;[Ljava/lang/String;[B)Lorg/tensorflow/SavedModelBundle;
  */
-JNIEXPORT jobject JNICALL Java_org_tensorflow_SavedModelBundle_load(
+JNIEXPORT jobject JNICALL Java_tfnative_SavedModelBundle_load(
     JNIEnv *, jclass, jstring, jobjectArray, jbyteArray);
 
 #ifdef __cplusplus

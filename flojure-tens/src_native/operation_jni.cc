@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/java/src/main/native/operation_jni.h"
+#include "operation_jni.h"
 
 #include <memory>
-#include "tensorflow/c/c_api.h"
-#include "tensorflow/java/src/main/native/exception_jni.h"
+#include "include/c_api.h"
+#include "exception_jni.h"
 
 namespace {
 template <class T>
@@ -42,7 +42,7 @@ TF_Graph* requireGraphHandle(JNIEnv* env, jlong handle) {
 }
 }  // namespace
 
-JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_name(JNIEnv* env,
+JNIEXPORT jstring JNICALL Java_tfnative_Operation_name(JNIEnv* env,
                                                              jclass clazz,
                                                              jlong handle) {
   TF_Operation* op = requireHandle(env, handle);
@@ -50,7 +50,7 @@ JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_name(JNIEnv* env,
   return env->NewStringUTF(TF_OperationName(op));
 }
 
-JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_type(JNIEnv* env,
+JNIEXPORT jstring JNICALL Java_tfnative_Operation_type(JNIEnv* env,
                                                              jclass clazz,
                                                              jlong handle) {
   TF_Operation* op = requireHandle(env, handle);
@@ -58,7 +58,7 @@ JNIEXPORT jstring JNICALL Java_org_tensorflow_Operation_type(JNIEnv* env,
   return env->NewStringUTF(TF_OperationOpType(op));
 }
 
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_numOutputs(JNIEnv* env,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_numOutputs(JNIEnv* env,
                                                                 jclass clazz,
                                                                 jlong handle) {
   TF_Operation* op = requireHandle(env, handle);
@@ -66,7 +66,7 @@ JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_numOutputs(JNIEnv* env,
   return TF_OperationNumOutputs(op);
 }
 
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_outputListLength(JNIEnv* env,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_outputListLength(JNIEnv* env,
                                                                       jclass clazz,
                                                                       jlong handle,
                                                                       jstring name) {
@@ -84,7 +84,7 @@ JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_outputListLength(JNIEnv* en
   return result;
 }
 
-JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Operation_shape(
+JNIEXPORT jlongArray JNICALL Java_tfnative_Operation_shape(
     JNIEnv* env, jclass clazz, jlong graph_handle, jlong op_handle,
     jint output_index) {
   TF_Graph* graph = requireGraphHandle(env, graph_handle);
@@ -135,7 +135,7 @@ JNIEXPORT jlongArray JNICALL Java_org_tensorflow_Operation_shape(
   return ret;
 }
 
-JNIEXPORT jint JNICALL Java_org_tensorflow_Operation_dtype(JNIEnv* env,
+JNIEXPORT jint JNICALL Java_tfnative_Operation_dtype(JNIEnv* env,
                                                            jclass clazz,
                                                            jlong graph_handle,
                                                            jlong op_handle,

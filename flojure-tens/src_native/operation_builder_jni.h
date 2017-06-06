@@ -23,150 +23,150 @@ extern "C" {
 #endif
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    allocate
  * Signature: (JLjava/lang/String;Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_OperationBuilder_allocate(
+JNIEXPORT jlong JNICALL Java_tfnative_OperationBuilder_allocate(
     JNIEnv *, jclass, jlong, jstring, jstring);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    finish
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_tensorflow_OperationBuilder_finish(JNIEnv *,
+JNIEXPORT jlong JNICALL Java_tfnative_OperationBuilder_finish(JNIEnv *,
                                                                     jclass,
                                                                     jlong);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    addInput
  * Signature: (JJI)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_addInput(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_addInput(
     JNIEnv *, jclass, jlong, jlong, jint);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    addInputList
  * Signature: (J[J[I)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_addInputList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_addInputList(
     JNIEnv *, jclass, jlong, jlongArray, jintArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    addControlInput
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_addControlInput(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_addControlInput(
     JNIEnv *, jclass, jlong, jlong);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setDevice
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setDevice(JNIEnv *,
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setDevice(JNIEnv *,
                                                                       jclass,
                                                                       jlong,
                                                                       jstring);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrString
  * Signature: (JLjava/lang/String;[B)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrString(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrString(
     JNIEnv *, jclass, jlong, jstring, jbyteArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrInt
  * Signature: (JLjava/lang/String;J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrInt(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrInt(
     JNIEnv *, jclass, jlong, jstring, jlong);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrIntList
  * Signature: (JLjava/lang/String;[J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrIntList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrIntList(
     JNIEnv *, jclass, jlong, jstring, jlongArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrFloat
  * Signature: (JLjava/lang/String;F)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrFloat(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrFloat(
     JNIEnv *, jclass, jlong, jstring, jfloat);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrFloatList
  * Signature: (JLjava/lang/String;[F)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrFloatList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrFloatList(
     JNIEnv *, jclass, jlong, jstring, jfloatArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrBool
  * Signature: (JLjava/lang/String;Z)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrBool(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrBool(
     JNIEnv *, jclass, jlong, jstring, jboolean);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrBoolList
  * Signature: (JLjava/lang/String;[Z)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrBoolList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrBoolList(
     JNIEnv *, jclass, jlong, jstring, jbooleanArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrType
  * Signature: (JLjava/lang/String;I)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrType(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrType(
     JNIEnv *, jclass, jlong, jstring, jint);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrTypeList
  * Signature: (JLjava/lang/String;[I)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrTypeList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrTypeList(
     JNIEnv *, jclass, jlong, jstring, jintArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrTensor
  * Signature: (JLjava/lang/String;J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrTensor(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrTensor(
     JNIEnv *, jclass, jlong, jstring, jlong);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrTensorList
  * Signature: (JLjava/lang/String;[J)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrTensorList(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrTensorList(
     JNIEnv *, jclass, jlong, jstring, jlongArray);
 
 /*
- * Class:     org_tensorflow_OperationBuilder
+ * Class:     tfnative_OperationBuilder
  * Method:    setAttrShape
  * Signature: (JLjava/lang/String;[JI)V
  */
-JNIEXPORT void JNICALL Java_org_tensorflow_OperationBuilder_setAttrShape(
+JNIEXPORT void JNICALL Java_tfnative_OperationBuilder_setAttrShape(
     JNIEnv *, jclass, jlong, jstring, jlongArray, jint);
 
 #ifdef __cplusplus
