@@ -1,16 +1,5 @@
-make GraphUtils in c++, java
-copy/write one dummy static func
-
-
-
-- c++ stub
-- java loader -- copy from TF's NativeLib
-- java stub
-- compliment or replace java/c++ api?
- -- prob replace????????
-  -- prob a nightmare?!?!?!? alternatives??
- -- how to reference tf libs from c++?
-   -- how does tf_scala do it?
+- make session ns etc
+- get basic stuff working again
 - gradient descent optimizer
 
 

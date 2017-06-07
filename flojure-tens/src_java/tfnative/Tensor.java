@@ -13,32 +13,36 @@ import java.util.Arrays;
 
 public final class Tensor{
 
-  public static native long allocate(int dtype, long[] shape, long byteSize);
+    static {
+        System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
+    }
+    
+    public static native long allocate(int dtype, long[] shape, long byteSize);
 
-  public static native long allocateScalarBytes(byte[] value);
+    public static native long allocateScalarBytes(byte[] value);
 
-  public static native void delete(long handle);
+    public static native void delete(long handle);
 
-  public static native ByteBuffer buffer(long handle);
+    public static native ByteBuffer buffer(long handle);
 
-  public static native int dtype(long handle);
+    public static native int dtype(long handle);
 
-  public static native long[] shape(long handle);
+    public static native long[] shape(long handle);
 
-  public static native void setValue(long handle, Object value);
+    public static native void setValue(long handle, Object value);
 
-  public static native float scalarFloat(long handle);
+    public static native float scalarFloat(long handle);
 
-  public static native double scalarDouble(long handle);
+    public static native double scalarDouble(long handle);
 
-  public static native int scalarInt(long handle);
+    public static native int scalarInt(long handle);
 
-  public static native long scalarLong(long handle);
+    public static native long scalarLong(long handle);
 
-  public static native boolean scalarBoolean(long handle);
+    public static native boolean scalarBoolean(long handle);
 
-  public static native byte[] scalarBytes(long handle);
+    public static native byte[] scalarBytes(long handle);
 
-  public static native void readNDArray(long handle, Object value);
-
+    public static native void readNDArray(long handle, Object value);
+    
 }
