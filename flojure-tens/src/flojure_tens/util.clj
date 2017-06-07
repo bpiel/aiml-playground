@@ -8,15 +8,7 @@
     (func (map (partial recursively apply-if-fn func) data))
     data))
 
-(defn vec->tf-array
-  [[f :as v]]
-  (cond
-    (int? f) (int-array v)
-    (float? f) (float-array v)
-    :else (to-array v)))
-
-
-(defn tf-vals [v]
+(defn ->tf [v]
   "Convert value into type acceptable to TensorFlow
   Persistent data structures become arrays
   Longs become 32bit integers
@@ -30,4 +22,4 @@
     (float? v) (float v)
     :else v))
 
-(def clj->tensor #(Tensor/create (tf-vals %)))
+
