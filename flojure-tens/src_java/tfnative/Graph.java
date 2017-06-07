@@ -6,21 +6,14 @@ public class Graph {
         System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
     }
 
-    public long doAllocate(){
-        return allocate();
-    }
-    
-    /**
-     * Returns the operation (node in the Graph) with the provided name.
-     *
-     * <p>Or {@code null} if no such operation exists in the Graph.
-     */
-    public long getOp(long handle, String name) {
-        return operation(handle, name);
-    }
+    public static native long allocate();
 
-    private static native long allocate();
-    
-    private static native long operation(long handle, String name);
+    public static native void delete(long handle);
 
+    public static native long operation(long handle, String name);
+
+    public static native void importGraphDef(long handle, byte[] graphDef, String prefix)
+        throws IllegalArgumentException;
+
+    public static native byte[] toGraphDef(long handle);
 }

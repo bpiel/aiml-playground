@@ -1,9 +1,19 @@
 (ns flojure-tens.scratch
   (:require [flojure-tens.thing2 :as t])
-  (:import tfnative.Graph))
+  (:import tfnative.Graph
+           tfnative.OperationBuilder))
 
 #_ (140294167222768
-    (.getOp (Graph.) 140058419724048 "hi")
+
+    
+    
+    (def gg (Graph.))
+
+    (def h1 (Graph/allocate))
+    (def oph1 (OperationBuilder/allocate h1 "Add" "nice"))
+    (OperationBuilder/finish oph1)
+    
+    (.getOp (Graph.) h1 "h00000000")
 
     (def tfg (org.tensorflow.Graph.))
 
