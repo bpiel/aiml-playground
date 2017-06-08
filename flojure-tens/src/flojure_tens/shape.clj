@@ -10,7 +10,7 @@
 
 (def create vector)
 
-(def num-dimensions [sh]
+(defn num-dimensions [sh]
   (if sh
     (count sh)
     -1))
@@ -25,51 +25,13 @@
                       (zeros-by-fn (drop 1 sh)
                                    f))))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defn shape-of-seq
+  [s]
+  (loop [agg []
+         v s]
+    (if (sequential? v)
+      (recur (conj agg (count v))
+             (first v))
+      agg)))
 
 

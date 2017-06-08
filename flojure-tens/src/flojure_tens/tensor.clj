@@ -1,5 +1,7 @@
 (ns flojure-tens.tensor
-  (:require [flojure-tens.data-type :as dt]))
+  (:require [flojure-tens.data-type :as dt]
+            [flojure-tens.shape :as sh]))
+
 
 (defrecord Tensor [handle dtype shape])
 
@@ -13,7 +15,7 @@
   (let [shape (long-array []) #_(get-shape v)
         {:keys [kw native byte-size]} (dt/data-type-of v)
         handle (tfnative.Tensor/allocate native shape byte-size)
-        t (Tensor. handle kw shape)]
+        t (Tensor. handle kw (vec shape))]
     (tfnative.Tensor/setValue handle v)
     t))
 
@@ -41,13 +43,16 @@
 
 
 
-(defn get-value [^Tensor {:keys [handle dtype shape]}]
-  (tfnative.Tensor/scalarFloat handle)
-    #_(let [la (float-array 1)]
-      (tfnative.Tensor/readNDArray handle la)
-      la))
+(defn get-value [^Tensor {:keys [handle dtype shape] :as t}]
+  (if (sh/scalar? shape)
+    (get-scalar-value t)
+    (let [dst (float-array 1)]
+      (tfnative.Tensor/readNDArray handle dst)
+      dst)))
 
 
 #_(vec (get-value (create-from-value (float 1))))
-#_ (def t1 (create-from-value 1.0))
+#_ (def t1 (create-from-value [1.0]))
 #_ (-> t1 :handle tfnative.Tensor/scalarFloat)
+
+(get-value t1)
