@@ -4,6 +4,8 @@
 
 (defrecord Op [id op inputs attrs handle ^Graph graph])
 
+(defn Op? [o] (= (type o) Op))
+
 (defn- set-attrs
   [builder-handle m]
   (doseq [[k v] m]
@@ -20,7 +22,7 @@
                                         idx))
   builder-handle)
 
-(defn build*
+(defn- build*
   [^Graph g op input-ops & [attrs node-name]]
   (let [attrs' (or attrs {})
         node-name' (or node-name (str (gensym op)))
@@ -32,7 +34,7 @@
                    #_(output 0))]
     (Op. node-name (keyword op) (mapv :id input-ops) attrs' handle g)))
 
-(defmulti build (fn [op-map] (:op op-map)))
+(defmulti build (fn [g op-plan] (:op op-plan)))
 
 (defmacro def-simple-op
   [op-name op-kw tf-op-str]

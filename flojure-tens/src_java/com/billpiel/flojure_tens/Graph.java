@@ -8,6 +8,11 @@ public class Graph{
     private clojure.lang.IPersistentMap nodes;
     private clojure.lang.IPersistentMap variableAssignments;
     private boolean closed = false;
+
+    private clojure.lang.IPersistentMap nodesByHash;
+    private clojure.lang.IPersistentMap nodesByHandle;
+    private clojure.lang.IPersistentMap nodesByInput;
+    
     
     public Graph(long nativeHandle,
                  clojure.lang.IPersistentMap nodes,

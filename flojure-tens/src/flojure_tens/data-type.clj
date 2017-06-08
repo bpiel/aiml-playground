@@ -1,5 +1,6 @@
 (ns flojure-tens.data-type)
 
+;; TODO rename with _
 
 (defn is-type?-fn
   [t]
