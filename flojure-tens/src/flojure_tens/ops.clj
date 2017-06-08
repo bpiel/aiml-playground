@@ -4,9 +4,6 @@
 
 (defrecord Op [id op inputs attrs handle ^Graph graph])
 
-(defn- build [^org.tensorflow.OperationBuilder ob] (.build ob))
-(defn- output [^org.tensorflow.OperationBuilder ob idx] (.output ob idx))
-
 (defn- set-attrs
   [builder-handle m]
   (doseq [[k v] m]
@@ -24,19 +21,18 @@
   builder-handle)
 
 (defn build*
-  [^Graph g op input-handles & [attrs node-name]]
+  [^Graph g op input-ops & [attrs node-name]]
   (let [attrs' (or attrs {})
         node-name' (or node-name (str (gensym op)))
         handle (-> (.getNativeHandle g)                         
                    (tfnative.OperationBuilder/allocate op node-name)
                    (set-attrs attrs')
-                   (add-inputs input-handles)
+                   (add-inputs (map :handle input-ops))
                    tfnative.OperationBuilder/finish
                    #_(output 0))]
-    (Op. node-name (keyword op) input-handles attrs' handle g)))
+    (Op. node-name (keyword op) (mapv :id input-ops) attrs' handle g)))
 
 (defmulti build (fn [op-map] (:op op-map)))
-
 
 (defmacro def-simple-op
   [op-name op-kw tf-op-str]

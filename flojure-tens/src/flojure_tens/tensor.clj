@@ -43,7 +43,7 @@
 
 
 
-#_(defn get-value [^Tensor {:keys [handle dtype shape]}]
+(defn get-value [^Tensor {:keys [handle dtype shape]}]
     (let [la (long-array 1)]
       (tfnative.Tensor/readNDArray handle la)
       la))
