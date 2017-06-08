@@ -12,6 +12,7 @@
     (sess/run s (sess/mk-run-req ops))))
 
 (defn run-plan [plan]
-  (->> (run-plan-ops plan [plan])
+  (run-plan-ops plan [plan])
+#_  (->> (run-plan-ops plan [plan])
        last
        tsr/get-value))

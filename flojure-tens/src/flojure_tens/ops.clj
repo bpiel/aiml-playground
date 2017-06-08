@@ -22,7 +22,7 @@
              (compute-hash plan)))
     plan))
 
-#_(defn get-op-by-plan
+(defn get-op-by-plan
   [^Graph g plan]
   (def g1 g)
   (def p1 plan)
