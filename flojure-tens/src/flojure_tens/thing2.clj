@@ -205,6 +205,7 @@
    :inputs [vari]
    :alpha alpha
    :delta delta})
+
 (defn- apply-gradient-descent*
   [g {:keys [inputs alpha delta]}]
   {:op (op-builder g

@@ -8,7 +8,7 @@
     (func (map (partial recursively apply-if-fn func) data))
     data))
 
-(defn ->tf [v]
+#_(defn ->tf [v]
   "Convert value into type acceptable to TensorFlow
   Persistent data structures become arrays
   Longs become 32bit integers

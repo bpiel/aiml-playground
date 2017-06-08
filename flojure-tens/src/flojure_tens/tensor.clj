@@ -3,7 +3,13 @@
 
 (defrecord Tensor [handle dtype shape])
 
-(defn create ^Tensor [v]
+(defn get-shape [^Tensor t]
+  (-> t :handle tfnative.Tensor/shape vector))
+
+(defn get-data-type [^Tensor t]
+  (-> t :handle tfnative.Tensor/dtype dt/native->dt))
+
+(defn create-from-value ^Tensor [v]
   (let [shape (long-array [1]) #_(get-shape v)
         {:keys [kw native byte-size]} (dt/data-type-of v)
         handle (tfnative.Tensor/allocate native shape byte-size)
@@ -11,70 +17,33 @@
     (tfnative.Tensor/setValue handle v)
     t))
 
-(defn get-float-value ^java.lang.Float [^Tensor t] (tfnative.Tensor/scalarFloat (:handle t)))
+(defn create-from-handle ^Tensor [handle]
+  (let [dummy (Tensor. handle nil nil)]
+    (Tensor. handle
+             (:kw (get-data-type dummy))
+             (get-shape dummy))))
 
-(defmacro defn-getter
-  [s1 s2 s3]
-  (let [f1 (symbol (str "get-" s1 "-value"))
-        f2 (symbol (str "tfnative.Tensort/" s2))
-        h1 (symbol (str "^" s3))]
-    `(defn ~f1  [^Tensor ~'t] (~f2 (:handle ~'t)))))
+(defmulti get-scalar-value (fn [^Tensor t] (:dtype t)))
 
-#_(macroexpand '(defn-getter float scalarFloat java.lang.Float))
+;; TODO return type hint
+(defmacro defmethod-getter
+  [dtype-kw s2]
+  (let [f2 (symbol (str "tfnative.Tensor/" s2))]
+    `(defmethod ~'get-scalar-value ~dtype-kw [^Tensor ~'t] (~f2 (:handle ~'t)))))
 
+#_(macroexpand '(defn-getter :float scalarFloat))
 
-
-(defn get-value [^Tensor t]
-  (let [la (long-array 1)]
-    (tfnative.Tensor/readNDArray (:handle t) la)
-    la))
-
-
-
-
-
-
+(defmethod-getter :float scalarFloat)
+(defmethod-getter :double scalarDouble)
+(defmethod-getter :int32 scalarInt)
+(defmethod-getter :int64 scalarLong)
+(defmethod-getter :boolean scalarBoolean)
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#_(defn get-value [^Tensor {:keys [handle dtype shape]}]
+    (let [la (long-array 1)]
+      (tfnative.Tensor/readNDArray handle la)
+      la))

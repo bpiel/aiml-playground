@@ -1,16 +1,20 @@
 package com.billpiel.flojure_tens;
 
 
-public class Graph implements clojure.lang.ILookup{
+public class Graph{
 
     private long nativeHandle;
     private final Object nativeHandleLock = new Object();
     private clojure.lang.IPersistentMap nodes;
+    private clojure.lang.IPersistentMap variableAssignments;
     private boolean closed = false;
     
-    public Graph(long nativeHandle, clojure.lang.IPersistentMap nodes){
+    public Graph(long nativeHandle,
+                 clojure.lang.IPersistentMap nodes,
+                 clojure.lang.IPersistentMap variableAssignments){
         this.nativeHandle = nativeHandle;
         this.nodes = nodes;
+        this.variableAssignments = variableAssignments;
     }
 
     public void close(){
@@ -33,35 +37,15 @@ public class Graph implements clojure.lang.ILookup{
     public clojure.lang.IPersistentMap getNodes(){
         return nodes;
     }
-    
+
+    public clojure.lang.IPersistentMap getVariableAssignments(){
+        return variableAssignments;
+    }
+
     public Object doSynchronized(clojure.lang.IFn f){
         synchronized (nativeHandleLock) {
             return f.invoke();
         }
-    }
-
-    public boolean containsKey(Object key){
-        return false;
-    }
-
-    public boolean containsKey(clojure.lang.Keyword key){
-        return (key.getName() == "hi");
-    }
-        
-    public Object valAt(clojure.lang.Keyword key){
-        if (key.getName() == "hi"){
-            return new clojure.lang.MapEntry(key, "ho");
-        }else{
-            return null;
-        }
-    }
-
-    public Object valAt(Object key, Object notFound){
-        return "NOT-IMPLEMENTED";
-    }
-    
-    public Object valAt(Object key){
-        return null;
     }
 
 }
