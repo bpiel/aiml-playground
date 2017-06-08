@@ -6,13 +6,12 @@
 
 (defn init-variable-assignments [^Graph g])
 
-(defn run [graph-plan ops]
+(defn run-plan-ops [graph-plan ops]
   (let [g (bdr/graph-plan->graph graph-plan)
         s (sess/create g)]
     (sess/run s (sess/mk-run-req ops))))
 
-(defn eval-op [graph-plan op]
-  (->> op
-       (run graph-plan)
+(defn run-plan [plan]
+  (->> (run-plan-ops plan [plan])
        last
        tsr/get-value))

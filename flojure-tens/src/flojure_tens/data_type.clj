@@ -124,3 +124,13 @@
       ((:array-fn dt) v)
       (to-array (map vec->md-array v)))
     v))
+
+(defn ->tf-attr-val [v]
+  (cond
+    (sequential? v)
+    (->> v
+         (map ->tf-attr-val)
+         vec->md-array)
+    (int? v) (long v)
+    (float? v) (float v)
+    :else v))

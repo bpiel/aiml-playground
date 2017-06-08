@@ -1,12 +1,14 @@
 (ns flojure-tens.builder
-  (:require [flojure-tens.ops :as ops])
-  (:import [com.billpiel.flojure_tens Graph]
-           flojure_tens.ops.Op))
+  (:require flojure-tens.common
+            [flojure-tens.ops :as ops]
+            [flojure-tens.graph :as gr])
+  (:import [flojure_tens.common Graph Op]))
 
-
-
-
-(defn build-add-op [^Graph g opp] (.add g (ops/build g opp)))
+(defn call-op-builder
+  [^Graph g opp input-ops]
+  (ops/build g
+             (assoc opp :inputs input-ops)
+             (ops/compute-hash opp)))
 
 (defn- apply-op-plan-to-graph!
   [^Graph g opp]
@@ -15,10 +17,10 @@
              (let [{:keys [inputs]} opp
                    input-ops (mapv (partial apply-op-plan-to-graph! g)
                                    inputs)]
-               (build-add-op g opp input-ops))
+               (call-op-builder g opp input-ops))
              (ops/Op? opp) opp
-             :else (build-add-op g (ops/c opp)))]
-    opp))
+             :else (call-op-builder g (ops/c opp) []))]
+    op))
 
 (defn- apply-plan-to-graph!
   [^Graph g gp]
@@ -28,61 +30,15 @@
         (map? gp)
         (apply-op-plan-to-graph! g gp)
         :else
-        (throw (Exception. "This plan makes no sense!")))
-  )
+        (throw (Exception. "This plan makes no sense!"))))
 
 (defn graph-plan->graph+ops
   [gp]
-  (let [g (Graph.)]
-    [g (apply-plan-to-graph! (Graph.) gp)]))
+  (let [g (gr/create)]
+    [g (apply-plan-to-graph! g gp)]))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defn graph-plan->graph
+  [gp]
+  (-> gp
+      graph-plan->graph+ops
+      first))
