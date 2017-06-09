@@ -1,5 +1,9 @@
-- make session ns etc
-- get basic stuff working again
+x make session ns etc
+x get basic stuff working again
+- tensor type stuff, get-value etc
+- variable takes id
+- GraphRef for Op
+- get basic nn example working
 - gradient descent optimizer
 
 

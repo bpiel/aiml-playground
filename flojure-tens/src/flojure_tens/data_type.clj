@@ -90,6 +90,12 @@
   (when-let [[f] a]
     (data-type-of f)))
 
+(defn data-type-of-whatever
+  [v]
+  (if (sequential? v)
+    (recur (first v))
+    (data-type-of v)))
+
 (defn data-type-of-array
   [a]
   (first (filter (partial is-array-of-data-type? a)

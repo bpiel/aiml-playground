@@ -12,11 +12,11 @@
   (-> t :handle tfnative.Tensor/dtype dt/native->dt))
 
 (defn create-from-value ^Tensor [v]
-  (let [shape (long-array []) #_(get-shape v)
-        {:keys [kw native byte-size]} (dt/data-type-of v)
-        handle (tfnative.Tensor/allocate native shape byte-size)
-        t (Tensor. handle kw (vec shape))]
-    (tfnative.Tensor/setValue handle v)
+  (let [shape (sh/shape-of-seq v)
+        {:keys [kw native byte-size]} (dt/data-type-of-whatever v)
+        handle (tfnative.Tensor/allocate native (long-array shape) byte-size)
+        t (Tensor. handle kw shape)]
+    (tfnative.Tensor/setValue handle (dt/vec->md-array v))
     t))
 
 (defn create-from-handle ^Tensor [handle]
@@ -41,18 +41,25 @@
 (defmethod-getter :int64 scalarLong)
 (defmethod-getter :boolean scalarBoolean)
 
-
+(defn zeros-array-by-dtype
+  [shape dtype-kw]
+  (sh/zeros-array-by-fn shape
+   (:array-fn (dt/kw->dt dtype-kw))))
 
 (defn get-value [^Tensor {:keys [handle dtype shape] :as t}]
   (if (sh/scalar? shape)
     (get-scalar-value t)
-    (let [dst (float-array 1)]
+    (let [dst (zeros-array-by-dtype shape dtype)]
       (tfnative.Tensor/readNDArray handle dst)
       dst)))
 
 
 #_(vec (get-value (create-from-value (float 1))))
-#_ (def t1 (create-from-value [1.0]))
+#_ (def t1 (create-from-value [[1.0 2.0]]))
 #_ (-> t1 :handle tfnative.Tensor/scalarFloat)
 
-(get-value t1)
+#_ (dt/md-array->vecs (get-value t1))
+#_(dt/md-array->vecs (dt/vec->md-array [[1.0 2.0]]))
+#_(:byte-size (dt/data-type-of-whatever [[1.0 2.0]]))
+
+#_(def l1 1)

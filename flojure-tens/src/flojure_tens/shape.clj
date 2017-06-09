@@ -1,4 +1,5 @@
-(ns flojure-tens.shape)
+(ns flojure-tens.shape
+  (:require [flojure-tens.util :as util]))
 
 (defn unknown [] nil)
 
@@ -15,14 +16,14 @@
     (count sh)
     -1))
 
-(defn zeros-by-fn
+(defn zeros-array-by-fn
   [sh f]
   (let [c (count sh)]
     (case c
       0 (first (f 1))
       1 (f (first sh))
-      (vector (repeat (first sh)
-                      (zeros-by-fn (drop 1 sh)
+      (to-array (repeat (first sh)
+                      (zeros-array-by-fn (drop 1 sh)
                                    f))))))
 
 (defn shape-of-seq
@@ -33,5 +34,4 @@
       (recur (conj agg (count v))
              (first v))
       agg)))
-
 
