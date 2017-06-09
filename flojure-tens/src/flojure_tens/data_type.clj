@@ -1,7 +1,5 @@
 (ns flojure-tens.data-type)
 
-;; TODO rename with _
-
 (defn is-type?-fn
   [t]
   #(= (type %) t))
@@ -11,7 +9,7 @@
   [{:kw :float 
     :native 1 
     :byte-size 4 
-    :scalar? float?
+    :scalar? (is-type?-fn java.lang.Float) ;; (float? 1.0) => true  UH OH!
     :array? (is-type?-fn (type (float-array 0)))
     :scalar java.lang.Float 
     :array (type (float-array 0)) 
@@ -70,7 +68,7 @@
 (def native->dt
   (into {}
         (for [dt data-types]
-          [(:kw dt) dt])))
+          [(:native dt) dt])))
 
 (defn is-of-data-type?
   [o dt]

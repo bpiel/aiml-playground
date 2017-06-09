@@ -1,6 +1,7 @@
 x make session ns etc
 x get basic stuff working again
-- tensor type stuff, get-value etc
+x tensor type stuff, get-value etc
+- variables
 - variable takes id
 - GraphRef for Op
 - get basic nn example working

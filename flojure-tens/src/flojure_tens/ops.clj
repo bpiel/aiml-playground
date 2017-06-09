@@ -113,8 +113,7 @@
 (defn c [value] {:op :const :value value})
 (defmethod build :const
   [g {:keys [value]} hsh]
-  (let [dtype (or (dt/data-type-of value)
-                  (dt/data-type-of-seq value)) ;; TODO hmmmmmmmmmmmmmmmmm..........
+  (let [dtype (dt/data-type-of-whatever value)
         tensor (tsr/create-from-value value)  #_(dt/vec->md-array value)]
     (build-add-op g
                   :const

@@ -22,9 +22,9 @@
     (case c
       0 (first (f 1))
       1 (f (first sh))
-      (to-array (repeat (first sh)
-                      (zeros-array-by-fn (drop 1 sh)
-                                   f))))))
+      (to-array (repeatedly (first sh)
+                            #(zeros-array-by-fn (drop 1 sh)
+                                                f))))))
 
 (defn shape-of-seq
   [s]
