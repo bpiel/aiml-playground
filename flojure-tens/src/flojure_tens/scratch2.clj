@@ -30,12 +30,10 @@
     [1. 1. 1.]   [1.]
    [1. 0. 1.]   [0.] ])
 
-(let [inputs (ops/c (vec (take-nth 2 training-data)))
-      outputs (ops/c (vec (take-nth 2 (rest training-data))))
-      weights (ops/variable :weights (vec
-                                      (repeatedly
-                                       3 (fn [] (vec
-                                                 (repeatedly 1 #(dec (rand 2))))))))
+(let [inputs (ops/c (take-nth 2 training-data))
+      outputs (ops/c (take-nth 2 (rest training-data)))
+      weights (ops/variable :weights (repeatedly
+                                      3 (fn [] (repeatedly 1 #(dec (rand 2))))))
       network (fn [x]
                 (-> x
                     (ops/matmul weights)

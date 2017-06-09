@@ -19,7 +19,7 @@
                                          (long-array shape)
                                          (apply * (conj shape byte-size)))
         t (Tensor. handle kw shape)]
-    (tfnative.Tensor/setValue handle (dt/vec->md-array v))
+    (tfnative.Tensor/setValue handle (dt/seq->md-array v))
     t))
 
 (defn create-from-handle ^Tensor [handle]
