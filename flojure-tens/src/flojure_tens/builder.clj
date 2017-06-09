@@ -22,7 +22,7 @@
              :else (call-op-builder g (ops/c opp) []))]
     op))
 
-(defn- apply-plan-to-graph!
+(defn apply-plan-to-graph!
   [^Graph g gp]
   (cond (sequential? gp)
         (mapv (partial apply-op-plan-to-graph! g)
@@ -42,3 +42,16 @@
   (-> gp
       graph-plan->graph+ops
       first))
+
+(defn mk-assignments-plan
+  [^Graph g]
+  (let [va (-> g :state deref :variable-assigments)]
+    (mapv (fn [[vari value]] (ops/assign vari (ops/c value)))
+          va)))
+
+(defn build-init-assignment-ops
+  [^Graph g]
+  (->> g
+       mk-assignments-plan
+       (apply-plan-to-graph! g)))
+

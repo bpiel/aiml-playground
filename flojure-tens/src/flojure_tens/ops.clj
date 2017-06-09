@@ -2,6 +2,7 @@
   (:require [flojure-tens.data-type :as dt]
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
+            [flojure-tens.shape :as sh]
             [flojure-tens.common])
   (:import [flojure_tens.common Graph Op]))
 
@@ -24,24 +25,28 @@
 
 (defn get-op-by-plan
   [^Graph g plan]
-  (def g1 g)
-  (def p1 plan)
   ((gr/nodes g)
    ((gr/ids-by-hash g) (compute-hash plan))))
 
-
 (defn- set-attr
   [builder-handle k [ty val]]
+  (def k1 k)
+  (def t1 ty)
+  (def v1 val)
   (case ty
-    :? (tfnative.OperationBuilder/setAttr builder-handle
-                                          (name k)
-                                          (dt/->tf-attr-val val))
     :tensor (tfnative.OperationBuilder/setAttrTensor builder-handle
                                                      (name k)
                                                      (:handle val))
     :type (tfnative.OperationBuilder/setAttrType builder-handle
                                                  (name k)
-                                                 (dt/->tf-attr-val val))))
+                                                 (dt/->tf-attr-val :int64 val))
+    :shape (tfnative.OperationBuilder/setAttrShape builder-handle
+                                                   (name k)
+                                                   (dt/->tf-attr-val :int64 val)
+                                                   (count val))
+    (tfnative.OperationBuilder/setAttr builder-handle
+                                       (name k)
+                                       (dt/->tf-attr-val ty val))))
 
 (defn- set-attrs
   [builder-handle m]
@@ -63,17 +68,12 @@
     (let [attrs' (or attrs {})
           id (or explicit-id (keyword (name (gensym (name op-kw)))))
           input-handles (mapv :handle input-ops)
-          _ (println (name id))
           handle (-> g
                      :handle
                      (tfnative.OperationBuilder/allocate tf-op (name id))
                      (set-attrs attrs')
                      (add-inputs input-handles)
                      tfnative.OperationBuilder/finish)
-          #_ hsh #_(compute-hash explicit-id
-                            op-kw
-                            input-handles
-                            attrs)
           op (Op. id
                   op-kw
                   (mapv :id input-ops)
@@ -129,15 +129,35 @@
                                     :id id
                                     :value value
                                     :opts (or opts {})})
-(defn- variable* [g {:keys [id value opts]}]
+(defmethod build :variable
+  [g {:keys [id value opts]} hsh]
   (build-add-op g
+                :variable
                 "Variable"
+                hsh
                 []
-                {:shape (sh/shape-of-seq value)
-                 :dtype (:native (dt/data-type-of-whatever value))}
+                {:shape [:shape (sh/shape-of-seq value)]
+                 :dtype [:type (:native (dt/data-type-of-whatever value))]}
                 id
                 value))
 
+(defn assign [vari value]
+  (let [vari-id (or (:id vari)
+                    vari)]
+    (when (-> vari-id keyword? not)
+      (throw (Exception. (str "Invalid assignment target: " vari))))
+    {:op :assign
+     :vari vari-id
+     :inputs [value]}))
+
+(defmethod build :assign
+  [g {:keys [vari inputs]} hsh]
+  (build-add-op g
+                :assign
+                "Assign"
+                hsh
+                [(-> g :state deref :nodes vari)
+                 (first inputs)]))
 
 
 
@@ -146,53 +166,3 @@
 (defn id [id-kw op]
   (assoc op
          :id id-kw))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

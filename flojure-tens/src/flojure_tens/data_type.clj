@@ -1,4 +1,5 @@
-(ns flojure-tens.data-type)
+(ns flojure-tens.data-type
+  (:require [flojure-tens.shape :as sh]))
 
 (defn is-type?-fn
   [t]
@@ -29,35 +30,40 @@
     :byte-size 4 
     :scalar? (is-type?-fn java.lang.Integer) 
     :array? (is-type?-fn (type (int-array 0)))
-    :scalar java.lang.Integer 
+    :scalar java.lang.Integer
+    :scalar-fn int
     :array-fn int-array}
    {:kw :uint8 
     :native 4  
     :byte-size 4 
     :scalar? (constantly false)  
     :array? (constantly false)
-    :scalar nil 
+    :scalar nil
+    :scalar-fn (fn [& args] (throw (Exception. "NOT IMPLEMENTED")))
     :array-fn nil}
    {:kw :string 
     :native 7  
     :byte-size nil 
     :scalar? string?  
     :array? (constantly false)
-    :scalar java.lang.String 
+    :scalar java.lang.String
+    :scalar-fn str ;; maybe wrong?
     :array-fn nil}
    {:kw :int64 
     :native 9  
     :byte-size 8 
     :scalar? int?  
     :array? (is-type?-fn (type (long-array 0)))
-    :scalar java.lang.Long 
+    :scalar java.lang.Long
+    :scalar-fn long
     :array-fn long-array}
    {:kw :bool 
     :native 10  
     :byte-size 1 
     :scalar? boolean?
     :array? (is-type?-fn (type (boolean-array 0)))
-    :scalar java.lang.Boolean 
+    :scalar java.lang.Boolean
+    :scalar-fn boolean
     :array-fn boolean-array}])
 
 (def kw->dt
@@ -129,12 +135,11 @@
       (to-array (map vec->md-array v)))
     v))
 
-(defn ->tf-attr-val [v]
-  (cond
-    (sequential? v)
-    (->> v
-         (map ->tf-attr-val)
-         vec->md-array)
-    (int? v) (long v)
-    (float? v) (float v)
-    :else v))
+(defn ->tf-attr-val [ty v & [dims]]
+  (let [dims' (or dims (sh/num-dimensions-seq v))]
+    (case dims'
+      0 ((-> ty kw->dt :scalar-fn) v)
+      1 ((-> ty kw->dt :array-fn) v)
+      (to-array (map #(->tf-attr-val ty % (dec dims'))
+                     v)))))
+

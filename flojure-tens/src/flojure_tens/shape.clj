@@ -16,6 +16,13 @@
     (count sh)
     -1))
 
+(defn num-dimensions-seq [s]
+  (loop [n 0
+         s' s]
+    (if (sequential? s')
+      (recur (inc n) (first s'))
+      n)))
+
 (defn zeros-array-by-fn
   [sh f]
   (let [c (count sh)]

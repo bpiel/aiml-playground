@@ -12,6 +12,7 @@
   (-> t :handle tfnative.Tensor/dtype dt/native->dt))
 
 (defn create-from-value ^Tensor [v]
+  (def v1 v)
   (let [shape (sh/shape-of-seq v)
         {:keys [kw native byte-size]} (dt/data-type-of-whatever v)
         handle (tfnative.Tensor/allocate native

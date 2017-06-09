@@ -43,9 +43,11 @@
 
 (defn- add-to-variable-assignments
   [m ^Op op value]
-  (assoc m
-         (:id op)
-         (tsr/create-from-value value)))
+  (if value
+    (assoc m
+           (:id op)
+           value)
+    m))
 
 (defn- add-op-to-state*
   [graph-state ^Op op variable-assigment]
@@ -58,7 +60,9 @@
 
 (defn add-op-to-state!
   [^Graph {:keys [handle handle-lock state]} ^Op op variable-assigment]
-  (swap! state add-op-to-state* op variable-assigments))
+  (def o1 op)
+  (def v1 variable-assigment)
+  (swap! state add-op-to-state* op variable-assigment))
 
 (defn create
   ([] (Graph. (tfnative.Graph/allocate)

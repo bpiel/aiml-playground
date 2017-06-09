@@ -2,7 +2,8 @@ x make session ns etc
 x get basic stuff working again
 x tensor type stuff, get-value etc
 - variables
-- variable takes id
+x variable takes id
+- dedup by hash
 - GraphRef for Op
 - get basic nn example working
 - memory leaks stuff -- call delete on graph, tensors? other stuff?

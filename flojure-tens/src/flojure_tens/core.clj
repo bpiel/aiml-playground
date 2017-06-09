@@ -9,21 +9,20 @@
 (defn run-plan-ops [graph-plan ops]
   (let [g (bdr/graph-plan->graph graph-plan)
         s (sess/create g)]
+    (println "1")
+    (sess/init-variable-assignments s)
+    (println "2")
     (sess/run s (sess/mk-run-req ops))))
 
-(defn run-plan [plan]
-  (run-plan-ops plan [plan])
-#_  (->> (run-plan-ops plan [plan])
-       last
-       tsr/get-value))
 
 
-;; ideas
-
-(defn fetch-plan-root
-  "
-Builds a graph and session. 
+(defn fetch-plan-root [plan]
+  "Builds a graph and session. 
 Runs the `plan`.
 Fetches the value of the root node of `plan`. 
 Returns a value."
-  [plan])
+  (run-plan-ops plan [plan])
+  #_  (->> (run-plan-ops plan [plan])
+           last
+           tsr/get-value))
+
