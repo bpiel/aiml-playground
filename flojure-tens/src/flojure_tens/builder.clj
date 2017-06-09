@@ -6,9 +6,13 @@
 
 (defn call-op-builder
   [^Graph g opp input-ops]
-  (ops/build g
-             (assoc opp :inputs input-ops)
-             (ops/compute-hash opp)))
+  (let [{:keys [nodes ids-by-hash]} (-> g :state deref)
+        hsh (ops/compute-hash opp)]
+    (if-let [op (some-> hsh ids-by-hash nodes)]
+      op
+      (ops/build g
+                 (assoc opp :inputs input-ops)
+                 (ops/compute-hash opp)))))
 
 (defn- apply-op-plan-to-graph!
   [^Graph g opp]

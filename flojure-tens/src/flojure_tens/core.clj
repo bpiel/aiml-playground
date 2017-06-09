@@ -9,9 +9,7 @@
 (defn run-plan-ops [graph-plan ops]
   (let [g (bdr/graph-plan->graph graph-plan)
         s (sess/create g)]
-    (println "1")
     (sess/init-variable-assignments s)
-    (println "2")
     (sess/run s (sess/mk-run-req ops))))
 
 

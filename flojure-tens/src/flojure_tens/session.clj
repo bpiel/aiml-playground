@@ -33,10 +33,6 @@
 (defn- run* [^Session s ^RunRequest req]
   (def r1 req)
   (let [g (:graph s)
-        _ (clojure.pprint/pprint (->> req
-                                :fetch
-                                (mapv (partial ops/get-op-by-plan g))
-                                (mapv :id)))
         outputs (long-array [(:handle (tsr/create-from-value 0))])
         maybe-meta (tfnative.Session/run (:handle s) 
                      (:options req)
@@ -47,8 +43,12 @@
                                       :fetch
                                       (mapv (partial ops/get-op-by-plan g))
                                       (mapv :handle))) ;; outputOpHandles
-                     (int-array [0] #_(map :idx (:fetch req))) ;; outputOpIndices
-                     (long-array (map :handle (:targets req))) ;; targetOpHandles
+                     (int-array (repeat (count (:fetch req)) 0)) ;; outputOpIndices
+                     (long-array (->> req
+                                      :targets
+                                      (mapv (partial ops/get-op-by-plan g))
+                                      (mapv :handle)))
+                     ;; targetOpHandles
                      (:return-meta req)
                      outputs)]
     
@@ -81,12 +81,63 @@
 
 (defn init-variable-assignments
   [^Session s]
-  (println "init-variable-assignments")
   (let [g (:graph s)
         va-plan (bdr/mk-assignments-plan g)]
-    (bdr/apply-plan-to-graph! g va-plan)
-    (run-plan-w-session s va-plan)))
+    (when (not-empty va-plan)
+      (bdr/apply-plan-to-graph! g va-plan)
+      ;; because there must be exactly one output
+      (run s (mk-run-req [(first va-plan)]  va-plan)))))
 
 #_ (def va-ops (-> s1 :graph bdr/build-init-assignment-ops))
 
 #_ (def x (init-variable-assignments s1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

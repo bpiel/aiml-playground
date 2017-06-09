@@ -15,6 +15,8 @@
 #_ (tsr/get-value-clj (first r1))
 
 
-#_(def r1 (ft/fetch-plan-root (ops/add (ops/variable :x 1) 3)))
+#_(def r1 (ft/fetch-plan-root (ops/add 1 2)))
+
+#_(-> r1 first tsr/get-value-clj)
 
 #_(def s1 (sess/run-plan->session (ops/add (ops/variable :x 1) 3)))
