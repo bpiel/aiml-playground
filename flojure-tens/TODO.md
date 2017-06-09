@@ -6,6 +6,7 @@ x variable takes id
 x dedup by hash
 x GraphRef for Op
 - get basic nn example working
+- const and variables takes seqs
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 - gradient descent optimizer
 

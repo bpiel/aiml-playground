@@ -67,6 +67,18 @@
     (mapv tsr/create-from-handle
           ts)))
 
+(defn run-all
+  [^Session s plans]
+  (doseq [p (drop-last)]
+    (run s (mk-run-req [p])))
+  (run s (mk-run-req [(last plans)])))
+
+(defn build-plan->session
+  ^Session [plan]
+  (-> plan
+      bdr/graph-plan->graph
+      create))
+
 (defn run-plan->session
   ^Session [plan]
   (let [g (bdr/graph-plan->graph plan)
@@ -91,53 +103,3 @@
 #_ (def va-ops (-> s1 :graph bdr/build-init-assignment-ops))
 
 #_ (def x (init-variable-assignments s1))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

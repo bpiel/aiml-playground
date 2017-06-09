@@ -66,6 +66,7 @@
 
 (defn build-add-op
   [^Graph g op-kw tf-op hsh input-ops & [attrs explicit-id variable-assigment]]
+  (clojure.pprint/pprint [tf-op attrs])
   (locking (:handle-lock g)
     (let [attrs' (or attrs {})
           id (or explicit-id (keyword (name (gensym (name op-kw)))))
@@ -171,7 +172,7 @@
                 "Transpose"
                 hsh
                 [(first inputs)
-                 (build g (c [1 0]) (compute-hash (c [1 0])))]))
+                 (build g (c [(int 1) (int 0)]) (compute-hash (c [(int 1) (int 0)])))]))
 
 ;; END OP DEFS ===================
 
