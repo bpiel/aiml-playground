@@ -4,7 +4,7 @@ x tensor type stuff, get-value etc
 x variables
 x variable takes id
 x dedup by hash
-- GraphRef for Op
+x GraphRef for Op
 - get basic nn example working
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 - gradient descent optimizer

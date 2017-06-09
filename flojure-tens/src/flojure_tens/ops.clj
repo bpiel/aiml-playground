@@ -162,6 +162,16 @@
                  (first inputs)]))
 
 
+(defn transpose [input] {:op :transpose
+                         :inputs [input]})
+(defmethod build :transpose
+  [g {:keys [inputs]} hsh]
+  (build-add-op g
+                :transpose
+                "Transpose"
+                hsh
+                [(first inputs)
+                 (build g (c [1 0]) (compute-hash (c [1 0])))]))
 
 ;; END OP DEFS ===================
 

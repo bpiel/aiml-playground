@@ -20,3 +20,41 @@
 #_(-> r1 first tsr/get-value-clj)
 
 #_(def s1 (sess/run-plan->session (ops/add (ops/variable :x 1) 3)))
+
+
+(def training-data
+  ;; input => output
+  [ [0. 0. 1.]   [0.]
+    [0. 1. 1.]   [1.]
+    [1. 1. 1.]   [1.]
+   [1. 0. 1.]   [0.] ])
+
+(let [inputs (ops/c (take-nth 2 training-data))
+      outputs (ops/c (take-nth 2 (rest training-data)))
+      weights (ops/variable :weights (repeatedly 3 (fn [] (repeatedly 1 #(dec (rand 2))))))
+      network (fn [x]
+                (-> x
+                    (ops/matmul weights)
+                    ops/sigmoid))
+      network-inputs (network inputs)
+      error (fn [network-output]
+              (-> outputs
+                  (ops/sub network-output)
+                  (ops/pow 2.)
+                  (ops/div 2.)))
+      error' (fn [network-output]
+               (ops/sub network-output
+                      outputs))
+      sigmoid' (fn [x]
+                 (->> x
+                      (ops/sub 1.)
+                      (ops/mul x)))
+      deltas (fn [network-output]
+               (->> (sigmoid' network-inputs)
+                    (ops/mul (error' network-inputs))
+                    (ops/matmul (ops/transpose inputs))))
+      train-network (->> network-inputs
+                         deltas
+                         (ops/sub weights)
+                         (ops/assign weights))]
+  (ft/fetch-plan-root train-network))
