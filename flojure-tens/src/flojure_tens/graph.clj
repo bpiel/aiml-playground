@@ -1,7 +1,7 @@
 (ns flojure-tens.graph
   (:require [flojure-tens.common]
             [flojure-tens.tensor :as tsr])
-  (:import [flojure_tens.common Graph Op]))
+  (:import [flojure_tens.common GraphRef Graph Op]))
 
 (defn nodes [^Graph {:keys [handle-lock state]}] (:nodes @state))
 (defn variable-assigments [^Graph {:keys [handle-lock state]}] (:variable-assigments @state))
@@ -13,8 +13,7 @@
   {:nodes {}
    :ids-by-hash {}
    :ids-by-handle {}
-   :ids-by-input {}
-   :closed false})
+   :ids-by-input {}})
 
 ;; don't overwrite!
 (defn- add-to-nodes
@@ -64,10 +63,16 @@
   (def v1 variable-assigment)
   (swap! state add-op-to-state* op variable-assigment))
 
+(defn mk-graph-ref
+  [^Graph g]
+  (GraphRef. (:closed g) (:handle-lock g)))
+
 (defn create
   ([] (Graph. (tfnative.Graph/allocate)
               (atom (init-graph-state))
+              (atom false)
               (Object.)))
   ([graph-handle] (Graph. graph-handle
                           (atom (init-graph-state))
+                          (atom false)
                           (Object.))))
