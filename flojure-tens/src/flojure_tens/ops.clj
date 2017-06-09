@@ -58,7 +58,7 @@
   builder-handle)
 
 (defn build-add-op
-  [^Graph g op-kw tf-op hsh input-ops & [attrs explicit-id variable-assigments]]
+  [^Graph g op-kw tf-op hsh input-ops & [attrs explicit-id variable-assigment]]
   (locking (:handle-lock g)
     (let [attrs' (or attrs {})
           id (or explicit-id (keyword (name (gensym (name op-kw)))))
@@ -81,7 +81,7 @@
                   attrs'
                   handle
                   g)]
-      (gr/add-op-to-state! g op variable-assigments)
+      (gr/add-op-to-state! g op variable-assigment)
       op)))
 
 (defmulti build (fn [g op-plan hsh] (:op op-plan)))
@@ -101,6 +101,8 @@
                      (rest name-str))]
     `(def-simple-op ~name1 ~op-kw ~tf-op)))
 
+;; OP DEFS ===================
+
 (def-super-simple-op add)
 (def-super-simple-op sub)
 (def-super-simple-op sigmoid)
@@ -109,12 +111,11 @@
 (def-super-simple-op pow)
 (def-super-simple-op mul)
 
-;; can constants be multidimensional?????????
 (defn c [value] {:op :const :value value})
 (defmethod build :const
   [g {:keys [value]} hsh]
   (let [dtype (dt/data-type-of-whatever value)
-        tensor (tsr/create-from-value value)  #_(dt/vec->md-array value)]
+        tensor (tsr/create-from-value value)]
     (build-add-op g
                   :const
                   "Const"
@@ -123,6 +124,75 @@
                   {:dtype [:type (:native dtype)]
                    :value [:tensor tensor]})))
 
+
+(defn variable [id value & [opts]] {:op :variable
+                                    :id id
+                                    :value value
+                                    :opts (or opts {})})
+(defn- variable* [g {:keys [id value opts]}]
+  (build-add-op g
+                "Variable"
+                []
+                {:shape (sh/shape-of-seq value)
+                 :dtype (:native (dt/data-type-of-whatever value))}
+                id
+                value))
+
+
+
+
+;; END OP DEFS ===================
+
 (defn id [id-kw op]
   (assoc op
          :id id-kw))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

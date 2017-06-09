@@ -16,3 +16,14 @@
 #_  (->> (run-plan-ops plan [plan])
        last
        tsr/get-value))
+
+
+;; ideas
+
+(defn fetch-plan-root
+  "
+Builds a graph and session. 
+Runs the `plan`.
+Fetches the value of the root node of `plan`. 
+Returns a value."
+  [plan])

@@ -5,6 +5,7 @@ x tensor type stuff, get-value etc
 - variable takes id
 - GraphRef for Op
 - get basic nn example working
+- memory leaks stuff -- call delete on graph, tensors? other stuff?
 - gradient descent optimizer
 
 

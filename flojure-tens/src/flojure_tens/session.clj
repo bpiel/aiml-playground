@@ -17,7 +17,7 @@
  :return-meta false}
 
 (defn mk-run-req
-  [& [fetch targets feed options return-meta]]
+  [& [fetch targets feed return-meta options]]
   (RunRequest. (or fetch [])
                (or targets [])
                (or feed {})
