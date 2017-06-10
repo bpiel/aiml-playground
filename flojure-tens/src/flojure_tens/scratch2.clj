@@ -70,8 +70,34 @@
 
 (-> r1 first tsr/get-value-clj)
 
-(tfnative.Graph/addGradients 0
+#_(tfnative.Graph/addGradients 0
                              (long-array 1) (int-array 1)
                              (long-array 1) (int-array 1)
                              (long-array 1) (int-array 1)
                              (long-array 1) (int-array 1))
+
+#_
+(let [a (ops/c [[(int 1) (int 2)]])
+      b (ops/c [[(int 2)] [(int 3)]])
+      o1 (ops/matmul a b)
+      g (bdr/graph-plan->graph o1)
+      s (sess/create g)
+      a' (:handle (ops/get-op-by-plan g a))
+      b' (:handle (ops/get-op-by-plan g b))
+      c' (:handle (ops/get-op-by-plan g o1))
+      d1' (long-array 2)
+      d2' (int-array 2)
+      grads (tfnative.Graph/addGradients (:handle g)
+                                   (long-array [c']) (int-array [0])
+                                   (long-array [a' b']) (int-array [0 0])
+                                   (long-array [c' c']) (int-array [0 0])
+                                   d1' d2')]
+  (def dd1 d1')
+  (def dd2 d2')
+  [a' b' c' (vec d1') (vec d2')]
+
+  #_(->  (sess/run-plan-w-session s [o1])
+         first
+         tsr/get-value-clj))
+
+#_(tfnative.Operation/name (second dd1))

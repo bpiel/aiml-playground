@@ -62,8 +62,6 @@
                                         0)) ;; hard coded to 0, because we should really be dealing with `output`s here
   builder-handle)
 
-
-
 (defn build-add-op
   [^Graph g op-kw tf-op hsh input-ops & [attrs explicit-id variable-assigment]]
   (locking (:handle-lock g)
@@ -178,3 +176,7 @@
 (defn id [id-kw op]
   (assoc op
          :id id-kw))
+
+(defn add-by-handle
+  [^Graph g handle]
+  )

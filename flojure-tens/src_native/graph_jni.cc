@@ -112,7 +112,7 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
   resolveOutputs(env, "y outputs", y_op_handles, y_op_indices, y.get(), ny);
   resolveOutputs(env, "x outputs", x_op_handles, x_op_indices, x.get(), nx);
   resolveOutputs(env, "dx outputs", dx_op_handles, dx_op_indices, dx.get(), nx);
-  resolveOutputs(env, "dy outputs", dy_op_handles, dy_op_indices, dy.get(), nx);
+  //resolveOutputs(env, "dy outputs", dy_op_handles, dy_op_indices, dy.get(), nx);
 
   TF_Status* status = TF_NewStatus();
   
