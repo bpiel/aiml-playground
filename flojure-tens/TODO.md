@@ -6,9 +6,9 @@ x variable takes id
 x dedup by hash
 x GraphRef for Op
 x get basic nn example working
-- const and variables takes seqs
+x const and variables takes seqs
+- gradient descent optimizer -- macros?
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
-- gradient descent optimizer
 
 
 g++ -std=c++11 -Iinclude/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o xxxx.so *.cc
