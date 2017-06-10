@@ -66,7 +66,6 @@
 
 (defn build-add-op
   [^Graph g op-kw tf-op hsh input-ops & [attrs explicit-id variable-assigment]]
-  (clojure.pprint/pprint [tf-op attrs])
   (locking (:handle-lock g)
     (let [attrs' (or attrs {})
           id (or explicit-id (keyword (name (gensym (name op-kw)))))

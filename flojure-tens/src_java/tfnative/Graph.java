@@ -12,6 +12,12 @@ public class Graph {
 
     public static native long operation(long handle, String name);
 
+    public static native long addGradients(long handle,
+                                           long[] yOpHandles, int[] yOpIndices,
+                                           long[] xOpHandles, int[] xOpIndices,
+                                           long[] dxOpHandles, int[] dxOpIndices,
+                                           long[] dyOpHandles, int[] dyOpIndices);
+
     public static native void importGraphDef(long handle, byte[] graphDef, String prefix)
         throws IllegalArgumentException;
 

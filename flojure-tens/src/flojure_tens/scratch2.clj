@@ -69,3 +69,9 @@
 #_    (def r1   (sess/run-plan-w-session session [weights])))
 
 (-> r1 first tsr/get-value-clj)
+
+(tfnative.Graph/addGradients 0
+                             (long-array 1) (int-array 1)
+                             (long-array 1) (int-array 1)
+                             (long-array 1) (int-array 1)
+                             (long-array 1) (int-array 1))

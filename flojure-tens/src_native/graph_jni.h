@@ -45,6 +45,15 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_delete(JNIEnv *, jclass,
 JNIEXPORT jlong JNICALL Java_tfnative_Graph_operation(JNIEnv *, jclass,
                                                             jlong, jstring);
 
+
+JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
+                                                        JNIEnv *, jclass, jlong,
+  jlongArray , jintArray ,
+  jlongArray , jintArray ,
+  jlongArray , jintArray ,
+  jlongArray , jintArray  );
+
+  
 /*
  * Class:     tfnative_Graph
  * Method:    importGraphDef

@@ -19,3 +19,13 @@ g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-
 find . -type f -print0 | xargs -0 sed -i 's/#include "tensorflow\/java\/src\/main\/native\//#include "/g'
 
 find . -type f -print0 | xargs -0 sed -i 's/org_tensorflow/tfnative/g'
+
+
+----
+build 
+run
+fetch
+
+run+fetch = fetch
+build+run = exec
+build+run+fetch = produce

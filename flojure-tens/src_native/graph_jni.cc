@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "graph_jni.h"
 
+#include <memory>
 #include <limits>
 #include "include/c_api.h"
 #include "exception_jni.h"
@@ -31,6 +32,41 @@ TF_Graph* requireHandle(JNIEnv* env, jlong handle) {
   return reinterpret_cast<TF_Graph*>(handle);
 }
 }  // namespace
+
+// BILL vvvvvvvvvvvvvvvvvvvvvvvvvvv
+void resolveOutputs(JNIEnv* env, const char* type, jlongArray src_op,
+                    jintArray src_index, TF_Output* dst, jint n) {
+  if (env->ExceptionCheck()) return;
+  jint len = env->GetArrayLength(src_op);
+  if (len != n) {
+    throwException(env, kIllegalArgumentException,
+                   "expected %d, got %d %s Operations", n, len, type);
+    return;
+  }
+  len = env->GetArrayLength(src_index);
+  if (len != n) {
+    throwException(env, kIllegalArgumentException,
+                   "expected %d, got %d %s Operation output indices", n, len,
+                   type);
+    return;
+  }
+  jlong* op_handles = env->GetLongArrayElements(src_op, nullptr);
+  jint* indices = env->GetIntArrayElements(src_index, nullptr);
+  for (int i = 0; i < n; ++i) {
+    if (op_handles[i] == 0) {
+      throwException(env, kNullPointerException, "invalid %s (#%d of %d)", type,
+                     i, n);
+      break;
+    }
+    dst[i] = TF_Output{reinterpret_cast<TF_Operation*>(op_handles[i]),
+                       static_cast<int>(indices[i])};
+  }
+  env->ReleaseIntArrayElements(src_index, indices, JNI_ABORT);
+  env->ReleaseLongArrayElements(src_op, op_handles, JNI_ABORT);
+}
+
+
+// BILL ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 JNIEXPORT jlong JNICALL Java_tfnative_Graph_allocate(JNIEnv*, jclass) {
   return reinterpret_cast<jlong>(TF_NewGraph());
@@ -53,6 +89,60 @@ JNIEXPORT jlong JNICALL Java_tfnative_Graph_operation(JNIEnv* env,
   env->ReleaseStringUTFChars(name, cname);
   return reinterpret_cast<jlong>(op);
 }
+
+//=====================================================
+
+JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
+  JNIEnv* env, jclass clazz, jlong handle,
+  jlongArray y_op_handles, jintArray y_op_indices,
+  jlongArray x_op_handles, jintArray x_op_indices,
+  jlongArray dx_op_handles, jintArray dx_op_indices,
+  jlongArray dy_op_handles, jintArray dy_op_indices ){
+
+  const jint ny = env->GetArrayLength(y_op_handles);
+  const jint nx = env->GetArrayLength(x_op_handles);
+
+  std::unique_ptr<TF_Output[]> x(new TF_Output[nx]);
+  std::unique_ptr<TF_Output[]> y(new TF_Output[ny]);
+  std::unique_ptr<TF_Output[]> dx(new TF_Output[nx]);
+  std::unique_ptr<TF_Output[]> dy(new TF_Output[nx]);
+
+  TF_Graph* g = requireHandle(env, handle);  
+
+  resolveOutputs(env, "y outputs", y_op_handles, y_op_indices, y.get(), ny);
+  resolveOutputs(env, "x outputs", x_op_handles, x_op_indices, x.get(), nx);
+  resolveOutputs(env, "dx outputs", dx_op_handles, dx_op_indices, dx.get(), nx);
+  resolveOutputs(env, "dy outputs", dy_op_handles, dy_op_indices, dy.get(), nx);
+
+  TF_Status* status = TF_NewStatus();
+  
+  TF_AddGradients(g,
+                  y.get(), static_cast<int>(ny),
+                  x.get(), static_cast<int>(nx),
+                  dx.get(),
+                  status,
+                  dy.get());
+
+  if (!throwExceptionIfNotOK(env, status)) {
+    TF_DeleteStatus(status);
+    return;
+  }
+
+  jlong* o = env->GetLongArrayElements(dy_op_handles, nullptr);
+  jint* n = env->GetIntArrayElements(dy_op_indices, nullptr);
+  for (int i = 0; i < nx; ++i) {
+    o[i] = reinterpret_cast<jlong>(dy[i].oper);
+    n[i] = reinterpret_cast<jint>(dy[i].index);
+  }
+  env->ReleaseLongArrayElements(dy_op_handles, o, 0);
+  env->ReleaseIntArrayElements(dy_op_indices, n, 0);
+
+  TF_DeleteStatus(status);
+  return;
+}
+
+
+//=====================================================
 
 JNIEXPORT void JNICALL Java_tfnative_Graph_importGraphDef(
     JNIEnv* env, jclass clazz, jlong handle, jbyteArray graph_def,
