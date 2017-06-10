@@ -15,6 +15,11 @@ g++ -std=c++11 -Iinclude/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/li
 
 g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o libtensorflow_jni.so *.cc -ltensorflow
 
+-----
+2089 [11:00:43] bill@bill-desktop: ~/repos/aiml-playground/flojure-tens/resources/proto
+$ protoc --java_out=./ ./tensorflow/core/framework/*.proto
+-----
+
 
 find . -type f -print0 | xargs -0 sed -i 's/#include "tensorflow\/java\/src\/main\/native\//#include "/g'
 

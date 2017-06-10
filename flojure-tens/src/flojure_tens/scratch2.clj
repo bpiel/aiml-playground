@@ -4,7 +4,9 @@
             [flojure-tens.ops :as ops]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.data-type :as dt]
-            [flojure-tens.builder :as bdr]))
+            [flojure-tens.builder :as bdr]
+            [flatland.protobuf.core :as pr])
+  (:import [org.tensorflow.framework OpDef OpList]))
 
 
 #_ (def r1 (ft/run-plan (ops/add 1 3)))
@@ -101,3 +103,12 @@
          tsr/get-value-clj))
 
 #_(tfnative.Operation/name (second dd1))
+
+(tfnative.TensorFlow/version)
+
+(def OpDefP (pr/protodef OpDef))
+(def OpListP (pr/protodef OpList))
+
+(def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
+
+(clojure.pprint/pprint op-list)

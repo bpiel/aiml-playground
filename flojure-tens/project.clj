@@ -6,4 +6,65 @@
   :source-paths ["src"]
   :java-source-paths ["src_java"]
   :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
-                 [org.tensorflow/tensorflow  "1.2.0-rc1"]])
+                 [org.tensorflow/tensorflow  "1.2.0-rc1"]
+                 [org.clojars.ghaskins/protobuf "3.3.1-1"]])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

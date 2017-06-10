@@ -177,6 +177,9 @@
   (assoc op
          :id id-kw))
 
-(defn add-by-handle
+#_(defn add-by-handle
   [^Graph g handle]
-  )
+  (Op. (keyword (tfnative.Operation/name handle))
+       (keyword (tfnative.Operation/type handle))
+       []
+       0))
