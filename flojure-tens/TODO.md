@@ -8,8 +8,14 @@ x GraphRef for Op
 x get basic nn example working
 x const and variables takes seqs
 - gradient descent optimizer -- macros?
+- :output-idx
+- :subgraph
+- compile time vs run time op gen
+- -id op fns
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
-
+- ref counting instead of hard lock?
+- check for overides during compile time
+- docstrings for auto gen op fns
 
 g++ -std=c++11 -Iinclude/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o xxxx.so *.cc
 

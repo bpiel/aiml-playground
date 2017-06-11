@@ -129,6 +129,7 @@
                                     :id id
                                     :value value
                                     :opts (or opts {})})
+
 (defmethod build :variable
   [g {:keys [id value opts]} hsh]
   (build-add-op g

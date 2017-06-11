@@ -1,6 +1,6 @@
 (ns flojure-tens.session
   (:require flojure-tens.common
-            [flojure-tens.ops :as ops]
+            [flojure-tens.ops2 :as ops]
             [flojure-tens.util :as util]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.builder :as bdr])
