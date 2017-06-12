@@ -6,7 +6,8 @@
             [flojure-tens.data-type :as dt]
             [flojure-tens.builder :as bdr]
             [flatland.protobuf.core :as pr])
-  (:import [org.tensorflow.framework OpDef OpList]))
+  (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
+           [flojure_tens.common Graph Op GraphRef]))
 
 
 
@@ -81,7 +82,7 @@
                              (long-array 1) (int-array 1)
                              (long-array 1) (int-array 1))
 
-#_
+
 (let [a (ops/c [[(int 1) (int 2)]])
       b (ops/c [[(int 2)] [(int 3)]])
       o1 (ops/matmul a b)
@@ -100,18 +101,61 @@
   (def dd1 d1')
   (def dd2 d2')
   [a' b' c' (vec d1') (vec d2')]
-
+  (def g1 g)
+  #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(->  (sess/run-plan-w-session s [o1])
          first
          tsr/get-value-clj))
 
+
+(vec (tfnative.Graph/nextOperation2 (:handle g1) 0))
+
+(def oph1 (first (vec (tfnative.Graph/nextOperation2 (:handle g1) 4))))
+
+(ops/create-from-handle oph1 (GraphRef. nil (Object.)))
+
+(def opd-ba )
+
+(def n1 (pr/protobuf-load NodeDefP opd-ba))
+
+
+(clojure.pprint/pprint  n1)
+(clojure.pprint/pprint (ops/create-from-handle oph1 (GraphRef. nil (Object.))))
+
+
+
 #_(tfnative.Operation/name (second dd1))
+
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy (clojure.java.io/input-stream x) out)
+    (.toByteArray out)))
+
+(defn spit-bytes
+  "Slurp the bytes from a slurpable thing"
+  [f ba]
+  (let [bais (java.io.ByteArrayInputStream. ba)]
+    (with-open [out (clojure.java.io/output-stream f)]
+      (clojure.java.io/copy bais out))))
+
+
 
 (tfnative.TensorFlow/version)
 
 (def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
+(def MetaGraphP (pr/protodef MetaGraphDef))
+(def NodeDefP (pr/protodef NodeDef))
+
+(def GraphDefP (pr/protodef GraphDef))
 
 (def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
 
-(clojure.pprint/pprint op-list)
+(tfnative.TensorFlow/version)
+
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/metagraph2.pb")))
+
+(-> mg2 :graph-def clojure.pprint/pprint )
+

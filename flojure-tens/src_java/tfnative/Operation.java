@@ -12,4 +12,6 @@ public final class Operation {
   public static native long[] shape(long graphHandle, long opHandle, int output);
 
   public static native int dtype(long graphHandle, long opHandle, int output);
+    
+  public static native byte[] toNodeDef(long handle);
 }

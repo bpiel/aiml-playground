@@ -76,3 +76,35 @@
                           (atom (init-graph-state))
                           (atom false)
                           (Object.))))
+
+(defn- spit-bytes
+  "Is there a better way?"
+  [f ba]
+  (let [bais (java.io.ByteArrayInputStream. ba)]
+    (with-open [out (clojure.java.io/output-stream f)]
+      (clojure.java.io/copy bais out))))
+
+(defn ->graph-def-byte-array [^Graph g]
+  (tfnative.Graph/toGraphDef (:handle g)))
+
+(defn write-graph-def-to-file [filename ^Graph g]
+  (spit-bytes filename (->graph-def-byte-array g)))
+
+#_(defn create-from-handle
+  [handle]
+  (let [g (Graph. handle :.....)]
+    )
+  )
+
+#_ ((def gtmp flojure-tens.scratch2/g1)
+
+    (def gd1 (tfnative.Graph/toGraphDef (:handle gtmp)))
+
+    (let [ghhh (:handle (create))]
+      (tfnative.Graph/importGraphDef ghhh
+                                     gd1
+                                     "")
+      (def gh1 ghhh ))
+
+
+    )

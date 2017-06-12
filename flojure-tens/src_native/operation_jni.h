@@ -73,6 +73,11 @@ JNIEXPORT jlongArray JNICALL Java_tfnative_Operation_shape(JNIEnv *,
 JNIEXPORT jint JNICALL Java_tfnative_Operation_dtype(JNIEnv *, jclass,
                                                            jlong, jlong, jint);
 
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Operation_toNodeDef(JNIEnv*,
+                                                               jclass,
+                                                               jlong);
+
+  
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus

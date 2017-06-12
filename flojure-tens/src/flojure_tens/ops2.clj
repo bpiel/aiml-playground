@@ -5,8 +5,17 @@
             [flojure-tens.shape :as sh]
             [flatland.protobuf.core :as pr]
             [flojure-tens.common])
-  (:import [flojure_tens.common Graph Op]
-           [org.tensorflow.framework OpDef OpList]))
+  (:import [flojure_tens.common Graph Op GraphRef]
+           [org.tensorflow.framework OpDef OpList NodeDef]))
+
+(def skip-ops #{"Variable"})
+(def overrides (atom {}))
+
+(defn register-op-overrides!
+  [tf-op override-map]
+  (swap! overrides assoc tf-op override-map))
+
+(def NodeDefP (pr/protodef NodeDef))
 
 (defn Op? [o] (= (type o) Op))
 
@@ -31,6 +40,11 @@
         (for [op-def (:op op-list)]
           [(:name op-def) op-def])))
 
+(def proc-op-list-by-name
+  (into {}
+        (for [op-def (:op op-list)]
+          [(:name op-def) (default-op-def-processor op-def)])))
+
 (def const-op (->> op-list
                    :op
                    (filter #(= (:name %) "Const"))
@@ -49,29 +63,15 @@
                    first
                    (into {})))
 
-(def skip-ops #{"Variable"})
-
-(def op-fn-name-override
-  {"Const" 'c
-   "VariableV2" 'v})
-
-(def op-fn-bodies-override
-  {"Const" '[([value] {:op :const :attrs {:value value}})
-             ([value data-type] {:op :const :attrs {:value value :dtype data-type}})]
-   "VariableV2" '[([id value] {:op :variablev2 :id id :assignment value})]
-   "Transpose" '[([input] {:op :transpose :inputs [input [(int 1) (int 0)]] :attrs {}})]
-   "Assign"  '[([vari value]
-                (let [vari-id (or (:id vari)
-                                  vari)]
-                  (when (-> vari-id keyword? not)
-                    (throw (Exception. (str "Invalid assignment target: " vari))))
-                  {:op :assign :vari vari-id :inputs [value]}))]})
 
 (defn default-op-def-processor
   [op-def]
   (-> op-def
       (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
                                          a))))))
+
+
+
 
 
 (defn get-op-kw
@@ -116,42 +116,20 @@
   (-> args
       (update-in [:plan :attrs] convert-attrs (-> args :op-def :attr))))
 
-(defn hook-pre-build-op-override-const
-  [args]
-  (let [dtype (-> args :plan :attrs :value dt/data-type-of-whatever :native)]
-    (-> args
-        (assoc-in [:plan :attrs :dtype] dtype)
-        hook-pre-build-op-default)))
+(defn fetch-override
+  [op-def kw]
+  (some-> op-def :name ((deref overrides)) kw))
 
-(defn hook-pre-build-op-override-variable-v2
-  [args]
-  (let [value (-> args :plan :assignment)
-        dtype (-> value dt/data-type-of-whatever :native)
-        shape (sh/shape-of-seq value)]
-    (-> args
-        (assoc-in [:plan :attrs] {:dtype dtype :shape shape})
-        hook-pre-build-op-default)))
+;; necessary?
+(defn call-override
+  [op-def kw args]
+  (when-let [f (fetch-override op-def kw)]
+    (apply f args)))
 
-(defn hook-pre-build-op-override-assign
-  [args]
-  (let [nodes (-> args :g :state deref :nodes)
-        value (-> args :plan :inputs first)
-        vari (-> args :plan :vari nodes)]
-    (-> args
-        (assoc-in [:plan :inputs] [vari value])
-        (dissoc :vari)
-        hook-pre-build-op-default)))
-
-(def hook-pre-build-op-override
-  {"Const" hook-pre-build-op-override-const
-   "VariableV2" hook-pre-build-op-override-variable-v2
-   "Assign" hook-pre-build-op-override-assign})
-
-(defn hook-pre-build-op
-  [args]
-  ((or (-> args :op-def :name hook-pre-build-op-override)
-       hook-pre-build-op-default)
-   args))
+(defn fetch-pre-build-op-fn
+  [op-def]
+  (or (fetch-override op-def :hook-pre-build)   
+      `hook-pre-build-op-default))
 
 (defn dyn-defn
   [name-sym bodies]
@@ -165,7 +143,7 @@
 
 
 (defn get-op-fn-name-sym [op-def]
-  (let [s1 (or (op-fn-name-override (:name op-def))
+  (let [s1 (or (fetch-override op-def :fn-name)
                (symbol (clojure.string/lower-case (:name op-def))))]
     (if (ns-resolve 'clojure.core s1)
       (symbol (str s1 "-tf"))
@@ -185,7 +163,7 @@
                   {})))))
 
 (defn get-op-fn-body [fn-name-sym op-def]
-  (or (op-fn-bodies-override (:name op-def))
+  (or (fetch-override op-def :plan-fn-bodies)
       (get-op-fn-body* fn-name-sym op-def)))
 
 (defn dyn-defn-op [op-def]
@@ -252,10 +230,9 @@
   [op-def]
   (list '[g plan hsh]
         `(build-op
-          (hook-pre-build-op
+          (~(fetch-pre-build-op-fn op-def)
            {:g ~'g :plan ~'plan :hsh ~'hsh
-            :op-def (default-op-def-processor ;;TODO fix
-                     (~'op-list-by-name ~(:name op-def)))}))))
+            :op-def (~'proc-op-list-by-name ~(:name op-def))}))))
 
 (defn dyn-defmethod-op-build
   [op-def]
@@ -291,3 +268,34 @@
       (dyn-def-op-fns op-def)))
   (println "done"))
 
+
+(defn node-def-attr->
+  [attr-value]
+  (let [[ty v] (first attr-value)]
+    (case ty
+      :type nil ;;TODO
+      :b  (boolean v))))
+
+(defn node-def-attrs->
+  [attr-vec]
+  (into {}
+        (keep (fn [{k :key v :value}]
+                [(keyword k)
+                 (node-def-attr-> v)])
+              attr-vec)))
+
+(defn create-from-handle [op-handle ^GraphRef graph-ref]
+  (let [nd (pr/protobuf-load NodeDefP
+                             (tfnative.Operation/toNodeDef op-handle))
+        plan {:id (:name nd)
+              :op (get-op-kw nd)
+              :inputs (mapv keyword
+                            (:input nd))
+              :attrs (node-def-attrs-> (:attr nd))}]
+    (Op. (:id plan)
+         (:op plan)
+         (:inputs plan)
+         (compute-hash plan)
+         (:attrs plan)
+         op-handle
+         graph-ref)))

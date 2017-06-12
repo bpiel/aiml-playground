@@ -12,6 +12,15 @@ public class Graph {
 
     public static native long operation(long handle, String name);
 
+    public static native long nextOperation(long handle, long posIn, long[] posOut);
+
+    public static long[] nextOperation2(long handle, long pos){
+        long[] posOut = {0};
+        long opHandle = nextOperation(handle, pos, posOut);
+        long[] ret = {opHandle, posOut[0]};
+        return ret;
+    }
+
     public static native long addGradients(long handle,
                                            long[] yOpHandles, int[] yOpIndices,
                                            long[] xOpHandles, int[] xOpIndices,

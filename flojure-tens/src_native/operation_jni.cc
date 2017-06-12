@@ -156,3 +156,27 @@ JNIEXPORT jint JNICALL Java_tfnative_Operation_dtype(JNIEnv* env,
 
   return static_cast<jint>(TF_OperationOutputType(TF_Output{op, output_index}));
 }
+
+JNIEXPORT jbyteArray JNICALL Java_tfnative_Operation_toNodeDef(JNIEnv* env,
+                                                           jclass clazz,
+                                                           jlong handle){
+  jbyteArray ret = nullptr;
+  TF_Operation* op = requireHandle(env, handle);
+  if (op == nullptr) return 0;
+
+  TF_Buffer* buf = TF_NewBuffer();
+  TF_Status* status = TF_NewStatus();
+
+  TF_OperationToNodeDef(op, buf, status);
+  
+  jint ret_len = static_cast<jint>(buf->length);
+  ret = env->NewByteArray(ret_len);
+  env->SetByteArrayRegion(ret, 0, ret_len,
+                          static_cast<const jbyte*>(buf->data));
+
+  TF_DeleteStatus(status);
+  TF_DeleteBuffer(buf);
+  
+  return ret;
+}
+

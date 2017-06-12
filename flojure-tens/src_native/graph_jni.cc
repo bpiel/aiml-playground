@@ -90,7 +90,8 @@ JNIEXPORT jlong JNICALL Java_tfnative_Graph_operation(JNIEnv* env,
   return reinterpret_cast<jlong>(op);
 }
 
-//=====================================================
+
+// BILL vvvvvvvvvvvvvvvvvvvvvvvvvvv
 
 JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
   JNIEnv* env, jclass clazz, jlong handle,
@@ -141,8 +142,26 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
   return;
 }
 
+// TODO make `pos` stuff less embarrassing
+JNIEXPORT jlong  JNICALL Java_tfnative_Graph_nextOperation(
+  JNIEnv* env, jclass clazz,
+  jlong handle, jlong pos_in,  jlongArray pos_out){
 
-//=====================================================
+  TF_Graph* g = requireHandle(env, handle);
+  size_t pos_st = static_cast<size_t>(pos_in);
+  size_t* st_ptr = &pos_st;
+  TF_Operation* op = TF_GraphNextOperation(g, st_ptr);
+
+  jlong* pos_ret = env->GetLongArrayElements(pos_out, nullptr);
+  pos_ret[0] = static_cast<jlong>(*st_ptr);
+  
+  env->ReleaseLongArrayElements(pos_out, pos_ret, 0);
+  
+  return reinterpret_cast<jlong>(op);
+}
+
+
+// BILL ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 JNIEXPORT void JNICALL Java_tfnative_Graph_importGraphDef(
     JNIEnv* env, jclass clazz, jlong handle, jbyteArray graph_def,

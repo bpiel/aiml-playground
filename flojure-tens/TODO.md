@@ -8,7 +8,23 @@ x GraphRef for Op
 x get basic nn example working
 x const and variables takes seqs
 x auto gen ops from protobuf
+
+x clj graph to tensorboard
+  - graph -> graphdef
+   -- SavedModelBundle
+  - write graphdef to file
+  - write summary w/ python
+  
+
 - gradient descent optimizer -- macros?
+  - simpler gdo case?
+  - build in py
+  - export graphdef
+  - build in clj
+  - export graphdef 
+  - compare, tweak, iterate
+
+
 - :output-idx
 - :subgraph
 - compile time vs run time op gen
@@ -18,9 +34,10 @@ x auto gen ops from protobuf
 - check for auto-gen overides during compile time
 - docstrings for auto gen op fns
 
-g++ -std=c++11 -Iinclude/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o xxxx.so *.cc
-
+-----
 g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o libtensorflow_jni.so *.cc -ltensorflow
+-----
+
 
 -----
 2089 [11:00:43] bill@bill-desktop: ~/repos/aiml-playground/flojure-tens/resources/proto

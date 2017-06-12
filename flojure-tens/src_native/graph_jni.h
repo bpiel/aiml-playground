@@ -53,6 +53,10 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
   jlongArray , jintArray ,
   jlongArray , jintArray  );
 
+JNIEXPORT jlong  JNICALL Java_tfnative_Graph_nextOperation(
+                                                           JNIEnv *, jclass,
+                                                           jlong, jlong,  jlongArray);
+
   
 /*
  * Class:     tfnative_Graph
