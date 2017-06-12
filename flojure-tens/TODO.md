@@ -25,6 +25,8 @@ g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-
 -----
 2089 [11:00:43] bill@bill-desktop: ~/repos/aiml-playground/flojure-tens/resources/proto
 $ protoc --java_out=./ ./tensorflow/core/framework/*.proto
+$ protoc --java_out=./ ./tensorflow/core/protobuf/*.proto
+$ protoc --java_out=./ ./tensorflow/core/lib/core/*.proto
 -----
 
 
