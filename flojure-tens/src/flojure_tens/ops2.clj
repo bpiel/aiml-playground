@@ -8,17 +8,11 @@
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
-(def skip-ops #{"Variable"})
-(def overrides (atom {}))
-
-(defn register-op-overrides!
-  [tf-op override-map]
-  (swap! overrides assoc tf-op override-map))
-
 (def NodeDefP (pr/protodef NodeDef))
 
 (defn Op? [o] (= (type o) Op))
 
+;; TODO move to utils?
 (defn compute-hash
   [{:keys [id] :as plan}]
   (if id
@@ -29,6 +23,12 @@
   [^Graph g plan]
   ((gr/nodes g)
    ((gr/ids-by-hash g) (compute-hash plan))))
+
+(defn default-op-def-processor
+  [op-def]
+  (-> op-def
+      (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
+                                         a))))))
 
 (def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
@@ -64,11 +64,7 @@
                    (into {})))
 
 
-(defn default-op-def-processor
-  [op-def]
-  (-> op-def
-      (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
-                                         a))))))
+
 
 
 
@@ -111,10 +107,6 @@
   (mapv (partial convert-attrs* plan-attrs)
         def-attr))
 
-(defn hook-pre-build-op-default
-  [args]
-  (-> args
-      (update-in [:plan :attrs] convert-attrs (-> args :op-def :attr))))
 
 (defn fetch-override
   [op-def kw]
@@ -149,7 +141,7 @@
       (symbol (str s1 "-tf"))
       s1)))
 
-(defn get-op-fn-body*
+#_(defn get-op-fn-body*
   [fn-name-sym op-def]
   (let [input-syms (mapv #(-> % :name symbol)
                          (:input-arg op-def))
@@ -262,11 +254,7 @@
 #_(clojure.pprint/pprint (op-list-by-name "Assign"))
 
 
-(do
-  (doseq [op-def (:op op-list)]
-    (when-not (skip-ops (:name op-def))
-      (dyn-def-op-fns op-def)))
-  (println "done"))
+
 
 
 (defn node-def-attr->
@@ -284,18 +272,22 @@
                  (node-def-attr-> v)])
               attr-vec)))
 
-(defn create-from-handle [op-handle ^GraphRef graph-ref]
+(defn handle->plan [op-handle]
   (let [nd (pr/protobuf-load NodeDefP
-                             (tfnative.Operation/toNodeDef op-handle))
-        plan {:id (:name nd)
+                             (tfnative.Operation/toNodeDef op-handle))]
+    {:id (:name nd)
               :op (get-op-kw nd)
               :inputs (mapv keyword
                             (:input nd))
-              :attrs (node-def-attrs-> (:attr nd))}]
-    (Op. (:id plan)
-         (:op plan)
-         (:inputs plan)
-         (compute-hash plan)
-         (:attrs plan)
-         op-handle
-         graph-ref)))
+     :attrs (node-def-attrs-> (:attr nd))}))
+
+(defn create-from-handle
+  [op-handle ^GraphRef graph-ref]
+  (let [{:keys [id op inputs attrs] :as plan} (handle->plan op-handle)]
+    (Op. id op inputs (compute-hash plan) attrs op-handle graph-ref)))
+
+(do
+  (doseq [op-def (:op op-list)]
+    (when-not (skip-ops (:name op-def))
+      (dyn-def-op-fns op-def)))
+  (println "done"))

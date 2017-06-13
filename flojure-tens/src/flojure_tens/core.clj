@@ -1,5 +1,6 @@
 (ns flojure-tens.core
-  (:require [flojure-tens.builder :as bdr]
+  (:require flojure-tens.ops-override
+            [flojure-tens.builder :as bdr]
             [flojure-tens.session :as sess]
             [flojure-tens.tensor :as tsr])
   (:import [com.billpiel.flojure_tens Graph]))
