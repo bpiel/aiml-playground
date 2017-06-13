@@ -3,8 +3,6 @@
             [flojure-tens.shape :as sh]
             [flojure-tens.tensor :as tsr]))
 
-(def NodeDefP (pr/protodef NodeDef))
-
 (defn get-op-kw
   [op-def]
   (keyword (clojure.string/lower-case (:name op-def))))
@@ -40,10 +38,6 @@
   [plan-attrs def-attr]
   (mapv (partial convert-attrs* plan-attrs)
         def-attr))
-
-
-
-
 
 
 (defn node-def-attr->

@@ -13,9 +13,9 @@
 
 (defn fetch-config
   [op-def kw]
-  (some-> op-def :name ((deref gen-config)) kw))
+  (or (some-> op-def :name ((deref gen-config)) kw)
+      (some-> :default ((deref gen-config)) kw)))
 
-;; necessary?
 (defn call-config
   [op-def kw args]
   (when-let [f (fetch-config op-def kw)]
@@ -38,6 +38,13 @@
 
 (defn get-op-fn-body [fn-name-sym op-def]
   (call-config op-def :plan-fn-bodies [fn-name-sym op-def]))
+
+(defn op-def-processor [op-def]
+  (call-config op-def :op-def-processor [op-def]))
+
+(defn node-def->plan
+  [node-def]
+  (call-config node-def :node-def->plan [node-def]))
 
 ;; Op Gen Defaults =========================================================
 
@@ -69,9 +76,9 @@
 
 (register-op-gen-cfg!
  :default
- {:op-def-processor `op-def-processor-default
-  :plan-fn-bodies `get-op-fn-body-default
-  :hook-pre-build `hook-pre-build-op-override-default
+ {:op-def-processor op-def-processor-default
+  :plan-fn-bodies get-op-fn-body-default
+  :hook-pre-build `hook-pre-build-op-default
   :node-def->plan op-gen/node-def->plan-default})
 
 
@@ -87,11 +94,12 @@
 (register-op-gen-cfg!
  "Const"
  {:fn-name 'c
-  :plan-fn-bodies '[([value] {:op :const
-                              :attrs {:value value}})
-                    ([value data-type] {:op :const
-                                        :attrs {:value value
-                                                :dtype data-type}})]
+  :plan-fn-bodies (constantly
+                   '[([value] {:op :const
+                               :attrs {:value value}})
+                     ([value data-type] {:op :const
+                                         :attrs {:value value
+                                                 :dtype data-type}})])
   :hook-pre-build `hook-pre-build-op-override-const})
 
 
@@ -107,9 +115,10 @@
 (register-op-gen-cfg!
  "VariableV2"
  {:fn-name 'v
-  :plan-fn-bodies '[([id value] {:op :variablev2
-                                 :id id
-                                 :assignment value})]
+  :plan-fn-bodies (constantly
+                   '[([id value] {:op :variablev2
+                                  :id id
+                                  :assignment value})])
   :hook-pre-build  `hook-pre-build-op-override-variable-v2})
 
 (defn hook-pre-build-op-override-assign
@@ -124,17 +133,19 @@
 
 (register-op-gen-cfg!
  "Assign"
- {:plan-fn-bodies '[([vari value]
-                     (let [vari-id (or (:id vari)
-                                       vari)]
-                       (when (-> vari-id keyword? not)
-                         (throw (Exception. (str "Invalid assignment target: " vari))))
-                       {:op :assign :vari vari-id :inputs [value]}))]
+ {:plan-fn-bodies (constantly
+                   '[([vari value]
+                      (let [vari-id (or (:id vari)
+                                        vari)]
+                        (when (-> vari-id keyword? not)
+                          (throw (Exception. (str "Invalid assignment target: " vari))))
+                        {:op :assign :vari vari-id :inputs [value]}))])
   :hook-pre-build  `hook-pre-build-op-override-assign})
 
 
 (register-op-gen-cfg!
  "Transpose"
- {:plan-fn-bodies '[([input] {:op :transpose
-                              :inputs [input [(int 1) (int 0)]]
-                              :attrs {}})]})
+ {:plan-fn-bodies (constantly
+                   '[([input] {:op :transpose
+                               :inputs [input [(int 1) (int 0)]]
+                               :attrs {}})])})

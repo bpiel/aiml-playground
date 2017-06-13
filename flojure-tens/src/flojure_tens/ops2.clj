@@ -9,6 +9,7 @@
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
+(def NodeDefP (pr/protodef NodeDef))
 
 
 (defn Op? [o] (= (type o) Op))
@@ -25,12 +26,6 @@
   ((gr/nodes g)
    ((gr/ids-by-hash g) (compute-hash plan))))
 
-(defn default-op-def-processor
-  [op-def]
-  (-> op-def
-      (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
-                                         a))))))
-
 (def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
 
@@ -44,7 +39,7 @@
 (def proc-op-list-by-name
   (into {}
         (for [op-def (:op op-list)]
-          [(:name op-def) (default-op-def-processor op-def)])))
+          [(:name op-def) (ogc/op-def-processor op-def)])))
 
 (def const-op (->> op-list
                    :op
@@ -176,7 +171,7 @@
       (println "^^^^^^^^^^^^^^^^^"))))
 
 (defn dyn-def-op-fns [op-def]
-  (let [op (default-op-def-processor op-def)]
+  (let [op (ogc/op-def-processor op-def)]
     (dyn-defn-op op)
     (dyn-defmethod-op-build op)))
 
@@ -188,6 +183,10 @@
 #_ (clean-ns)
 
 #_(clojure.pprint/pprint (op-list-by-name "Assign"))
+
+(defn handle->plan
+  [op-handle]
+  (ogc/node-def->plan  (pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef op-handle))))
 
 (defn create-from-handle
   [op-handle ^GraphRef graph-ref]
