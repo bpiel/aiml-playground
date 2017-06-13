@@ -110,6 +110,17 @@
 
 (vec (tfnative.Graph/nextOperation2 (:handle g1) 0))
 
+(def op-handles
+  (loop [agg []
+         pos 0]
+    (let [[handle pos'] (vec (tfnative.Graph/nextOperation2
+                              (:handle g1)
+                              pos))]
+      (if (zero? handle)
+        agg
+        (recur (conj agg handle)
+               pos')))))
+
 (def oph1 (first (vec (tfnative.Graph/nextOperation2 (:handle g1) 4))))
 
 (ops/create-from-handle oph1 (GraphRef. nil (Object.)))

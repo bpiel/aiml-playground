@@ -43,9 +43,40 @@
 (defn node-def-attr->
   [attr-value]
   (let [[ty v] (first attr-value)]
+    (def t-map v)
     (case ty
-      :type nil ;;TODO
+      :type nil ;; TODO
+      :list [] ;; TODO
+;      :tensor []
       :b  (boolean v))))
+
+#_ ((clojure.pprint/pprint t-map)
+    (def gbs (-> t-map :tensor-content))
+    (vec (.toByteArray gbs))
+
+    (defn apply-shape-to-vec
+      [s v]
+      (let [dim (last s)]
+        (if (nil? dim)
+          v
+          (recur (drop-last s)
+                 (vec
+                  (take dim v))))))
+
+    (def x [1 2 3 4 5 6 7 8 9])
+
+    (vec (take 3 (mapv vec (partition 2 x))))
+
+    (apply-shape-to-vec [2 3] [1 2 3 4 5 6 7 8 9]))
+
+(defn google-byte-string->int-array
+  [gbs]
+  (let [ib (-> (java.nio.ByteBuffer/wrap (.toByteArray gbs))
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN)
+               (.asIntBuffer))
+        ia (int-array (.remaining ib))]
+    (.get ib ia)
+    (vec ia)))
 
 (defn node-def-attrs->
   [attr-vec]
@@ -61,4 +92,48 @@
    :inputs (mapv keyword
                  (:input node-def))
    :attrs (node-def-attrs-> (:attr node-def))})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

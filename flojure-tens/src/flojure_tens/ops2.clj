@@ -174,3 +174,5 @@
         (clojure.pprint/pprint op-def)
         (throw e))))
   (println "done"))
+
+#_(handle->expr (first flojure-tens.scratch2/op-handles))
