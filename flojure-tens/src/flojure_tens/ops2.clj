@@ -4,7 +4,7 @@
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.shape :as sh]
-            [flatland.protobuf.core :as pr]
+            
             [flojure-tens.common])
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
@@ -25,39 +25,6 @@
   [^Graph g plan]
   ((gr/nodes g)
    ((gr/ids-by-hash g) (compute-hash plan))))
-
-(def OpDefP (pr/protodef OpDef))
-(def OpListP (pr/protodef OpList))
-
-(def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
-
-(def op-list-by-name
-  (into {}
-        (for [op-def (:op op-list)]
-          [(:name op-def) op-def])))
-
-(def proc-op-list-by-name
-  (into {}
-        (for [op-def (:op op-list)]
-          [(:name op-def) (ogc/op-def-processor op-def)])))
-
-(def const-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Const"))
-                   first
-                   (into {})))
-
-(def add-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Add"))
-                   first
-                   (into {})))
-
-(def assign-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Assign"))
-                   first
-                   (into {})))
 
 
 
@@ -192,6 +159,11 @@
   [op-handle ^GraphRef graph-ref]
   (let [{:keys [id op inputs attrs] :as plan} (handle->plan op-handle)]
     (Op. id op inputs (compute-hash plan) attrs op-handle graph-ref)))
+
+(defn handle->expr
+  [op-handle]
+  (ogc/plan->expr
+   (handle->plan op-handle)))
 
 (do
   (doseq [op-def (:op op-list)]

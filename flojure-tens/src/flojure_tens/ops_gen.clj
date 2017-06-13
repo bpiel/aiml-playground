@@ -5,7 +5,7 @@
 
 (defn get-op-kw
   [op-def]
-  (keyword (clojure.string/lower-case (:name op-def))))
+  (keyword (:name op-def)))
 
 (defn convert-attr
   [value def-type]
@@ -61,3 +61,4 @@
    :inputs (mapv keyword
                  (:input node-def))
    :attrs (node-def-attrs-> (:attr node-def))})
+
