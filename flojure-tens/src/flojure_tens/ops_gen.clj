@@ -47,30 +47,30 @@
     (case ty
       :type nil ;; TODO
       :list [] ;; TODO
-;      :tensor []
+      :tensor (tensor-attr->vec v)
       :b  (boolean v))))
-
- ((clojure.pprint/pprint t-map)
-    (def gbs (-> t-map :tensor-content))
-    (vec (.toByteArray gbs))
 
     (defn apply-shape-to-vec
       [s v]
-      (let [dim (last s)]
+      (let [dim (first s)]
         (case (count s)
           0 v
           1 (vec (take dim v))
           (vec (take dim
-                     (mapv (partial apply-shape-to-vec (drop-last s))
+                     (mapv (partial apply-shape-to-vec (drop 1 s))
                            (partition (quot (count v) dim) v)))))))
 
-    (def x [1 2 3 4 5 6 7 8 9])
+(defn tensor-attr-shape->vec
+  [tas]
+  (mapv :size (:dim tas)))
 
-    (vec (take 3 (mapv vec (partition 2 x))))
-
-  (apply-shape-to-vec [2 3] [1 2 3 4 5 6 7 8 9])
-
-  (comment))
+(defn tensor-attr->vec
+    [{:keys [dtype tensor-shape tensor-content]}]
+    (if (= dtype :dt-int32)
+      (apply-shape-to-vec
+       (tensor-attr-shape->vec tensor-shape)
+       (google-byte-string->int-array tensor-content))
+      (throw (Exception. (str "tensor-attr->vec NOT IMPLEMENTED for " dtype)))))
 
 (defn google-byte-string->int-array
   [gbs]
@@ -90,53 +90,9 @@
               attr-vec)))
 
 (defn node-def->plan-default [node-def]
-  {:id (:name node-def)
-   :op (get-op-kw node-def)
+  (def nd1 node-def)
+  {:id (-> node-def :name keyword)
+   :op (-> node-def :op keyword)
    :inputs (mapv keyword
                  (:input node-def))
    :attrs (node-def-attrs-> (:attr node-def))})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

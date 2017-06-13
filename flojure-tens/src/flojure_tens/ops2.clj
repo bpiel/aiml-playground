@@ -162,8 +162,8 @@
 
 (defn handle->expr
   [op-handle]
-  (ogc/plan->expr
-   (handle->plan op-handle)))
+  (ogc/plan->expr (handle->plan op-handle)
+                  "flojure-tens.ops2"))
 
 (do
   (doseq [op-def (:op ogc/op-list)]
@@ -176,3 +176,7 @@
   (println "done"))
 
 #_(handle->expr (first flojure-tens.scratch2/op-handles))
+
+#_ (clojure.pprint/pprint  (map handle->expr flojure-tens.scratch2/op-handles))
+
+#_(handle->plan (first flojure-tens.scratch2/op-handles))

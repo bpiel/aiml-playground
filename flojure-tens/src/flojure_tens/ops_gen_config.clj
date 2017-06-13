@@ -91,10 +91,10 @@
   :plan-fn-bodies (constantly
                    '[([value] {:op :Const
                                :attrs {:value value}})
-                     ([id value] {:op :const
+                     ([id value] {:op :Const
                                :id id
                                :attrs {:value value}})
-                     ([id value data-type] {:op :const
+                     ([id value data-type] {:op :Const
                                          :attrs {:value value
                                                  :dtype data-type}})])
   :hook-pre-build `hook-pre-build-op-override-const
@@ -184,11 +184,6 @@
 
 
 
-(defn plans->exprs
-  [plans ops-ns-str]
-  (into {}
-        (for [p plans]
-          [(:id p) (plan->expr p ops-ns-str)])))
 
 (def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
 
@@ -236,6 +231,12 @@
                  [plan
                   (symbol ops-ns-str fn-name)
                   op-def])))
+
+(defn plans->exprs
+  [plans ops-ns-str]
+  (into {}
+        (for [p plans]
+          [(:id p) (plan->expr p ops-ns-str)])))
 
 (register-op-gen-cfg!
  :default
