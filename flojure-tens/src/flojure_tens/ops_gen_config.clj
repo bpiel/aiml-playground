@@ -1,25 +1,55 @@
-(ns flojure-tens.ops-override ;; TODO rename to op-gen? op-gen-config?
-  (:require [flojure-tens.data-type :as dt]
+(ns flojure-tens.ops-gen-config
+  (:require [flojure-tens.ops-gen :as op-gen]
+            [flojure-tens.data-type :as dt]
             [flojure-tens.shape :as sh]))
 
 
 (def skip-ops #{"Variable"})
-(def gen-cfg (atom {}))
+(def gen-config (atom {}))
 
 (defn register-op-gen-cfg!
-  [tf-op override-map]
-  (swap! overrides assoc tf-op override-map))
+  [tf-op config-map]
+  (swap! gen-config assoc tf-op config-map))
+
+(defn fetch-config
+  [op-def kw]
+  (some-> op-def :name ((deref gen-config)) kw))
+
+;; necessary?
+(defn call-config
+  [op-def kw args]
+  (when-let [f (fetch-config op-def kw)]
+    (apply f args)))
+
+(defn fetch-pre-build-op-fn
+  [op-def]
+  (or (fetch-config op-def :hook-pre-build)   
+      `hook-pre-build-op-default))
+
+(defn fn-name-default [op-def]
+  (symbol (clojure.string/lower-case (:name op-def))))
+
+(defn get-op-fn-name-sym [op-def]
+  (let [s1 (or (fetch-config op-def :fn-name)
+               (fn-name-default op-def))]
+    (if (ns-resolve 'clojure.core s1)
+      (symbol (str s1 "-tf"))
+      s1)))
+
+(defn get-op-fn-body [fn-name-sym op-def]
+  (call-config op-def :plan-fn-bodies [fn-name-sym op-def]))
 
 ;; Op Gen Defaults =========================================================
 
 (defn hook-pre-build-op-default
   [args]
   (-> args
-      (update-in [:plan :attrs] convert-attrs (-> args :op-def :attr))))
+      (update-in [:plan :attrs] op-gen/convert-attrs (-> args :op-def :attr))))
 
 (defn op-def-processor-default
   [op-def]
   (-> op-def
+      (assoc :kw (op-gen/get-op-kw op-def))
       (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
                                          a))))))
 
@@ -30,7 +60,7 @@
                          (:input-arg op-def))
         arg-vec (conj input-syms 'attrs)]
     (list (list arg-vec
-                {:op (get-op-kw op-def)
+                {:op (op-gen/get-op-kw op-def)
                  :inputs input-syms
                  :attrs  'attrs})
           (list input-syms
@@ -41,7 +71,8 @@
  :default
  {:op-def-processor `op-def-processor-default
   :plan-fn-bodies `get-op-fn-body-default
-  :hook-pre-build `hook-pre-build-op-override-default})
+  :hook-pre-build `hook-pre-build-op-override-default
+  :node-def->plan op-gen/node-def->plan-default})
 
 
 ;; Op Gen Custom Overrides =================================================

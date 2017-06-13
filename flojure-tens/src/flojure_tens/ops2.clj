@@ -1,5 +1,6 @@
 (ns flojure-tens.ops2
-  (:require [flojure-tens.data-type :as dt]
+  (:require [flojure-tens.ops-gen-config :as ogc]
+            [flojure-tens.data-type :as dt]
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.shape :as sh]
@@ -8,7 +9,7 @@
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
-(def NodeDefP (pr/protodef NodeDef))
+
 
 (defn Op? [o] (= (type o) Op))
 
@@ -65,64 +66,6 @@
 
 
 
-
-
-
-
-
-(defn get-op-kw
-  [op-def]
-  (keyword (clojure.string/lower-case (:name op-def))))
-
-
-(defn convert-attr
-  [value def-type]
-  (case def-type
-    :tensor (:handle (tsr/create-from-value value))
-    :type (dt/->tf-attr-val :int64 value)
-    :shape (dt/->tf-attr-val :int64 value)
-    (dt/->tf-attr-val def-type value)))
-
-(defn convert-attrs*
-  [plan-attrs
-   {attr-name :name attr-type :type default-value :default-value :as attr-def}]
-  (let [dt-kw (keyword attr-type)
-        value ((keyword attr-name) plan-attrs)]
-    (try
-      [attr-name
-       (if-not (nil? value)
-         (convert-attr value dt-kw)
-         (-> default-value vals first))
-       dt-kw]
-      (catch Throwable e
-        (throw (Exception. (format "Could not convert an attribute %s %s %s \n\n %s"
-                                   attr-name
-                                   attr-type
-                                   value
-                                   attr-def)
-                           e))))))
-
-(defn convert-attrs
-  [plan-attrs def-attr]
-  (mapv (partial convert-attrs* plan-attrs)
-        def-attr))
-
-
-(defn fetch-override
-  [op-def kw]
-  (some-> op-def :name ((deref overrides)) kw))
-
-;; necessary?
-(defn call-override
-  [op-def kw args]
-  (when-let [f (fetch-override op-def kw)]
-    (apply f args)))
-
-(defn fetch-pre-build-op-fn
-  [op-def]
-  (or (fetch-override op-def :hook-pre-build)   
-      `hook-pre-build-op-default))
-
 (defn dyn-defn
   [name-sym bodies]
   (eval `(def ~name-sym
@@ -134,12 +77,7 @@
            ~body)))
 
 
-(defn get-op-fn-name-sym [op-def]
-  (let [s1 (or (fetch-override op-def :fn-name)
-               (symbol (clojure.string/lower-case (:name op-def))))]
-    (if (ns-resolve 'clojure.core s1)
-      (symbol (str s1 "-tf"))
-      s1)))
+
 
 #_(defn get-op-fn-body*
   [fn-name-sym op-def]
@@ -154,15 +92,13 @@
                 `(~fn-name-sym ~@input-syms
                   {})))))
 
-(defn get-op-fn-body [fn-name-sym op-def]
-  (or (fetch-override op-def :plan-fn-bodies)
-      (get-op-fn-body* fn-name-sym op-def)))
+
 
 (defn dyn-defn-op [op-def]
-  (let [fn-name-sym (get-op-fn-name-sym op-def)]
+  (let [fn-name-sym (ogc/get-op-fn-name-sym op-def)]
     (dyn-defn
      fn-name-sym
-     (get-op-fn-body fn-name-sym op-def))))
+     (ogc/get-op-fn-body fn-name-sym op-def))))
 
 (defn- set-attr
   [builder-handle k v ty]
@@ -222,16 +158,16 @@
   [op-def]
   (list '[g plan hsh]
         `(build-op
-          (~(fetch-pre-build-op-fn op-def)
+          (~(ogc/fetch-pre-build-op-fn op-def)
            {:g ~'g :plan ~'plan :hsh ~'hsh
             :op-def (~'proc-op-list-by-name ~(:name op-def))}))))
 
 (defn dyn-defmethod-op-build
   [op-def]
   (try
-    (let [op-kw (get-op-kw op-def)]
+    (let [{:keys [kw]} op-def]
       (dyn-defmethod 'build
-                     op-kw
+                     kw
                      (get-op-build-fn-body op-def)))
     (catch Exception e
       (println "vvvvvvvvvvvvvvvvvvvvvv")
@@ -253,34 +189,6 @@
 
 #_(clojure.pprint/pprint (op-list-by-name "Assign"))
 
-
-
-
-
-(defn node-def-attr->
-  [attr-value]
-  (let [[ty v] (first attr-value)]
-    (case ty
-      :type nil ;;TODO
-      :b  (boolean v))))
-
-(defn node-def-attrs->
-  [attr-vec]
-  (into {}
-        (keep (fn [{k :key v :value}]
-                [(keyword k)
-                 (node-def-attr-> v)])
-              attr-vec)))
-
-(defn handle->plan [op-handle]
-  (let [nd (pr/protobuf-load NodeDefP
-                             (tfnative.Operation/toNodeDef op-handle))]
-    {:id (:name nd)
-              :op (get-op-kw nd)
-              :inputs (mapv keyword
-                            (:input nd))
-     :attrs (node-def-attrs-> (:attr nd))}))
-
 (defn create-from-handle
   [op-handle ^GraphRef graph-ref]
   (let [{:keys [id op inputs attrs] :as plan} (handle->plan op-handle)]
@@ -288,6 +196,6 @@
 
 (do
   (doseq [op-def (:op op-list)]
-    (when-not (skip-ops (:name op-def))
+    (when-not (ogc/skip-ops (:name op-def))
       (dyn-def-op-fns op-def)))
   (println "done"))
