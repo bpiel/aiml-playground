@@ -2,7 +2,8 @@
   (:require [flojure-tens.ops-gen :as op-gen]
             [flojure-tens.data-type :as dt]
             [flojure-tens.shape :as sh]
-            [flatland.protobuf.core :as pr])
+            [flatland.protobuf.core :as pr]
+            flojure-tens.common)
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
@@ -48,7 +49,7 @@
   (let [input-syms (mapv #(-> % :name symbol)
                          (:input-arg op-def))
         args-id (into ['id] input-syms)
-        args-id-attrs (into ['attrs] args-id)]
+        args-id-attrs (into ['id 'attrs] input-syms)]
     (list (list args-id-attrs
                 {:op (op-gen/get-op-kw op-def)
                  :inputs input-syms
@@ -88,12 +89,12 @@
  "Const"
  {:fn-name 'c
   :plan-fn-bodies (constantly
-                   '[([value] {:op :const
+                   '[([value] {:op :Const
                                :attrs {:value value}})
                      ([id value] {:op :const
                                :id id
                                :attrs {:value value}})
-                     ([value data-type] {:op :const
+                     ([id value data-type] {:op :const
                                          :attrs {:value value
                                                  :dtype data-type}})])
   :hook-pre-build `hook-pre-build-op-override-const
@@ -113,7 +114,7 @@
  "VariableV2"
  {:fn-name 'v
   :plan-fn-bodies (constantly
-                   '[([id value] {:op :variablev2
+                   '[([id value] {:op :VariableV2
                                   :id id
                                   :assignment value})])
   :hook-pre-build  `hook-pre-build-op-override-variable-v2})
@@ -136,14 +137,14 @@
                                         vari)]
                         (when (-> vari-id keyword? not)
                           (throw (Exception. (str "Invalid assignment target: " vari))))
-                        {:op :assign :vari vari-id :inputs [value]}))])
+                        {:op :Assign :vari vari-id :inputs [value]}))])
   :hook-pre-build  `hook-pre-build-op-override-assign})
 
 
 (register-op-gen-cfg!
  "Transpose"
  {:plan-fn-bodies (constantly
-                   '[([input] {:op :transpose
+                   '[([input] {:op :Transpose
                                :inputs [input [(int 1) (int 0)]]
                                :attrs {}})])})
 
@@ -181,15 +182,7 @@
   [node-def]
   (call-config node-def :node-def->plan [node-def]))
 
-(defn plan->expr
-  [plan ops-ns-str]
-  (let [op-def (op-list-by-kw (:op plan))
-        fn-name (name (get-op-fn-name-sym op-def))]
-    (call-config op-def
-                 :plan->expr
-                 [plan
-                  (symbol ops-ns-str fn-name)
-                  op-def])))
+
 
 (defn plans->exprs
   [plans ops-ns-str]
@@ -234,6 +227,15 @@
                    (into {})))
 
 
+(defn plan->expr
+  [plan ops-ns-str]
+  (let [op-def (op-list-by-kw (:op plan))
+        fn-name (name (get-op-fn-name-sym op-def))]
+    (call-config op-def
+                 :plan->expr
+                 [plan
+                  (symbol ops-ns-str fn-name)
+                  op-def])))
 
 (register-op-gen-cfg!
  :default

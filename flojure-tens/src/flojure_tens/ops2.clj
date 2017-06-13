@@ -4,7 +4,7 @@
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.shape :as sh]
-            
+            [flatland.protobuf.core :as pr]
             [flojure-tens.common])
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
@@ -122,7 +122,7 @@
         `(build-op
           (~(ogc/fetch-pre-build-op-fn op-def)
            {:g ~'g :plan ~'plan :hsh ~'hsh
-            :op-def (~'proc-op-list-by-name ~(:name op-def))}))))
+            :op-def (~'ogc/proc-op-list-by-name ~(:name op-def))}))))
 
 (defn dyn-defmethod-op-build
   [op-def]
@@ -166,7 +166,11 @@
    (handle->plan op-handle)))
 
 (do
-  (doseq [op-def (:op op-list)]
-    (when-not (ogc/skip-ops (:name op-def))
-      (dyn-def-op-fns op-def)))
+  (doseq [op-def (:op ogc/op-list)]
+    (try
+      (when-not (ogc/skip-ops (:name op-def))
+        (dyn-def-op-fns op-def))
+      (catch Exception e
+        (clojure.pprint/pprint op-def)
+        (throw e))))
   (println "done"))
