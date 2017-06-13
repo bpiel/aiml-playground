@@ -50,24 +50,27 @@
 ;      :tensor []
       :b  (boolean v))))
 
-#_ ((clojure.pprint/pprint t-map)
+ ((clojure.pprint/pprint t-map)
     (def gbs (-> t-map :tensor-content))
     (vec (.toByteArray gbs))
 
     (defn apply-shape-to-vec
       [s v]
       (let [dim (last s)]
-        (if (nil? dim)
-          v
-          (recur (drop-last s)
-                 (vec
-                  (take dim v))))))
+        (case (count s)
+          0 v
+          1 (vec (take dim v))
+          (vec (take dim
+                     (mapv (partial apply-shape-to-vec (drop-last s))
+                           (partition (quot (count v) dim) v)))))))
 
     (def x [1 2 3 4 5 6 7 8 9])
 
     (vec (take 3 (mapv vec (partition 2 x))))
 
-    (apply-shape-to-vec [2 3] [1 2 3 4 5 6 7 8 9]))
+  (apply-shape-to-vec [2 3] [1 2 3 4 5 6 7 8 9])
+
+  (comment))
 
 (defn google-byte-string->int-array
   [gbs]
