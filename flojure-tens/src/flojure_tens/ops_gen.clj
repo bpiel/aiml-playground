@@ -24,7 +24,7 @@
       [attr-name
        (if-not (nil? value)
          (convert-attr value dt-kw)
-         (-> default-value vals first))
+         (-> default-value vals first)) ;; TODO either pre-convert or don't use
        dt-kw]
       (catch Throwable e
         (throw (Exception. (format "Could not convert an attribute %s %s %s \n\n %s"
