@@ -176,3 +176,9 @@
   (-> mg :graph-def :node))
 
 (def n2 (metagraph->node-defs mg2))
+
+(def add1 (:add (eval (ops/node-defs->src n2))))
+
+(clojure.pprint/pprint add1)
+
+(def g2 (bdr/graph-plan->graph add1))

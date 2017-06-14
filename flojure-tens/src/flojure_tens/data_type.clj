@@ -5,6 +5,9 @@
   [t]
   #(= (type %) t))
 
+(def is-goole-pb-byte-string?
+  (is-type?-fn (type com.google.protobuf.ByteString/EMPTY)))
+
 (defn bytes->ints
   [ba]
   (let [ib (-> (java.nio.ByteBuffer/wrap ba)
@@ -36,6 +39,19 @@
     (if-let [f (some-> dtype protobuf->dt :pb-tensor-key)]
       (f t)
       (throw (Exception. (str "tensor-attr->vec couldn't handle " t))))))
+
+(declare protobuf->dt)
+(declare pb-attr-key->dt)
+
+(defn pb-list-attr->vec
+  [l]
+  (let [[ty v] (first l)
+        dt (some-> ty pb-attr-key->dt) 
+        f (or (:pb-attr-fn dt)
+              (:scalar-fn dt))]
+    (if f
+      (mapv f v)
+      (throw (Exception. (str "pb-list-attr->vec couldn't handle " l))))))
 
 ;; this is crazy
 (def data-types
@@ -108,10 +124,10 @@
     :array-fn boolean-array
     :pb-attr-key :b}
    {:kw :type
-    :pb-attr-fn (constantly nil) ;; TODO
+    :pb-attr-fn #(-> % protobuf->dt :kw)
     :pb-attr-key :type}
    {:kw :list
-    :pb-attr-fn (constantly nil) ;; TODO
+    :pb-attr-fn pb-list-attr->vec
     :pb-attr-key :list}
    {:kw :tensor
     :pb-attr-fn tensor-attr->vec
@@ -142,11 +158,15 @@
 
 (defn is-of-data-type?
   [o dt]
-  ((:scalar? dt) o))
+  (if-let [f (:scalar? dt)]
+    (f o)
+    false))
 
 (defn is-array-of-data-type?
   [o dt]
-  ((:array? dt) o))
+  (if-let [f (:array? dt)]
+    (f o)
+    false))
 
 (defn data-type-of
   [o]

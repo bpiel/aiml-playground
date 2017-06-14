@@ -40,21 +40,18 @@
         def-attr))
 
 
+
 (defn node-def-attr->
   [attr-value]
   (let [[ty v] (first attr-value)]
-    (if-let [f (or (some-> ty dt/pb-attr-key->dt :pb-attr-fn)
-                   (some-> ty dt/pb-attr-key->dt :scalar-fn))]
-      (f v)
-      (throw (Exception. (str "node-def-attr-> can't handle " attr-value)))
-#_      (case ty
-        :type nil ;; TODO
-        :list [] ;; TODO
-        :tensor (tensor-attr->vec v)
-        :b  (boolean v)
-        :i (int v)
-        :s (String. (.toByteArray v))))))
-
+    (if (dt/is-goole-pb-byte-string? v)
+      (if-let [f (some-> ty dt/pb-attr-key->dt :from-bytes)]
+        (f (.toByteArray v))
+        (throw (Exception. (str "node-def-attr-> can't handle " attr-value))))
+      (if-let [f (or (some-> ty dt/pb-attr-key->dt :pb-attr-fn)
+                     (some-> ty dt/pb-attr-key->dt :scalar-fn))]
+        (f v)
+        (throw (Exception. (str "node-def-attr-> can't handle " attr-value)))))))
 
 
 #_(defn tensor-attr->vec
@@ -70,7 +67,7 @@
 (defn node-def-attrs->
   [attr-vec]
   (into {}
-        (keep (fn [{k :key v :value}]
+        (map (fn [{k :key v :value}]
                 [(keyword k)
                  (node-def-attr-> v)])
               attr-vec)))
@@ -114,49 +111,3 @@
      :ctrl-inputs (vec (keep get-node-def-ctrl-input-id
                              (:input node-def)))
      :attrs attrs}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

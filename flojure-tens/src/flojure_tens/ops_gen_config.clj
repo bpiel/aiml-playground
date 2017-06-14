@@ -140,14 +140,30 @@
         (assoc-in [:plan :attrs] {:dtype dtype :shape shape})
         hook-pre-build-op-default)))
 
+(defn plan->expr-variable-v2
+  [plan fn-name _ _]
+  (let [{:keys [id attrs]} plan]
+    `(~fn-name
+      ~id
+      ~(dissoc attrs :value)
+      ~(:value attrs))))
+
+(defn plan-fn-bodies-assign
+  [fn-name-sym _]
+  ['([id value] {:op :VariableV2
+                 :id id
+                 :assignment value})
+   '([id attrs value] {:op :VariableV2
+                       :id id
+                       :assignment value
+                       :attrs attrs})])
+
 (register-op-gen-cfg!
  "VariableV2"
  {:fn-name 'v
-  :plan-fn-bodies (constantly
-                   '[([id value] {:op :VariableV2
-                                  :id id
-                                  :assignment value})])
-  :hook-pre-build  `hook-pre-build-op-override-variable-v2})
+  :plan-fn-bodies plan-fn-bodies-assign
+  :hook-pre-build  `hook-pre-build-op-override-variable-v2
+  :plan->expr plan->expr-variable-v2})
 
 (defn hook-pre-build-op-override-assign
   [args]
@@ -215,13 +231,6 @@
 (defn op-def-processor [op-def]
   (call-config op-def :op-def-processor [op-def]))
 
-(defn node-def->plan
-  [node-def]
-  (let [op-def (-> node-def :op proc-op-list-by-name)]
-    (call-config node-def :node-def->plan [node-def op-def])))
-
-
-
 
 (def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
 
@@ -259,6 +268,14 @@
                    (filter #(= (:name %) "Assign"))
                    first
                    (into {})))
+
+
+(defn node-def->plan
+  [node-def]
+  (let [op-def (-> node-def :op proc-op-list-by-name)]
+    (call-config node-def :node-def->plan [node-def op-def])))
+
+
 
 (defn plan->expr
   [plan ops-ns-str output-fn-sym]

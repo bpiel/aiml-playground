@@ -223,8 +223,8 @@
 
 #_ (clojure.pprint/pprint  (eval (node-defs->src flojure-tens.scratch2/n2)))
 
-(clojure.pprint/pprint
- (node-defs->src (filter #(-> % :op (= "ConcatV2"))
+#_(clojure.pprint/pprint
+ (node-defs->src (filter #(-> % :op (= "Const"))
                          flojure-tens.scratch2/n2)))
 
 
@@ -238,51 +238,3 @@
 
 
 #_(handle->plan (first flojure-tens.scratch2/op-handles))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
