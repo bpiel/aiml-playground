@@ -43,28 +43,21 @@
 (defn node-def-attr->
   [attr-value]
   (let [[ty v] (first attr-value)]
-    (def t-map v)
-    (case ty
-      :type nil ;; TODO
-      :list [] ;; TODO
-      :tensor (tensor-attr->vec v)
-      :b  (boolean v))))
+    (if-let [f (or (some-> ty dt/pb-attr-key->dt :pb-attr-fn)
+                   (some-> ty dt/pb-attr-key->dt :scalar-fn))]
+      (f v)
+      (throw (Exception. (str "node-def-attr-> can't handle " attr-value)))
+#_      (case ty
+        :type nil ;; TODO
+        :list [] ;; TODO
+        :tensor (tensor-attr->vec v)
+        :b  (boolean v)
+        :i (int v)
+        :s (String. (.toByteArray v))))))
 
-    (defn apply-shape-to-vec
-      [s v]
-      (let [dim (first s)]
-        (case (count s)
-          0 v
-          1 (vec (take dim v))
-          (vec (take dim
-                     (mapv (partial apply-shape-to-vec (drop 1 s))
-                           (partition (quot (count v) dim) v)))))))
 
-(defn tensor-attr-shape->vec
-  [tas]
-  (mapv :size (:dim tas)))
 
-(defn tensor-attr->vec
+#_(defn tensor-attr->vec
     [{:keys [dtype tensor-shape tensor-content]}]
     (if (= dtype :dt-int32)
       (apply-shape-to-vec
@@ -72,14 +65,7 @@
        (google-byte-string->int-array tensor-content))
       (throw (Exception. (str "tensor-attr->vec NOT IMPLEMENTED for " dtype)))))
 
-(defn google-byte-string->int-array
-  [gbs]
-  (let [ib (-> (java.nio.ByteBuffer/wrap (.toByteArray gbs))
-               (.order java.nio.ByteOrder/LITTLE_ENDIAN)
-               (.asIntBuffer))
-        ia (int-array (.remaining ib))]
-    (.get ib ia)
-    (vec ia)))
+
 
 (defn node-def-attrs->
   [attr-vec]
@@ -89,10 +75,88 @@
                  (node-def-attr-> v)])
               attr-vec)))
 
-(defn node-def->plan-default [node-def]
-  (def nd1 node-def)
-  {:id (-> node-def :name keyword)
-   :op (-> node-def :op keyword)
-   :inputs (mapv keyword
-                 (:input node-def))
-   :attrs (node-def-attrs-> (:attr node-def))})
+(defn node-def-name->plan-id [s]
+  (-> s (clojure.string/replace #"/" ">") keyword))
+
+(defn get-node-def-input-id [ndi]
+  (when-not (= \^ (first ndi))
+    (node-def-name->plan-id ndi)))
+
+(defn get-node-def-ctrl-input-id [ndi]
+  (when (= \^ (first ndi))
+    (node-def-name->plan-id (apply str (rest ndi)))))
+
+
+
+(defn group-inputs
+  [inputs op-def attrs]
+  (loop [grouped []
+         [head & tail] (:input-arg op-def)
+         remaining inputs]
+    (if (not-empty remaining)
+      (if-let [group-size (some-> head :number-attr keyword attrs)]
+        (recur (conj grouped (vec (take group-size remaining)))
+               tail
+               (drop group-size remaining))
+        (recur (conj grouped (first remaining))
+               tail
+               (rest remaining)))
+      grouped)))
+
+
+(defn node-def->plan-default [node-def op-def]
+  (let [attrs (node-def-attrs-> (:attr node-def))]
+    {:id (-> node-def :name node-def-name->plan-id)
+     :op (-> node-def :op keyword)
+     :inputs (group-inputs (vec (keep get-node-def-input-id
+                                      (:input node-def)))
+                           op-def attrs)
+     :ctrl-inputs (vec (keep get-node-def-ctrl-input-id
+                             (:input node-def)))
+     :attrs attrs}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

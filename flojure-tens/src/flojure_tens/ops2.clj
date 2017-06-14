@@ -90,13 +90,14 @@
                                         0)) ;; hard coded to 0, because we should really be dealing with `output`s here
   builder-handle)
 
+(def id-atom (atom 0))
 
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
-  (let [{:keys [id op inputs attrs assignment]} plan
+  (let [{:keys [id op inputs ctrl-inputs attrs assignment]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
-        id' (or id (keyword (name (gensym (name op)))))
+        id' (or id (keyword (str (name op) (swap! id-atom inc))))
         input-handles (mapv :handle inputs)
         handle (-> g
                    :handle
@@ -107,6 +108,7 @@
         oper (Op. id'
                   op
                   (mapv :id inputs)
+                  (mapv :id ctrl-inputs)
                   hsh
                   attrs'
                   handle
@@ -157,13 +159,19 @@
 
 (defn create-from-handle
   [op-handle ^GraphRef graph-ref]
-  (let [{:keys [id op inputs attrs] :as plan} (handle->plan op-handle)]
-    (Op. id op inputs (compute-hash plan) attrs op-handle graph-ref)))
+  (let [{:keys [id op inputs ctrl-inputs attrs] :as plan} (handle->plan op-handle)]
+    (Op. id op inputs ctrl-inputs (compute-hash plan) attrs op-handle graph-ref)))
 
 (defn handle->expr
   [op-handle]
   (ogc/plan->expr (handle->plan op-handle)
                   "flojure-tens.ops2"))
+
+(defn handle->id-expr
+  [op-handle]
+  (let [p (handle->plan op-handle)]
+    [(:id p)
+     (ogc/plan->expr p "flojure-tens.ops2")]))
 
 (do
   (doseq [op-def (:op ogc/op-list)]
@@ -175,8 +183,106 @@
         (throw e))))
   (println "done"))
 
+(defn op-handles->src
+  [handles]
+  (let [id-expr-pairs (map handle->id-expr handles)
+        assigns (vec (mapcat (fn [[k v]]
+                               [(-> k name symbol) v])
+                             id-expr-pairs))
+        body (apply hash-map (mapcat (fn [[k v]]
+                                       [k (-> k name symbol)])
+                                     id-expr-pairs))]
+    `(let ~assigns ~body)))
+
+(defn node-def->id-expr
+  [node-def]
+  (let [p (ogc/node-def->plan node-def)]
+    [(:id p)
+     (ogc/plan->expr p "flojure-tens.ops2" `assoc-plan-output)]))
+
+(defn node-defs->src
+  [node-defs]
+  (let [id-expr-pairs (map node-def->id-expr node-defs)
+        assigns (vec (mapcat (fn [[k v]]
+                               [(-> k name symbol) v])
+                             id-expr-pairs))
+        body (apply hash-map (mapcat (fn [[k v]]
+                                       [k (-> k name symbol)])
+                                     id-expr-pairs))]
+    `(let ~assigns ~body)))
+
+(defn assoc-plan-output
+  [plan & [idx]]
+  (assoc plan :output-idx (or idx 0)))
+
+#_(clojure.pprint/pprint  (eval (op-handles->src flojure-tens.scratch2/op-handles)))
+
+#_(clojure.pprint/pprint (op-handles->src flojure-tens.scratch2/op-handles))
+
+#_(clojure.pprint/pprint (node-defs->src flojure-tens.scratch2/n2))
+
+#_ (clojure.pprint/pprint  (eval (node-defs->src flojure-tens.scratch2/n2)))
+
+(clojure.pprint/pprint
+ (node-defs->src (filter #(-> % :op (= "ConcatV2"))
+                         flojure-tens.scratch2/n2)))
+
+
+#_(clojure.pprint/pprint (mapv #(pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef %))
+                             flojure-tens.scratch2/op-handles))
+
 #_(handle->expr (first flojure-tens.scratch2/op-handles))
 
-#_ (clojure.pprint/pprint  (map handle->expr flojure-tens.scratch2/op-handles))
+#_ (clojure.pprint/pprint  (map handle->plan flojure-tens.scratch2/op-handles))
+
+
 
 #_(handle->plan (first flojure-tens.scratch2/op-handles))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

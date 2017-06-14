@@ -158,6 +158,7 @@
 (def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
 (def MetaGraphP (pr/protodef MetaGraphDef))
+
 (def NodeDefP (pr/protodef NodeDef))
 
 (def GraphDefP (pr/protodef GraphDef))
@@ -170,3 +171,8 @@
 
 (-> mg2 :graph-def clojure.pprint/pprint )
 
+(defn metagraph->node-defs
+  [mg]
+  (-> mg :graph-def :node))
+
+(def n2 (metagraph->node-defs mg2))

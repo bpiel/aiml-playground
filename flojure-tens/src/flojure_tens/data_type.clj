@@ -5,7 +5,39 @@
   [t]
   #(= (type %) t))
 
-;; TODO double check
+(defn bytes->ints
+  [ba]
+  (let [ib (-> (java.nio.ByteBuffer/wrap ba)
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN)
+               (.asIntBuffer))
+        ia (int-array (.remaining ib))]
+    (.get ib ia)
+    (vec ia)))
+
+(defn bytes->floats
+  [ba]
+  (let [ib (-> (java.nio.ByteBuffer/wrap ba)
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN)
+               (.asFloatBuffer))
+        ia (float-array (.remaining ib))]
+    (.get ib ia)
+    (vec ia)))
+
+(declare protobuf->dt)
+
+(defn tensor-attr->vec
+  [{:keys [dtype tensor-shape tensor-content] :as t}]
+  (if tensor-content
+    (if-let [f (some-> dtype protobuf->dt :from-bytes)]
+      (sh/apply-shape-to-vec
+       (sh/tensor-attr-shape->vec tensor-shape)
+       (f (.toByteArray tensor-content)))
+      (throw (Exception. (str "tensor-attr->vec couldn't handle " t))))
+    (if-let [f (some-> dtype protobuf->dt :pb-tensor-key)]
+      (f t)
+      (throw (Exception. (str "tensor-attr->vec couldn't handle " t))))))
+
+;; this is crazy
 (def data-types
   [{:kw :float 
     :native 1 
@@ -15,7 +47,10 @@
     :scalar java.lang.Float 
     :array (type (float-array 0)) 
     :scalar-fn float 
-    :array-fn float-array}
+    :array-fn float-array
+    :protobuf :dt-float
+    :from-bytes bytes->floats
+    :pb-tensor-key :float-val}
    {:kw :double 
     :native 2 
     :byte-size 8 
@@ -32,7 +67,11 @@
     :array? (is-type?-fn (type (int-array 0)))
     :scalar java.lang.Integer
     :scalar-fn int
-    :array-fn int-array}
+    :array-fn int-array
+    :protobuf :dt-int32
+    :from-bytes bytes->ints
+    :pb-attr-key :i
+    :pb-tensor-key :int-val}
    {:kw :uint8 
     :native 4  
     :byte-size 4 
@@ -48,7 +87,9 @@
     :array? (constantly false)
     :scalar java.lang.String
     :scalar-fn str ;; maybe wrong?
-    :array-fn nil}
+    :array-fn nil
+    :pb-attr-key :s
+    :from-bytes #(String. %)}
    {:kw :int64 
     :native 9  
     :byte-size 8 
@@ -64,7 +105,20 @@
     :array? (is-type?-fn (type (boolean-array 0)))
     :scalar java.lang.Boolean
     :scalar-fn boolean
-    :array-fn boolean-array}])
+    :array-fn boolean-array
+    :pb-attr-key :b}
+   {:kw :type
+    :pb-attr-fn (constantly nil) ;; TODO
+    :pb-attr-key :type}
+   {:kw :list
+    :pb-attr-fn (constantly nil) ;; TODO
+    :pb-attr-key :list}
+   {:kw :tensor
+    :pb-attr-fn tensor-attr->vec
+    :pb-attr-key :tensor}
+   {:kw :shape
+    :pb-attr-fn  sh/tensor-attr-shape->vec
+    :pb-attr-key :shape}])
 
 (def kw->dt
   (into {}
@@ -75,6 +129,16 @@
   (into {}
         (for [dt data-types]
           [(:native dt) dt])))
+
+(def protobuf->dt
+  (into {}
+        (for [dt data-types]
+          [(:protobuf dt) dt])))
+
+(def pb-attr-key->dt
+  (into {}
+        (for [dt data-types]
+          [(:pb-attr-key dt) dt])))
 
 (defn is-of-data-type?
   [o dt]

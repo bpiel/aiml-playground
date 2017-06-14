@@ -4,4 +4,4 @@
 
 (defrecord GraphRef [^clojure.lang.Atom closed ^Object handle-lock])
 
-(defrecord Op [id op inputs hash attrs handle ^GraphRef graphref])
+(defrecord Op [id op inputs ctrl-inputs hash attrs handle ^GraphRef graphref])

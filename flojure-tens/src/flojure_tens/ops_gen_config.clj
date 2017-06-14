@@ -53,18 +53,48 @@
     (list (list args-id-attrs
                 {:op (op-gen/get-op-kw op-def)
                  :inputs input-syms
+                 :ctrl-inputs (:ctrl-inputs 'attrs)
                  :id 'id
-                 :attrs 'attrs})
+                 :attrs '(dissoc attrs :ctrl-inputs)})
           (list args-id
                 `(~fn-name-sym 'id ~@input-syms))
           (list input-syms
                 `(~fn-name-sym nil {} ~@input-syms)))))
 
+#_(defn node-def-input->plan-input [s]
+  (if (#{\:} s)
+    (let [[id idx] (clojure.string/split s #":")]
+      [(node-def-name->plan-id id) idx])
+    (node-def-name->plan-id s)))
+
+(defn plan-input->expr-input
+  [output-fn-sym input-kw]
+  (let [iname (name input-kw)]
+    (if (some #{\:} iname)
+      (let [[id idx] (clojure.string/split iname
+                                           #":")]
+        `(~output-fn-sym ~(symbol id) ~(Integer/parseInt idx)))
+      (symbol iname))))
+
+(defn plan-input->expr-input-walker
+  [output-fn-sym inputs]
+  (clojure.walk/prewalk
+   (fn [v]
+     (if (keyword? v)
+       (plan-input->expr-input output-fn-sym v)
+       v))
+   inputs))
+
 (defn plan->expr-default
-  [plan fn-name _]
-  (let [{:keys [id attrs inputs]} plan]
+  [plan fn-name output-fn _]
+  (let [{:keys [id attrs inputs ctrl-inputs]} plan]
     `(~fn-name
-      ~id ~attrs ~@(map (comp symbol name) inputs))))
+      ~id
+      ~(if (not-empty ctrl-inputs)
+         (assoc attrs :ctrl-inputs ctrl-inputs)
+         attrs)
+      ~@(plan-input->expr-input-walker output-fn
+                                       inputs))))
 
 
 
@@ -81,7 +111,7 @@
         hook-pre-build-op-default)))
 
 (defn plan->expr-const
-  [plan fn-name _]
+  [plan fn-name _ _]
   (let [{:keys [id attrs]} plan]
     `(~fn-name ~id ~(:value attrs))))
 
@@ -129,15 +159,22 @@
         (dissoc :vari)
         hook-pre-build-op-default)))
 
+(defn plan-fn-bodies-assign
+  [fn-name-sym _]
+  ['([id attrs vari value]
+     (let [vari-id (or (:id vari)
+                       vari)]
+       (when (-> vari-id keyword? not)
+         (throw (Exception. (str "Invalid assignment target: " vari))))
+       (cond-> {:op :Assign :vari vari-id :inputs [value]}
+         (not-empty attrs) (assoc :attrs attrs)
+         id (assoc :id id))))
+   `([~'vari ~'value]
+     (~fn-name-sym nil nil ~'vari ~'value))])
+
 (register-op-gen-cfg!
  "Assign"
- {:plan-fn-bodies (constantly
-                   '[([vari value]
-                      (let [vari-id (or (:id vari)
-                                        vari)]
-                        (when (-> vari-id keyword? not)
-                          (throw (Exception. (str "Invalid assignment target: " vari))))
-                        {:op :Assign :vari vari-id :inputs [value]}))])
+ {:plan-fn-bodies plan-fn-bodies-assign
   :hook-pre-build  `hook-pre-build-op-override-assign})
 
 
@@ -180,7 +217,8 @@
 
 (defn node-def->plan
   [node-def]
-  (call-config node-def :node-def->plan [node-def]))
+  (let [op-def (-> node-def :op proc-op-list-by-name)]
+    (call-config node-def :node-def->plan [node-def op-def])))
 
 
 
@@ -203,6 +241,7 @@
           [(:kw op-def) op-def])))
 
 
+
 (def const-op (->> op-list
                    :op
                    (filter #(= (:name %) "Const"))
@@ -221,15 +260,15 @@
                    first
                    (into {})))
 
-
 (defn plan->expr
-  [plan ops-ns-str]
+  [plan ops-ns-str output-fn-sym]
   (let [op-def (op-list-by-kw (:op plan))
         fn-name (name (get-op-fn-name-sym op-def))]
     (call-config op-def
                  :plan->expr
                  [plan
                   (symbol ops-ns-str fn-name)
+                  output-fn-sym
                   op-def])))
 
 (defn plans->exprs

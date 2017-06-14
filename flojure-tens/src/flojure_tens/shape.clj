@@ -42,3 +42,17 @@
              (first v))
       agg)))
 
+
+(defn apply-shape-to-vec
+  [s v]
+  (let [dim (first s)]
+    (case (count s)
+      0 v
+      1 (vec (take dim v))
+      (vec (take dim
+                 (mapv (partial apply-shape-to-vec (drop 1 s))
+                       (partition (quot (count v) dim) v)))))))
+
+(defn tensor-attr-shape->vec
+  [tas]
+  (mapv :size (:dim tas)))
