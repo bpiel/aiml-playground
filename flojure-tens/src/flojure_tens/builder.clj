@@ -59,3 +59,66 @@
        mk-assignments-plan
        (apply-plan-to-graph! g)))
 
+(defn assoc-meta-handle-to-plan
+  [p]
+  (assoc p :handle (-> p meta ::ops/handle)))
+
+(defn discover-new-ops-from-id*
+  [^Graph g discovered id]
+  (if (contains? discovered id)
+    [discovered []]
+    (let [plan (assoc-meta-handle-to-plan (ops/id->plan g id))]
+      [(assoc discovered
+              (:id plan)
+              plan)
+       (flatten (into (:inputs plan)
+                      (:ctrl-inputs plan)))])))
+
+(defn discover-new-ops-from-ids
+  [^Graph g ids]
+  (loop [discovered (into {}
+                          (for [[k _] (-> g :state deref :nodes)]
+                            [k nil]))
+         [id & tail] ids]
+    (if id
+      (let [[d ids'] (discover-new-ops-from-id* g discovered id)]
+        (recur d (into ids' tail)))
+      (->> discovered
+           vals
+           (remove nil?)))))
+
+(defn discover-new-ops-from-handles
+  [^Graph g op-handles]
+  (discover-new-ops-from-ids g
+                             (map ops/handle->id op-handles)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

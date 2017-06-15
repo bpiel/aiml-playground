@@ -162,7 +162,22 @@
 
 (defn handle->plan
   [op-handle]
-  (ogc/node-def->plan  (pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef op-handle))))
+  (with-meta
+    (ogc/node-def->plan  (pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef op-handle)))
+    {::handle op-handle}))
+
+
+(defn id->plan
+  [^Graph g id]
+  (handle->plan (tfnative.Graph/operation (:handle g) (name id))))
+
+(defn handle->id
+  [op-handle]
+  (->> op-handle
+       (tfnative.Operation/toNodeDef)
+       (pr/protobuf-load NodeDefP)
+       :name
+       keyword))
 
 (defn create-from-handle
   [op-handle ^GraphRef graph-ref]

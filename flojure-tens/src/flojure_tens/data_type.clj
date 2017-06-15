@@ -26,6 +26,15 @@
     (.get ib ia)
     (vec ia)))
 
+(defn bytes->doubles
+  [ba]
+  (let [ib (-> (java.nio.ByteBuffer/wrap ba)
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN)
+               (.asDoubleBuffer))
+        ia (double-array (.remaining ib))]
+    (.get ib ia)
+    (vec ia)))
+
 (declare protobuf->dt)
 
 (defn tensor-attr->vec
@@ -45,13 +54,15 @@
 
 (defn pb-list-attr->vec
   [l]
-  (let [[ty v] (first l)
-        dt (some-> ty pb-attr-key->dt) 
-        f (or (:pb-attr-fn dt)
-              (:scalar-fn dt))]
-    (if f
-      (mapv f v)
-      (throw (Exception. (str "pb-list-attr->vec couldn't handle " l))))))
+  (if (= l {})
+    []
+    (let [[ty v] (first l)
+          dt (some-> ty pb-attr-key->dt) 
+          f (or (:pb-attr-fn dt)
+                (:scalar-fn dt))]
+      (if f
+        (mapv f v)
+        (throw (Exception. (str "pb-list-attr->vec couldn't handle " l)))))))
 
 ;; this is crazy
 (def data-types
@@ -75,7 +86,9 @@
     :scalar java.lang.Double 
     :array (type (double-array 0)) 
     :scalar-fn double 
-    :array-fn double-array}
+    :array-fn double-array
+    :protobuf :dt-double
+    :from-bytes bytes->doubles}
    {:kw :int32 
     :native 3 
     :byte-size 4 

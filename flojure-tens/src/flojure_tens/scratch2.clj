@@ -131,12 +131,16 @@
   (clojure.pprint/pprint  [a a' b b' dx dx' y y' (vec d1') (vec d2')])
   (def g1 g)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
-  (->  (sess/run-plan-w-session s [y])
+  #_(->  (sess/run-plan-w-session s [y])
          first
          tsr/get-value-clj))
 
 (vec dd1)
 (vec dd2)
+
+(-> dd1 vec first ops/handle->plan)
+
+(clojure.pprint/pprint  (bdr/discover-new-ops-from-handles g1 [(->> dd1 vec first)]))
 
 
 (clojure.pprint/pprint g1)

@@ -14,7 +14,9 @@ x clj graph to tensorboard
    -- SavedModelBundle
   - write graphdef to file
   - write summary w/ python
-  
+
+- import (gradient) nodes created by c++
+- support nullptr for dx
 
 - gradient descent optimizer -- macros?
   - simpler gdo case?
@@ -24,14 +26,15 @@ x clj graph to tensorboard
   - export graphdef 
   - compare, tweak, iterate
 
-
+- resolve :control-inputs (as with :inputs)
+- "init" NoOp takes init assignments as ctrl inputs
 - :output-idx
 - :subgraph
+- id scopes
 - compile time vs run time op gen
-- -id op fns
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 - ref counting instead of hard lock?
-- check for auto-gen overides during compile time
+x check for auto-gen overides during compile time
 - docstrings for auto gen op fns
 
 -----
