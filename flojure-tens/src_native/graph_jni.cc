@@ -105,7 +105,7 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
 
   std::unique_ptr<TF_Output[]> x(new TF_Output[nx]);
   std::unique_ptr<TF_Output[]> y(new TF_Output[ny]);
-  std::unique_ptr<TF_Output[]> dx(new TF_Output[nx]);
+  std::unique_ptr<TF_Output[]> dx(new TF_Output[nx]); // should be ny?
   std::unique_ptr<TF_Output[]> dy(new TF_Output[nx]);
 
   TF_Graph* g = requireHandle(env, handle);  

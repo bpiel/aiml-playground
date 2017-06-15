@@ -110,7 +110,8 @@
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])
       dx (ops/c [[1. 1.] [1. 1.]])
-      y (ops/add (ops/matmul a b) (ops/sin a))
+                                        ;      y (ops/add (ops/matmul a b) (ops/sin a))
+      y (ops/matmul (ops/matmul a b) (ops/sin a))
       g (bdr/graph-plan->graph y)
       _ (bdr/apply-plan-to-graph! g dx)
       s (sess/create g)
@@ -123,17 +124,19 @@
       grads (tfnative.Graph/addGradients (:handle g)
                                          (long-array [y']) (int-array [0])
                                          (long-array [a' b']) (int-array [0 0])
-                                         (long-array [dx']) (int-array [0])
+                                         (long-array [dx' dx']) (int-array [0 0])
                                          d1' d2')]
   (def dd1 d1')
   (def dd2 d2')
   (clojure.pprint/pprint  [a a' b b' dx dx' y y' (vec d1') (vec d2')])
-(def g1 g)
-  #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
-#_(->  (sess/run-plan-w-session s [y])
+  (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(->  (sess/run-plan-w-session s [y])
          first
          tsr/get-value-clj))
 
+(vec dd1)
+(vec dd2)
 
 
 (clojure.pprint/pprint g1)
