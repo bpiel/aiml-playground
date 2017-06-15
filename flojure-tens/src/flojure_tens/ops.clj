@@ -77,6 +77,7 @@
           op (Op. id
                   op-kw
                   (mapv :id input-ops)
+                  []
                   hsh
                   attrs'
                   handle

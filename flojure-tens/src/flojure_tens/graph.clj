@@ -90,6 +90,9 @@
 (defn write-graph-def-to-file [filename ^Graph g]
   (spit-bytes filename (->graph-def-byte-array g)))
 
+(defn add-output-by-handle! [^Graph g handle idx]
+  (throw (Exception. "NOT IMPLEMENTED")))
+
 #_(defn create-from-handle
   [handle]
   (let [g (Graph. handle :.....)]
@@ -108,3 +111,4 @@
 
 
     )
+

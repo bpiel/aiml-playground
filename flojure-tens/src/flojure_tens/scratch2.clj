@@ -131,9 +131,9 @@
   (clojure.pprint/pprint  [a a' b b' dx dx' y y' (vec d1') (vec d2')])
   (def g1 g)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
-  #_(->  (sess/run-plan-w-session s [y])
-         first
-         tsr/get-value-clj))
+  #_(-> (sess/run-plan-w-session s [y])
+        first
+        tsr/get-value-clj))
 
 (vec dd1)
 (vec dd2)
