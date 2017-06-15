@@ -105,14 +105,14 @@ JNIEXPORT void JNICALL Java_tfnative_Graph_addGradients(
 
   std::unique_ptr<TF_Output[]> x(new TF_Output[nx]);
   std::unique_ptr<TF_Output[]> y(new TF_Output[ny]);
-  std::unique_ptr<TF_Output[]> dx(new TF_Output[nx]); // should be ny?
+  std::unique_ptr<TF_Output[]> dx(new TF_Output[ny]);
   std::unique_ptr<TF_Output[]> dy(new TF_Output[nx]);
 
   TF_Graph* g = requireHandle(env, handle);  
 
   resolveOutputs(env, "y outputs", y_op_handles, y_op_indices, y.get(), ny);
   resolveOutputs(env, "x outputs", x_op_handles, x_op_indices, x.get(), nx);
-  resolveOutputs(env, "dx outputs", dx_op_handles, dx_op_indices, dx.get(), nx);
+  resolveOutputs(env, "dx outputs", dx_op_handles, dx_op_indices, dx.get(), ny);
   //resolveOutputs(env, "dy outputs", dy_op_handles, dy_op_indices, dy.get(), nx);
 
   TF_Status* status = TF_NewStatus();
