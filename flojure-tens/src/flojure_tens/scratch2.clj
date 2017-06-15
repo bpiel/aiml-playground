@@ -167,7 +167,9 @@
 
 (tfnative.TensorFlow/version)
 
-(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/metagraph2.pb")))
+#_(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/metagraph2.pb")))
+
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/py2.mgpb")))
 
 (-> mg2 :graph-def clojure.pprint/pprint )
 
@@ -177,8 +179,13 @@
 
 (def n2 (metagraph->node-defs mg2))
 
+(clojure.pprint/pprint n2)
+
 (def add1 (:add (eval (ops/node-defs->src n2))))
 
 (clojure.pprint/pprint add1)
 
 (def g2 (bdr/graph-plan->graph add1))
+
+
+(clojure.pprint/pprint g2)

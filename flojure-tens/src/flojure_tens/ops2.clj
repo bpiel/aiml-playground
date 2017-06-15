@@ -62,6 +62,12 @@
      fn-name-sym
      (ogc/get-op-fn-body fn-name-sym op-def))))
 
+(defn get-attr-bytes
+  [v]
+  (cond (string? v) (.getBytes v)
+        (dt/is-goole-pb-byte-string? v) (.toByteArray v)
+        :else (byte-array v)))
+
 (defn- set-attr
   [builder-handle k v ty]
   (case ty
@@ -72,9 +78,10 @@
     :shape (tfnative.OperationBuilder/setAttrShape builder-handle
                                                    k v (count v))
     :string (tfnative.OperationBuilder/setAttrString builder-handle
-                                                     k (.toByteArray v))
+                                                     k (get-attr-bytes v))
     (tfnative.OperationBuilder/setAttr builder-handle
                                        k v)))
+
 
 (defn- set-attrs
   [builder-handle attrs]

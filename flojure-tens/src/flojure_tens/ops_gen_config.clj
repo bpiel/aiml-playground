@@ -133,11 +133,15 @@
 
 (defn hook-pre-build-op-override-variable-v2
   [args]
-  (let [value (-> args :plan :assignment)
-        dtype (-> value dt/data-type-of-whatever :native)
-        shape (sh/shape-of-seq value)]
+  (let [plan (:plan args)
+        value (:assignment plan)
+        attrs (:attrs plan)
+        dtype (or (some-> attrs :dtype dt/kw->dt :native)
+                  (-> value dt/data-type-of-whatever :native))
+        shape (or (some-> attrs :shape)
+                  (sh/shape-of-seq value))]
     (-> args
-        (assoc-in [:plan :attrs] {:dtype dtype :shape shape})
+        (update-in [:plan :attrs] merge {:dtype dtype :shape shape})
         hook-pre-build-op-default)))
 
 (defn plan->expr-variable-v2

@@ -69,14 +69,13 @@ train_subset = 2
 graph = tf.Graph()
 with graph.as_default():
 
-    a = tf.Variable([[0.2], [0.7]])
-    b = tf.Variable([[0.3 , 0.6]])
-    c = tf.Variable([[0.1 , 0.5]])
-      
-    ba = tf.matmul(b, a) + c;
+    x1 = tf.Variable([[0.2], [0.7]])
+    x2 = tf.Variable([[0.3 , 0.6]])
+          
+    y = tf.matmul(x1, x2) + tf.sin(x1);
   
-    optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(ba)
-  
+    optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(y)
+
 with tf.Session(graph=graph) as session:
 
   tf.global_variables_initializer().run()
