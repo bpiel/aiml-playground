@@ -185,7 +185,12 @@
 
 (clojure.pprint/pprint add1)
 
+(clojure.pprint/pprint (eval (ops/node-defs->src n2)))
+
 (def g2 (bdr/graph-plan->graph add1))
 
+(def g2 (bdr/graph-plan->graph (vals (eval (ops/node-defs->src n2)))))
+
+(clojure.pprint/pprint (vals (eval (ops/node-defs->src n2))))
 
 (clojure.pprint/pprint g2)

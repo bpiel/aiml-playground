@@ -105,6 +105,9 @@
     :scalar-fn str ;; maybe wrong?
     :array-fn nil
     :pb-attr-key :s
+    :pb-attr-fn #(if (is-goole-pb-byte-string? %)
+                   (String. (.toByteArray %))
+                   (str %))
     :from-bytes #(String. %)}
    {:kw :int64 
     :native 9  

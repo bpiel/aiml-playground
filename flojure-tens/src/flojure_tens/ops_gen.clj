@@ -53,7 +53,6 @@
         (f v)
         (throw (Exception. (str "node-def-attr-> can't handle " attr-value)))))))
 
-
 #_(defn tensor-attr->vec
     [{:keys [dtype tensor-shape tensor-content]}]
     (if (= dtype :dt-int32)
