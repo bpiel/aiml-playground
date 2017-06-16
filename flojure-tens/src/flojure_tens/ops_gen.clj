@@ -1,112 +1,79 @@
 (ns flojure-tens.ops-gen
-  (:require [flojure-tens.data-type :as dt]
-            [flojure-tens.shape :as sh]
-            [flojure-tens.tensor :as tsr]))
+  (:require [flojure-tens.op-build :as obld]
+            [flojure-tens.ops-gen-config :as cfg]
+            [flojure-tens.ops-gen-util :as ogu]))
 
-(defn get-op-kw
+
+
+
+(defn fetch-pre-build-op-fn
   [op-def]
-  (keyword (:name op-def)))
+  (cfg/fetch-config op-def :hook-pre-build))
 
-(defn convert-attr
-  [value def-type]
-  (case def-type
-    :tensor (:handle (tsr/create-from-value value))
-    :type (dt/->tf-attr-val :int64 value)
-    :shape (dt/->tf-attr-val :int64 value)
-    (dt/->tf-attr-val def-type value)))
+(defn get-op-build-fn-body
+  [op-def]
+  (let [r (list '[g plan hsh]
+              `(obld/build-op
+                (~(fetch-pre-build-op-fn op-def)
+                 {:g ~'g :plan ~'plan :hsh ~'hsh
+                  :op-def (~'cfg/proc-op-list-by-name ~(:name op-def))})))]
 
-(defn convert-attrs*
-  [plan-attrs
-   {attr-name :name attr-type :type default-value :default-value :as attr-def}]
-  (let [dt-kw (keyword attr-type)
-        value ((keyword attr-name) plan-attrs)]
+    r))
+
+(defn dyn-defmethod-op-build
+  [op-def]
+  (try
+    (let [{:keys [kw]} op-def]
+      (ogu/dyn-defmethod `obld/build
+                     kw
+                     (get-op-build-fn-body op-def)))
+    (catch Exception e
+      (println "vvvvvvvvvvvvvvvvvvvvvv")
+      (clojure.pprint/pprint op-def)
+      (clojure.pprint/pprint e)
+      (println "^^^^^^^^^^^^^^^^^"))))
+
+
+
+(defn get-op-fn-body [fn-name-sym op-def]
+  (cfg/call-config op-def :plan-fn-bodies [fn-name-sym op-def]))
+
+
+
+
+(defn get-op-fn-name-sym [op-def]
+  (let [s1 (or (cfg/fetch-config op-def :fn-name)
+               (ogu/fn-name-default op-def))]
+    (if (ns-resolve 'clojure.core s1)
+      (symbol (str s1 "-tf"))
+      s1)))
+
+(defn dyn-defn-op [op-def]
+  (let [fn-name-sym (get-op-fn-name-sym op-def)]
+    (ogu/dyn-defn
+     fn-name-sym
+     (get-op-fn-body fn-name-sym op-def))))
+
+(defn dyn-def-op-fns [op-def]
+  (let [op (cfg/op-def-processor op-def)]
+    (dyn-defn-op op)
+    (dyn-defmethod-op-build op)))
+
+(defn gen-ops [ns-sym]
+  (doseq [op-def (:op cfg/op-list)]
     (try
-      [attr-name
-       (if-not (nil? value)
-         (convert-attr value dt-kw)
-         (-> default-value vals first)) ;; TODO either pre-convert or don't use
-       dt-kw]
-      (catch Throwable e
-        (throw (Exception. (format "Could not convert an attribute %s %s %s \n\n %s"
-                                   attr-name
-                                   attr-type
-                                   value
-                                   attr-def)
-                           e))))))
+      (when-not (cfg/skip-ops (:name op-def))
+        (dyn-def-op-fns #_ns-sym op-def))
+      (catch Exception e
+        (clojure.pprint/pprint op-def)
+        (throw e)))))
 
-(defn convert-attrs
-  [plan-attrs def-attr]
-  (mapv (partial convert-attrs* plan-attrs)
-        def-attr))
-
-
-
-(defn node-def-attr->
-  [attr-value]
-  (let [[ty v] (first attr-value)]
-    (if (dt/is-goole-pb-byte-string? v)
-      (if-let [f (some-> ty dt/pb-attr-key->dt :from-bytes)]
-        (f (.toByteArray v))
-        (throw (Exception. (str "node-def-attr-> can't handle " attr-value))))
-      (if-let [f (or (some-> ty dt/pb-attr-key->dt :pb-attr-fn)
-                     (some-> ty dt/pb-attr-key->dt :scalar-fn))]
-        (f v)
-        (throw (Exception. (str "node-def-attr-> can't handle " attr-value)))))))
-
-#_(defn tensor-attr->vec
-    [{:keys [dtype tensor-shape tensor-content]}]
-    (if (= dtype :dt-int32)
-      (apply-shape-to-vec
-       (tensor-attr-shape->vec tensor-shape)
-       (google-byte-string->int-array tensor-content))
-      (throw (Exception. (str "tensor-attr->vec NOT IMPLEMENTED for " dtype)))))
-
-
-
-(defn node-def-attrs->
-  [attr-vec]
-  (into {}
-        (map (fn [{k :key v :value}]
-                [(keyword k)
-                 (node-def-attr-> v)])
-              attr-vec)))
-
-(defn node-def-name->plan-id [s]
-  (-> s (clojure.string/replace #"/" ">") keyword))
-
-(defn get-node-def-input-id [ndi]
-  (when-not (= \^ (first ndi))
-    (node-def-name->plan-id ndi)))
-
-(defn get-node-def-ctrl-input-id [ndi]
-  (when (= \^ (first ndi))
-    (node-def-name->plan-id (apply str (rest ndi)))))
-
-
-
-(defn group-inputs
-  [inputs op-def attrs]
-  (loop [grouped []
-         [head & tail] (:input-arg op-def)
-         remaining inputs]
-    (if (not-empty remaining)
-      (if-let [group-size (some-> head :number-attr keyword attrs)]
-        (recur (conj grouped (vec (take group-size remaining)))
-               tail
-               (drop group-size remaining))
-        (recur (conj grouped (first remaining))
-               tail
-               (rest remaining)))
-      grouped)))
-
-
-(defn node-def->plan-default [node-def op-def]
-  (let [attrs (node-def-attrs-> (:attr node-def))]
-    {:id (-> node-def :name node-def-name->plan-id)
-     :op (-> node-def :op keyword)
-     :inputs (group-inputs (vec (keep get-node-def-input-id
-                                      (:input node-def)))
-                           op-def attrs)
-     :ctrl-inputs (vec (keep get-node-def-ctrl-input-id
-                             (:input node-def)))
-     :attrs attrs}))
+#_(do
+  (doseq [op-def (:op ogc/op-list)]
+    (try
+      (when-not (ogc/skip-ops (:name op-def))
+        (dyn-def-op-fns op-def))
+      (catch Exception e
+        (clojure.pprint/pprint op-def)
+        (throw e))))
+  (println "done"))

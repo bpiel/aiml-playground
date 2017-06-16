@@ -1,6 +1,6 @@
 (ns flojure-tens.session
   (:require flojure-tens.common
-            [flojure-tens.ops2 :as ops]
+            [flojure-tens.op-node :as op-node]
             [flojure-tens.util :as util]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.builder :as bdr])
@@ -41,12 +41,12 @@
                      (int-array [])       ;; inputOpIndices
                      (long-array (->> req
                                       :fetch
-                                      (mapv (partial ops/get-op-by-plan g))
+                                      (mapv (partial op-node/get-op-by-plan g))
                                       (mapv :handle))) ;; outputOpHandles
                      (int-array (repeat (count (:fetch req)) 0)) ;; outputOpIndices
                      (long-array (->> req
                                       :targets
-                                      (mapv (partial ops/get-op-by-plan g))
+                                      (mapv (partial op-node/get-op-by-plan g))
                                       (mapv :handle)))
                      ;; targetOpHandles
                      (:return-meta req)

@@ -1,6 +1,8 @@
 (ns flojure-tens.builder
   (:require flojure-tens.common
             [flojure-tens.ops2 :as ops]
+            [flojure-tens.op-node :as op-node]
+            [flojure-tens.op-build :as obld]
             [flojure-tens.graph :as gr]
             [flojure-tens.util :as util]
             [flojure-tens.macros :as mcro])
@@ -9,12 +11,12 @@
 (defn call-op-builder
   [^Graph g opp input-ops]
   (let [{:keys [nodes ids-by-hash]} (-> g :state deref)
-        hsh (ops/compute-hash opp)]
+        hsh (op-node/compute-hash opp)]
     (if-let [op (some-> hsh ids-by-hash nodes)]
       op
-      (ops/build g
+      (obld/build g
                  (assoc opp :inputs input-ops)
-                 (ops/compute-hash opp)))))
+                 (op-node/compute-hash opp)))))
 
 (defn- apply-plan-to-graph
   [^Graph g opp]
@@ -26,7 +28,7 @@
                (if (:macro opp)
                  (mcro/build-macro g (assoc opp :inputs input-ops))
                  (call-op-builder g opp input-ops)))
-             (ops/Op? opp) opp
+             (op-node/Op? opp) opp
              :else (call-op-builder g (ops/c opp) []))]
     op))
 

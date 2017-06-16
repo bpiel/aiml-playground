@@ -1,7 +1,7 @@
 (ns flojure-tens.macros
   (:require flojure-tens.common
             [flojure-tens.graph :as gr]
-            [flojure-tens.ops2 :as ops])
+            [flojure-tens.op-build :as obld])
   (:import [flojure_tens.common Graph]))
 
 {:macro :grad-desc-opt
@@ -149,7 +149,7 @@
                                  (long-array [dx]) (int-array [dx-idx])
                                  dy-handles dy-idx)
     (dorun (map (partial gr/add-op-to-state! g)
-                (ops/discover-new-ops-from-handles g dy-handles)))
+                (obld/discover-new-ops-from-handles g dy-handles)))
     ;; TODO dy-idx? aliases? what? do something!
     {:outputs dy-handles #_ (mapv ops/get-outputs
                           (get-ops-by-handles dy-handles)

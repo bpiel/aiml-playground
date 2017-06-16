@@ -11,7 +11,7 @@
            [flojure_tens.common Graph Op GraphRef]))
 
 
-
+(ft/build->graph (ops/add 1 3))
 
 (ft/produce (ops/add 1 3))
 
@@ -21,7 +21,7 @@
 
 #_(-> r1 first tsr/get-value-clj)
 
-#_(def s1 (sess/run-plan->session (ops/add (ops/variable :x 1) 3)))
+#_(def s1 (sess/run-plan->session (ops/add (ops/v :x 1) 3)))
 
 
 (def training-data
@@ -133,8 +133,6 @@
         first
         tsr/get-value-clj))
 
-
-(let [])
 
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])

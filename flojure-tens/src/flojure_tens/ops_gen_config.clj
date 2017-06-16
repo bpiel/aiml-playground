@@ -1,5 +1,5 @@
 (ns flojure-tens.ops-gen-config
-  (:require [flojure-tens.ops-gen :as op-gen]
+  (:require [flojure-tens.ops-gen-util :as ogu]
             [flojure-tens.data-type :as dt]
             [flojure-tens.shape :as sh]
             [flatland.protobuf.core :as pr]
@@ -11,8 +11,6 @@
 (def skip-ops #{"Variable"})
 (def gen-config (atom {}))
 
-
-(def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
 
 (defn register-op-gen-cfg!
@@ -21,8 +19,9 @@
 
 (defn fetch-config
   [op-def kw]
-  (or (some-> op-def :name ((deref gen-config)) kw)
-      (some-> :default ((deref gen-config)) kw)))
+  (let [gc @gen-config]
+    (or (some-> op-def :name gc kw)
+        (some-> :default gc kw))))
 
 (defn call-config
   [op-def kw args]
@@ -34,14 +33,9 @@
 (defn hook-pre-build-op-default
   [args]
   (-> args
-      (update-in [:plan :attrs] op-gen/convert-attrs (-> args :op-def :attr))))
+      (update-in [:plan :attrs] ogu/convert-attrs (-> args :op-def :attr))))
 
-(defn op-def-processor-default
-  [op-def]
-  (-> op-def
-      (assoc :kw (op-gen/get-op-kw op-def))
-      (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
-                                         a))))))
+
 
 
 (defn get-op-fn-body-default
@@ -51,7 +45,7 @@
         args-id (into ['id] input-syms)
         args-id-attrs (into ['id 'attrs] input-syms)]
     (list (list args-id-attrs
-                {:op (op-gen/get-op-kw op-def)
+                {:op (ogu/get-op-kw op-def)
                  :inputs input-syms
                  :ctrl-inputs (:ctrl-inputs 'attrs)
                  :id 'id
@@ -60,12 +54,6 @@
                 `(~fn-name-sym 'id ~@input-syms))
           (list input-syms
                 `(~fn-name-sym nil {} ~@input-syms)))))
-
-#_(defn node-def-input->plan-input [s]
-  (if (#{\:} s)
-    (let [[id idx] (clojure.string/split s #":")]
-      [(node-def-name->plan-id id) idx])
-    (node-def-name->plan-id s)))
 
 (defn plan-input->expr-input
   [output-fn-sym input-kw]
@@ -207,6 +195,13 @@
 
 ;; END Op Gen Custom Overrides =================================================
 
+(defn op-def-processor-default
+  [op-def]
+  (-> op-def
+      (assoc :kw (ogu/get-op-kw op-def))
+      (update :attr (fn [a] (vec (remove #(-> % :name str first (= \T))
+                                         a))))))
+
 ;; dumb
 (register-op-gen-cfg!
  :default
@@ -214,27 +209,10 @@
 
 
 
-(defn fetch-pre-build-op-fn
-  [op-def]
-  (or (fetch-config op-def :hook-pre-build)   
-      `hook-pre-build-op-default))
 
-(defn fn-name-default [op-def]
-  (symbol (clojure.string/lower-case (:name op-def))))
-
-(defn get-op-fn-name-sym [op-def]
-  (let [s1 (or (fetch-config op-def :fn-name)
-               (fn-name-default op-def))]
-    (if (ns-resolve 'clojure.core s1)
-      (symbol (str s1 "-tf"))
-      s1)))
-
-(defn get-op-fn-body [fn-name-sym op-def]
-  (call-config op-def :plan-fn-bodies [fn-name-sym op-def]))
 
 (defn op-def-processor [op-def]
   (call-config op-def :op-def-processor [op-def]))
-
 
 (def op-list (pr/protobuf-load OpListP (tfnative.TensorFlow/registeredOpList)))
 
@@ -255,55 +233,11 @@
           [(:kw op-def) op-def])))
 
 
-
-(def const-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Const"))
-                   first
-                   (into {})))
-
-(def add-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Add"))
-                   first
-                   (into {})))
-
-(def assign-op (->> op-list
-                   :op
-                   (filter #(= (:name %) "Assign"))
-                   first
-                   (into {})))
-
-
-(defn node-def->plan
-  [node-def]
-  (let [op-def (-> node-def :op proc-op-list-by-name)]
-    (call-config node-def :node-def->plan [node-def op-def])))
-
-
-
-(defn plan->expr
-  [plan ops-ns-str output-fn-sym]
-  (let [op-def (op-list-by-kw (:op plan))
-        fn-name (name (get-op-fn-name-sym op-def))]
-    (call-config op-def
-                 :plan->expr
-                 [plan
-                  (symbol ops-ns-str fn-name)
-                  output-fn-sym
-                  op-def])))
-
-(defn plans->exprs
-  [plans ops-ns-str]
-  (into {}
-        (for [p plans]
-          [(:id p) (plan->expr p ops-ns-str)])))
-
 (register-op-gen-cfg!
  :default
  {:op-def-processor op-def-processor-default
   :plan-fn-bodies get-op-fn-body-default
   :hook-pre-build `hook-pre-build-op-default
-  :node-def->plan op-gen/node-def->plan-default
+  :node-def->plan ogu/node-def->plan-default
   :plan->expr plan->expr-default})
 
