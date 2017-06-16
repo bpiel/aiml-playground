@@ -60,7 +60,7 @@
 
 (defn add-op-to-state!
   [^Graph {:keys [handle handle-lock state]} ^Op op & [variable-assigment]]
-  (swap! state add-op-to-state* op (or variable-assigment [])))
+  (swap! state add-op-to-state* op variable-assigment))
 
 (defn mk-graph-ref
   [^Graph g]

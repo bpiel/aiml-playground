@@ -16,12 +16,12 @@
                  (assoc opp :inputs input-ops)
                  (ops/compute-hash opp)))))
 
-(defn- apply-op-plan-to-graph!
+(defn- apply-plan-to-graph
   [^Graph g opp]
   (let [op (cond
              (map? opp)
              (let [{:keys [inputs]} opp
-                   input-ops (mapv (partial apply-op-plan-to-graph! g)
+                   input-ops (mapv (partial apply-plan-to-graph g)
                                    inputs)]
                (if (:macro opp)
                  (mcro/build-macro g (assoc opp :inputs input-ops))
@@ -45,39 +45,22 @@
                       (assoc % :inputs (vec %2)))
                    gp))
 
-(defn apply-plan-to-graph!
-  [^Graph g gp]
-  (->> gp
-       util/->vec
+(defn build->graph
+  [^Graph g plan]
+  (->> plan
        (visit-pre-plan (partial mcro/pre-build-macro g))
-       (mapv (partial apply-op-plan-to-graph! g)))
-#_  (cond (sequential? gp)
-        (mapv (partial apply-op-plan-to-graph! g)
-              gp)
-        (map? gp)
-        (apply-op-plan-to-graph! g gp)
-        :else
-        (throw (Exception. "This plan makes no sense!"))))
+       (apply-plan-to-graph g))
+  g)
 
-(defn graph-plan->graph+ops
-  [gp]
-  (let [g (gr/create)]
-    [g (apply-plan-to-graph! g gp)]))
-
-(defn graph-plan->graph
-  [gp]
-  (-> gp
-      graph-plan->graph+ops
-      first))
-
-(defn mk-assignments-plan
+(defn mk-init-assignments-plan
   [^Graph g]
   (let [va (gr/variable-assignments g)]
-    (mapv (fn [[vari value]] (ops/assign vari (ops/c value)))
+    (mapv (fn [[vari value]] (ops/assign vari value))
           va)))
 
-(defn build-init-assignment-ops
+(defn build-init-assignments->graph
   [^Graph g]
-  (->> g
-       mk-assignments-plan
-       (apply-plan-to-graph! g)))
+  (let [inits (mk-init-assignments-plan g)]
+    (doseq [p inits]
+      (build->graph g p))
+    g))

@@ -13,14 +13,9 @@
 
 
 
-#_ (def r1 (ft/fetch-plan-root (ops/add 1 3)))
+(ft/produce (ops/add 1 3))
 
-#_ (vec (tfnative.Tensor/shape  (-> r1 first :handle)))
-
-#_(flojure-tens.tensor/get-value (first r1))
-
-#_ (tsr/get-value-clj (first r1))
-
+(ft/produce (ops/add (ops/v :x 1) 3))
 
 #_(def r1 (ft/fetch-plan-root (ops/c [[1. 2.] [3. 4.]])))
 
@@ -65,14 +60,15 @@
                          deltas
                          (ops/sub weights)
                          (ops/assign weights))
-      session (sess/build-plan->session train-network)
+      session (ft/build->session train-network)
       test1 (network [[1. 1. 1.]])]
-  (sess/init-variable-assignments session)
-  (dotimes [_ 2000]
-    (sess/run-plan-w-session session [train-network]))
-  (bdr/apply-plan-to-graph! (:graph session) test1)
-  (def r1   (sess/run-plan-w-session session [test1]))
-  #_    (def r1   (sess/run-plan-w-session session [weights])))
+  (ft/run-init-variable-assignments session)
+  (->> train-network
+       (repeat 2000)
+       (ft/run-all session))
+#_  (dotimes [_ 2000]
+    (ft/run session train-network))
+  (ft/produce session test1))
 
 
 (-> r1 first tsr/get-value-clj)
@@ -144,8 +140,7 @@
       b (ops/c [[0.3 0.6]])
       y (ops/matmul (ops/matmul a b) (ops/sin a))
       gdo (mcro/grad-desc-opt :gdo y)
-      g (bdr/graph-plan->graph gdo)
-      s (sess/create g)]
+      g (ft/build->graph gdo)]
   (def g1 g)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(-> (sess/run-plan-w-session s [y])

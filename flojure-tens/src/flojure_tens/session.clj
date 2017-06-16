@@ -30,15 +30,15 @@
             g))
 
 ;; TODO use Graph doSync
-(defn- run* [^Session s ^RunRequest req]
-  (def r1 req)
+(defn run-req->handles
+  [^Session s ^RunRequest req]
   (let [g (:graph s)
         outputs (long-array [(:handle (tsr/create-from-value 0))])
         maybe-meta (tfnative.Session/run (:handle s) 
                      (:options req)
-                     (long-array []) ;; inputTensorHandles
-                     (long-array []) ;; inputOpHandles
-                     (int-array [])  ;; inputOpIndices
+                     (long-array [])      ;; inputTensorHandles
+                     (long-array [])      ;; inputOpHandles
+                     (int-array [])       ;; inputOpIndices
                      (long-array (->> req
                                       :fetch
                                       (mapv (partial ops/get-op-by-plan g))
@@ -51,55 +51,37 @@
                      ;; targetOpHandles
                      (:return-meta req)
                      outputs)]
-    
-
-    #_    (clojure.pprint/pprint maybe-meta)
     outputs
     #_    {:output-handles outputs
            :meta-data maybe-meta}))
 
-
-
-
-(defn run
+(defn run-req->tensors
   [^Session s ^RunRequest req]
-  (let [ts (run* s req)]
+  (let [handles (run-req->handles s req)]
     (mapv tsr/create-from-handle
-          ts)))
+          handles)))
 
-(defn run-all
+#_(defn run-all
   [^Session s plans]
   (doseq [p (drop-last)]
     (run s (mk-run-req [p])))
   (run s (mk-run-req [(last plans)])))
 
-(defn build-plan->session
-  ^Session [plan]
-  (-> plan
-      bdr/graph-plan->graph
-      create))
 
-(defn run-plan->session
-  ^Session [plan]
-  (let [g (bdr/graph-plan->graph plan)
-        s (create g)]
-    (def s1 s)
-    (run s (mk-run-req [plan]))
-    s))
+(defn fetch-all->tensors [^Session session plans]
+  (->> plans
+       mk-run-req
+       (run-req->tensors session)))
 
-(defn run-plan-w-session
-  [^Session s plan]
-  (run s (mk-run-req plan)))
+(defn fetch->tensor [^Session session plan]
+  (first (fetch-all->tensors session [plan])))
 
-(defn init-variable-assignments
-  [^Session s]
-  (let [g (:graph s)
-        va-plan (bdr/mk-assignments-plan g)]
-    (when (not-empty va-plan)
-      (bdr/apply-plan-to-graph! g va-plan)
-      ;; because there must be exactly one output
-      (run s (mk-run-req [(first va-plan)]  va-plan)))))
+(defn run [^Session session plan]
+  (run-req->tensors session
+                    (mk-run-req [plan]))
+  session)
 
-#_ (def va-ops (-> s1 :graph bdr/build-init-assignment-ops))
-
-#_ (def x (init-variable-assignments s1))
+(defn run-all [^Session session plans]
+  (doseq [p plans]
+    (run session p))
+  session)
