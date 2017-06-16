@@ -147,6 +147,7 @@
       g (bdr/graph-plan->graph gdo)
       s (sess/create g)]
   (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(-> (sess/run-plan-w-session s [y])
         first
         tsr/get-value-clj))

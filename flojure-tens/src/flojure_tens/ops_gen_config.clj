@@ -154,10 +154,10 @@
 
 (defn plan-fn-bodies-assign
   [fn-name-sym _]
-  ['([id value] {:op :VariableV2
+  ['([id value] {:op :VariableV2   ;; TODO fix!!
                  :id id
                  :assignment value})
-   '([id attrs value] {:op :VariableV2
+   '([id attrs value] {:op :VariableV2 ;; TODO fix!!
                        :id id
                        :assignment value
                        :attrs attrs})])

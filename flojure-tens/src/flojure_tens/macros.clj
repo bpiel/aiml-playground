@@ -35,13 +35,29 @@
   [^Graph g plan]
   (let [{:keys [id inputs]} plan
         [input] inputs]
-    {:plans []
-     :outputs [:kw:# :kw:#]}
     {:macro :grad
      :id :a>b
      #_ :aliases
      :inputs [input [[1.] [1.]]]}))
 
+{:id :g>final
+ :op :noop?
+ :ctrl-inputs
+ [{:id :g>update_a
+   :op :assign
+   :vari :a
+   :value {:id :---
+           :op :AddN
+           :inputs [{:macro :grad
+                     :id :g>MatMul_1_grad
+                     :inputs [{:id :MatMul_1
+                               :op :MatMul
+                               {:inputs}}
+                              :TODO]}
+                    {:macro :grad
+                     :id :g>Sin_1_grad
+                     :inputs [{:id :Sin_1
+                               :op :Sin}]}]}}]}
 
 (defmethod build-macro :grad
   [^Graph g plan]
@@ -70,6 +86,24 @@
                           (get-ops-by-handles dy-handles)
                           dy-idx)
      :nodes [:???]}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
