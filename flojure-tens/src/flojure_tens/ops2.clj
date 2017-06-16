@@ -33,10 +33,17 @@
   (eval `(def ~name-sym
            (fn ~@bodies))))
 
+#_(defn dyn-defn
+  [name-sym bodies & []]
+  (eval `(def ~name-sym
+           (fn ~@bodies))))
+
 (defn dyn-defmethod
   [name-sym dispatch-val body]
   (eval `(defmethod ~name-sym ~dispatch-val
            ~body)))
+
+
 
 (defn dyn-defn-op [op-def]
   (let [fn-name-sym (ogc/get-op-fn-name-sym op-def)]
@@ -249,3 +256,4 @@
   [^Graph g op-handles]
   (discover-new-ops-from-ids g
                              (map handle->id op-handles)))
+

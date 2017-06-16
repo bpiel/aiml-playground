@@ -40,24 +40,93 @@
      #_ :aliases
      :inputs [input [[1.] [1.]]]}))
 
+
 {:id :g>final
  :op :noop?
  :ctrl-inputs
- [{:id :g>update_a
+ [{:id :g>update_a_1
    :op :assign
    :vari :a
-   :value {:id :---
+   :value {:id :g>AddN_1
            :op :AddN
            :inputs [{:macro :grad
-                     :id :g>MatMul_1_grad
-                     :inputs [{:id :MatMul_1
-                               :op :MatMul
-                               {:inputs}}
-                              :TODO]}
+                     :id :g>MatMul_grad_1
+                     :output-idx 0
+                     :inputs [{:op :MatMul
+                               :inputs [{:id :a
+                                         :op :VariableV2
+                                         :assignment [1]}
+                                        {:id :b
+                                         :op :VariableV2
+                                         :assignment [1]}]}
+                              {:macro :grad
+                               :id :g>MatMul_grad_2
+                               :output-idx 0
+                               :inputs [{:op :MatMul
+                                         :inputs [{:op :MatMul
+                                                   :inputs [{:id :a
+                                                             :op :VariableV2
+                                                             :assignment [1]}
+                                                            {:id :b
+                                                             :op :VariableV2
+                                                             :assignment [1]}]}
+                                                  {:op :Sin
+                                                   :inputs [{:id :a
+                                                             :op :VariableV2
+                                                             :assignment [1]}]}]}
+                                        [111]]}]}
                     {:macro :grad
-                     :id :g>Sin_1_grad
-                     :inputs [{:id :Sin_1
-                               :op :Sin}]}]}}]}
+                     :id :g>Sin_grad_1
+                     :inputs [{:op :Sin
+                               :inputs [{:id :a
+                                         :op :VariableV2
+                                         :assignment [1]}]}
+                              {:macro :grad
+                               :id :g>MatMul_grad_2
+                               :output-idx 1
+                               :inputs [{:op :MatMul
+                                         :inputs [{:op :MatMul
+                                                   :inputs [{:id :a
+                                                             :op :VariableV2
+                                                             :assignment [1]}
+                                                            {:id :b
+                                                             :op :VariableV2
+                                                             :assignment [1]}]}
+                                                  {:op :Sin
+                                                   :inputs [{:id :a
+                                                             :op :VariableV2
+                                                             :assignment [1]}]}]}
+                                        [111]]}]}]}}
+  {:id :g>update_b_1
+   :op :assign
+   :vari :b
+   :value {:macro :grad
+           :id :g>MatMul_grad_1
+           :output-idx 1
+           :inputs [{:op :MatMul
+                     :inputs [{:id :a
+                               :op :VariableV2
+                               :assignment [1]}
+                              {:id :b
+                               :op :VariableV2
+                               :assignment [1]}]}
+                    {:macro :grad
+                     :id :g>MatMul_grad_2
+                     :output-idx 0
+                     :inputs [{:op :MatMul
+                               :inputs [{:op :MatMul
+                                         :inputs [{:id :a
+                                                   :op :VariableV2
+                                                   :assignment [1]}
+                                                  {:id :b
+                                                   :op :VariableV2
+                                                   :assignment [1]}]}
+                                        {:op :Sin
+                                         :inputs [{:id :a
+                                                   :op :VariableV2
+                                                   :assignment [1]}]}]}
+                              [111]]}]}}]}
+
 
 (defmethod build-macro :grad
   [^Graph g plan]
@@ -86,35 +155,3 @@
                           (get-ops-by-handles dy-handles)
                           dy-idx)
      :nodes [:???]}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

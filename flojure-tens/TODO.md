@@ -18,6 +18,12 @@ x clj graph to tensorboard
 - import (gradient) nodes created by c++
 - support nullptr for dx
 
+- nullptr for add gradients
+- reorg-plan
+- recursive hash???
+
+- use `intern` to create op fn vars
+
 - gradient descent optimizer -- macros?
   - simpler gdo case?
   - build in py

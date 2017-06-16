@@ -30,3 +30,12 @@
         (coll? v) (vec v)
         :else [v]))
 
+(defn tf-name->id
+  [name-str]
+  (keyword (clojure.string/replace name-str #"/" ">")))
+
+(defn id->tf-name
+  [id-kw]
+  (-> id-kw
+      name
+      (clojure.string/replace  #">" "/")))
