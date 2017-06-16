@@ -4,7 +4,7 @@
   (:import [flojure_tens.common GraphRef Graph Op]))
 
 (defn nodes [^Graph {:keys [handle-lock state]}] (:nodes @state))
-(defn variable-assigments [^Graph {:keys [handle-lock state]}] (:variable-assigments @state))
+(defn variable-assignments [^Graph {:keys [handle-lock state]}] (:variable-assigments @state))
 (defn ids-by-hash [^Graph {:keys [handle-lock state]}] (:ids-by-hash @state))
 (defn ids-by-handle [^Graph {:keys [handle-lock state]}] (:ids-by-handle @state))
 (defn ids-by-input [^Graph {:keys [handle-lock state]}] (:ids-by-input @state))
@@ -48,20 +48,19 @@
            value)
     m))
 
+;; TODO add all outputs by id,hash,input???
 (defn- add-op-to-state*
   [graph-state ^Op op variable-assigment]
   (-> graph-state
       (update :nodes add-to-nodes op)
       (update :ids-by-hash add-to-ids-by-hash op)
-      (update :ids-by-handle add-to-ids-by-hash op)
+      (update :ids-by-handle add-to-ids-by-handle op)
       (update :ids-by-input add-to-ids-by-input op)
       (update :variable-assigments add-to-variable-assignments op variable-assigment)))
 
 (defn add-op-to-state!
-  [^Graph {:keys [handle handle-lock state]} ^Op op variable-assigment]
-  (def o1 op)
-  (def v1 variable-assigment)
-  (swap! state add-op-to-state* op variable-assigment))
+  [^Graph {:keys [handle handle-lock state]} ^Op op & [variable-assigment]]
+  (swap! state add-op-to-state* op (or variable-assigment [])))
 
 (defn mk-graph-ref
   [^Graph g]
@@ -91,24 +90,6 @@
   (spit-bytes filename (->graph-def-byte-array g)))
 
 (defn add-output-by-handle! [^Graph g handle idx]
+    
   (throw (Exception. "NOT IMPLEMENTED")))
-
-#_(defn create-from-handle
-  [handle]
-  (let [g (Graph. handle :.....)]
-    )
-  )
-
-#_ ((def gtmp flojure-tens.scratch2/g1)
-
-    (def gd1 (tfnative.Graph/toGraphDef (:handle gtmp)))
-
-    (let [ghhh (:handle (create))]
-      (tfnative.Graph/importGraphDef ghhh
-                                     gd1
-                                     "")
-      (def gh1 ghhh ))
-
-
-    )
 

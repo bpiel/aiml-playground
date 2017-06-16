@@ -38,24 +38,6 @@
   (eval `(defmethod ~name-sym ~dispatch-val
            ~body)))
 
-
-
-
-#_(defn get-op-fn-body*
-  [fn-name-sym op-def]
-  (let [input-syms (mapv #(-> % :name symbol)
-                         (:input-arg op-def))
-        arg-vec (conj input-syms 'attrs)]
-    (list (list arg-vec
-                {:op (get-op-kw op-def)
-                 :inputs input-syms
-                 :attrs  'attrs})
-          (list input-syms
-                `(~fn-name-sym ~@input-syms
-                  {})))))
-
-
-
 (defn dyn-defn-op [op-def]
   (let [fn-name-sym (ogc/get-op-fn-name-sym op-def)]
     (dyn-defn
@@ -101,7 +83,7 @@
 
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
-  (let [{:keys [id op inputs ctrl-inputs attrs assignment]} plan
+  (let [{:keys [id op inputs ctrl-inputs attrs assignment output-idx]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
         id' (or id (keyword (str (name op) (swap! id-atom inc))))
@@ -113,12 +95,14 @@
                    (add-inputs input-handles)
                    tfnative.OperationBuilder/finish)
         oper (Op. id'
+                  [] ;; TODO add :0, when appropriate
                   op
                   (mapv :id inputs)
                   (mapv :id ctrl-inputs)
                   hsh
                   attrs'
                   handle
+                  (or output-idx 0)
                   (gr/mk-graph-ref g))]
     (gr/add-op-to-state! g oper assignment)
     oper))
@@ -156,16 +140,11 @@
   (doseq [sym (keys (ns-publics *ns*))]
     (ns-unmap *ns* sym)))
 
-#_ (clean-ns)
-
-#_(clojure.pprint/pprint (op-list-by-name "Assign"))
-
 (defn handle->plan
   [op-handle]
   (with-meta
     (ogc/node-def->plan  (pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef op-handle)))
     {::handle op-handle}))
-
 
 (defn id->plan
   [^Graph g id]
@@ -181,8 +160,8 @@
 
 (defn create-from-handle
   [op-handle ^GraphRef graph-ref]
-  (let [{:keys [id op inputs ctrl-inputs attrs] :as plan} (handle->plan op-handle)]
-    (Op. id op inputs ctrl-inputs (compute-hash plan) attrs op-handle graph-ref)))
+  (let [{:keys [id op aliases inputs ctrl-inputs attrs output-idx] :as plan} (handle->plan op-handle)]
+    (Op. id op (or aliases []) inputs ctrl-inputs (compute-hash plan) attrs op-handle (or output-idx 0) graph-ref)))
 
 (defn handle->expr
   [op-handle]
@@ -237,26 +216,36 @@
   [plan & [idx]]
   (assoc plan :output-idx (or idx 0)))
 
-#_(clojure.pprint/pprint  (eval (op-handles->src flojure-tens.scratch2/op-handles)))
 
-#_(clojure.pprint/pprint (op-handles->src flojure-tens.scratch2/op-handles))
+(defn assoc-meta-handle-to-plan
+  [p]
+  (assoc p :handle (-> p meta ::handle)))
 
-#_(clojure.pprint/pprint (node-defs->src flojure-tens.scratch2/n2))
+(defn discover-new-ops-from-id*
+  [^Graph g discovered id]
+  (if (contains? discovered id)
+    [discovered []]
+    (let [plan (assoc-meta-handle-to-plan (id->plan g id))]
+      [(assoc discovered
+              (:id plan)
+              plan)
+       (flatten (into (:inputs plan)
+                      (:ctrl-inputs plan)))])))
 
-#_ (clojure.pprint/pprint  (eval (node-defs->src flojure-tens.scratch2/n2)))
+(defn discover-new-ops-from-ids
+  [^Graph g ids]
+  (loop [discovered (into {}
+                          (for [[k _] (-> g :state deref :nodes)]
+                            [k nil]))
+         [id & tail] ids]
+    (if id
+      (let [[d ids'] (discover-new-ops-from-id* g discovered id)]
+        (recur d (into ids' tail)))
+      (->> discovered
+           vals
+           (remove nil?)))))
 
-#_(clojure.pprint/pprint
- (node-defs->src (filter #(-> % :op (= "Const"))
-                         flojure-tens.scratch2/n2)))
-
-
-#_(clojure.pprint/pprint (mapv #(pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef %))
-                             flojure-tens.scratch2/op-handles))
-
-#_(handle->expr (first flojure-tens.scratch2/op-handles))
-
-#_ (clojure.pprint/pprint  (map handle->plan flojure-tens.scratch2/op-handles))
-
-
-
-#_(handle->plan (first flojure-tens.scratch2/op-handles))
+(defn discover-new-ops-from-handles
+  [^Graph g op-handles]
+  (discover-new-ops-from-ids g
+                             (map handle->id op-handles)))

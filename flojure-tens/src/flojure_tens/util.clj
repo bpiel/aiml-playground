@@ -1,11 +1,32 @@
 (ns flojure-tens.util)
 
-(defn recursively
-  "Apply function to all items in nested data structure if
-  condition function is met."
-  [apply-if-fn func data]
-  (if (apply-if-fn data)
-    (func (map (partial recursively apply-if-fn func) data))
-    data))
 
+(defn visit-post
+  [f branch? children make-node root]
+  (if (branch? root)
+    (->> root
+         children
+         (map (partial visit-post f branch? children make-node))
+         (make-node root)
+         f)
+    (f root)))
+
+(defn visit-pre
+  [f branch? children make-node root]
+  (let [root' (f root)]
+    (if (branch? root')
+      (->> root'
+           children
+           (map (partial visit-pre f branch? children make-node))
+           (make-node root')
+           f)
+      root')))
+
+(defn ->vec
+  [v]
+  (cond (vector? v) v
+        (sequential? v) (vec v)
+        (map? v) [v]
+        (coll? v) (vec v)
+        :else [v]))
 

@@ -5,6 +5,7 @@
             [flojure-tens.tensor :as tsr]
             [flojure-tens.data-type :as dt]
             [flojure-tens.builder :as bdr]
+            [flojure-tens.macros :as mcro]
             [flatland.protobuf.core :as pr])
   (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
            [flojure_tens.common Graph Op GraphRef]))
@@ -107,6 +108,7 @@
          first
          tsr/get-value-clj))
 
+
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])
       dx (ops/c [[1.] [1.]])
@@ -135,8 +137,20 @@
         first
         tsr/get-value-clj))
 
-(vec dd1)
-(vec dd2)
+
+(let [])
+
+(let [a (ops/c [[0.2] [0.7]])
+      b (ops/c [[0.3 0.6]])
+      y (ops/matmul (ops/matmul a b) (ops/sin a))
+      gdo (mcro/grad-desc-opt :gdo y)
+      g (bdr/graph-plan->graph gdo)
+      s (sess/create g)]
+  (def g1 g)
+  #_(-> (sess/run-plan-w-session s [y])
+        first
+        tsr/get-value-clj))
+
 
 (-> dd1 vec first ops/handle->plan)
 
