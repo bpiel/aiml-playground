@@ -52,9 +52,11 @@
        keyword))
 
 (defn create-from-handle
-  [op-handle ^GraphRef graph-ref]
-  (let [{:keys [id op aliases inputs ctrl-inputs attrs output-idx] :as plan} (handle->plan op-handle)]
-    (Op. id op (or aliases []) inputs ctrl-inputs (compute-hash plan) attrs op-handle (or output-idx 0) graph-ref)))
+  ([op-handle output-idx ^GraphRef graph-ref]
+   (let [{:keys [id op aliases inputs ctrl-inputs attrs] :as plan} (handle->plan op-handle)]
+     (Op. id (or aliases []) op inputs ctrl-inputs (compute-hash plan) attrs op-handle (or output-idx 0) graph-ref)))
+  ([op-handle ^GraphRef graph-ref]
+   (create-from-handle op-handle 0 graph-ref)))
 
 (defn assoc-plan-output
   [plan & [idx]]

@@ -72,7 +72,7 @@ with graph.as_default():
     x1 = tf.Variable([[0.2], [0.7]])
     x2 = tf.Variable([[0.3 , 0.6]])
           
-    y = tf.matmul(x1, x2) + tf.sin(x1);
+    y = tf.matmul(tf.matmul(x1, x2),  tf.sin(x1))
   
     optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(y)
 

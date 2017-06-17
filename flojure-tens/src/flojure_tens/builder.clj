@@ -9,27 +9,33 @@
   (:import [flojure_tens.common Graph Op]))
 
 (defn call-op-builder
-  [^Graph g opp input-ops]
+  [^Graph g opp input-ops ctrl-input-ops]
   (let [{:keys [nodes ids-by-hash]} (-> g :state deref)
         hsh (op-node/compute-hash opp)]
     (if-let [op (some-> hsh ids-by-hash nodes)]
       op
       (obld/build g
-                 (assoc opp :inputs input-ops)
+                  (assoc opp
+                         :inputs input-ops
+                         :ctrl-inputs ctrl-input-ops)
                  (op-node/compute-hash opp)))))
 
 (defn- apply-plan-to-graph
   [^Graph g opp]
   (let [op (cond
              (map? opp)
-             (let [{:keys [inputs]} opp
+             (let [{:keys [inputs ctrl-inputs]} opp
                    input-ops (mapv (partial apply-plan-to-graph g)
-                                   inputs)]
+                                   inputs)
+                   ctrl-input-ops (mapv (partial apply-plan-to-graph g)
+                                        ctrl-inputs)]
                (if (:macro opp)
-                 (mcro/build-macro g (assoc opp :inputs input-ops))
-                 (call-op-builder g opp input-ops)))
+                 (mcro/build-macro g (assoc opp
+                                            :inputs input-ops
+                                            :ctrl-inputs ctrl-input-ops))
+                 (call-op-builder g opp input-ops ctrl-inputs)))
              (op-node/Op? opp) opp
-             :else (call-op-builder g (ops/c opp) []))]
+             :else (call-op-builder g (ops/c opp) [] []))]
     op))
 
 (defn visit-pre-plan
@@ -66,3 +72,24 @@
     (doseq [p inits]
       (build->graph g p))
     g))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

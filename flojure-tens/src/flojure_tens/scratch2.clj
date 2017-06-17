@@ -2,6 +2,7 @@
   (:require [flojure-tens.core :as ft]
             [flojure-tens.session :as sess]
             [flojure-tens.ops2 :as ops]
+            [flojure-tens.op-node :as op-node]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.data-type :as dt]
             [flojure-tens.builder :as bdr]
@@ -105,6 +106,8 @@
          tsr/get-value-clj))
 
 
+
+
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])
       dx (ops/c [[1.] [1.]])
@@ -197,6 +200,213 @@
       (clojure.java.io/copy bais out))))
 
 
+(def p1 {:op :MatMul
+         :inputs [{:op :MatMul
+                   :inputs [{:id :a
+                             :op :VariableV2
+                             :assignment [[1.] [1.]]}
+                            {:id :b
+                             :op :VariableV2
+                             :assignment [[1. 1.]]}]}
+                  {:op :Sin
+                   :inputs [{:id :a
+                             :op :VariableV2
+                             :assignment [[1.] [1.]]}]}]})
+
+(def gdo1 {:id :g>final
+           :op :NoOp
+           :ctrl-inputs [{:id :g>update_a_1
+                          :op :ApplyGradientDescent
+                          :inputs [{:id :a
+                                    :op :VariableV2
+                                    :assignment [[1.] [1.]]}
+                                   {:id :g>AddN_1
+                                    :op :AddN
+                                    :inputs [{:macro :grad
+                                              :id :g>MatMul_grad_1
+                                              :output-idx 0
+                                              :inputs [{:op :MatMul
+                                                        :inputs [{:id :a
+                                                                  :op :VariableV2
+                                                                  :assignment [[1.] [1.]]}
+                                                                 {:id :b
+                                                                  :op :VariableV2
+                                                                  :assignment [[1. 1.]]}]}
+                                                       {:macro :grad
+                                                        :id :g>MatMul_grad_2
+                                                        :output-idx 0
+                                                        :inputs [{:op :MatMul
+                                                                  :inputs [{:op :MatMul
+                                                                            :inputs [{:id :a
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1.] [1.]]}
+                                                                                     {:id :b
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1. 1.]]}]}
+                                                                           {:op :Sin
+                                                                            :inputs [{:id :a
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1.] [1.]]}]}]}
+                                                                 [[1.] [1.]]]}]}
+                                             {:macro :grad
+                                              :id :g>Sin_grad_1
+                                              :inputs [{:op :Sin
+                                                        :inputs [{:id :a
+                                                                  :op :VariableV2
+                                                                  :assignment [1]}]}
+                                                       {:macro :grad
+                                                        :id :g>MatMul_grad_2
+                                                        :output-idx 1
+                                                        :inputs [{:op :MatMul
+                                                                  :inputs [{:op :MatMul
+                                                                            :inputs [{:id :a
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1.] [1.]]}
+                                                                                     {:id :b
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1. 1.]]}]}
+                                                                           {:op :Sin
+                                                                            :inputs [{:id :a
+                                                                                      :op :VariableV2
+                                                                                      :assignment [[1.] [1.]]}]}]}
+                                                                 [1.]]}]}]}
+                                   0.5]}
+                         {:id :g>update_b_1
+                          :op :ApplyGradientDescent
+                          :inputs [{:id :b
+                                    :op :VariableV2
+                                    :assignment [[1. 1.]]}
+                                   {:macro :grad
+                                    :id :g>MatMul_grad_1
+                                    :output-idx 1
+                                    :inputs [{:op :MatMul
+                                              :inputs [{:id :a
+                                                        :op :VariableV2
+                                                        :assignment [[1.] [1.]]}
+                                                       {:id :b
+                                                        :op :VariableV2
+                                                        :assignment [1.]}]}
+                                             {:macro :grad
+                                              :id :g>MatMul_grad_2
+                                              :output-idx 0
+                                              :inputs [{:op :MatMul
+                                                        :inputs [{:op :MatMul
+                                                                  :inputs [{:id :a
+                                                                            :op :VariableV2
+                                                                            :assignment [[1.] [1.]]}
+                                                                           {:id :b
+                                                                            :op :VariableV2
+                                                                            :assignment [[1. 1.]]}]}
+                                                                 {:op :Sin
+                                                                  :inputs [{:id :a
+                                                                            :op :VariableV2
+                                                                            :assignment [[1.] [1.]]}]}]}
+                                                       [1.]]}]}
+                                   0.5]}]})
+
+(def g1 (ft/build-all->graph [{:op :MatMul
+                               :id :hi
+                               :inputs [{:id :a
+                                         :op :VariableV2
+                                         :assignment [[1.] [1.]]}
+                                        {:id :b
+                                         :op :VariableV2
+                                         :assignment [[1. 1.]]}]}
+                              {:macro :grad
+                               :id :g>MatMul_grad_1
+                               :output-idx 0
+                               :inputs [{:op :MatMul
+                                         :inputs [{:id :a
+                                                   :op :VariableV2
+                                                   :assignment [[1.] [1.]]}
+                                                  {:id :b
+                                                   :op :VariableV2
+                                                   :assignment [[1. 1.]]}]}
+                                        [1.]]}]))
+
+(def g1 (ft/build->graph {:macro :grad
+                          :id :g>MatMul_grad_2
+                          :output-idx 0
+                          :inputs [{:op :MatMul
+                                    :inputs [{:op :MatMul
+                                              :inputs [{:id :a
+                                                        :op :VariableV2
+                                                        :assignment [[1.] [1.]]}
+                                                       {:id :b
+                                                        :op :VariableV2
+                                                        :assignment [[1. 1.]]}]}
+                                             {:op :Sin
+                                              :inputs [{:id :a
+                                                        :op :VariableV2
+                                                        :assignment [[1.] [1.]]}]}]}
+                                   [[1.] [1.]]]}))
+
+(let [a (ops/v :a [[1.] [1.]])
+      b (ops/v :b [[1. 1.]])
+      c (ops/matmul (ops/matmul a b) (ops/sin a))
+      z (ops/c [[1.] [1.]])
+      g (ft/build-all->graph [c z])
+      s (sess/create g)
+      a' (:handle (op-node/get-op-by-plan g a))
+      b' (:handle (op-node/get-op-by-plan g b))
+      c' (:handle (op-node/get-op-by-plan g c))
+      z' (:handle (op-node/get-op-by-plan g z))
+      d1' (long-array 2)
+      d2' (int-array 2)
+      grads (tfnative.Graph/addGradients (:handle g)
+                                   (long-array [c']) (int-array [0])
+                                   (long-array [a' b']) (int-array [0 0])
+                                   (long-array [z']) (int-array [0])
+                                   d1' d2')]
+  (def dd1 d1')
+  (def dd2 d2')
+  [a' b' c' (vec d1') (vec d2')]
+  (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(->  (sess/run-plan-w-session s [o1])
+         first
+         tsr/get-value-clj))
+
+
+(op-node/handle->plan 140693012620440)
+
+(op-node/handle->plan 140693012620032)
+
+(op-node/handle->plan 140693012620168)
+
+
+(op-node/handle->plan 140693012644160)
+(op-node/handle->plan 140693012644016)
+(op-node/handle->plan 140693012644088)
+(op-node/handle->plan 140693012644608)
+(op-node/handle->plan 140693012645016)
+
+
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g1)))
+
+(let [g (ft/build->graph gdo1)]
+  (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(-> (sess/run-plan-w-session s [y])
+        first
+        tsr/get-value-clj))
+
+(let [g (ft/build->graph p1)]
+  (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(-> (sess/run-plan-w-session s [y])
+        first
+        tsr/get-value-clj))
+
+(clojure.pprint/pprint g1)
+
+
+
+(let [s (ft/graph->session g1)]
+  (ft/run-init-variable-assignments s)
+  (ft/fetch s (op-node/id->plan g1 :MatMul)))
+
+(ft/produce p1)
 
 (tfnative.TensorFlow/version)
 
