@@ -51,7 +51,7 @@
                  :id 'id
                  :attrs '(dissoc attrs :ctrl-inputs)})
           (list args-id
-                `(~fn-name-sym 'id ~@input-syms))
+                `(~fn-name-sym ~'id {} ~@input-syms))
           (list input-syms
                 `(~fn-name-sym nil {} ~@input-syms)))))
 

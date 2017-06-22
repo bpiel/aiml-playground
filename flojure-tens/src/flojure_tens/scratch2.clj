@@ -106,8 +106,6 @@
          tsr/get-value-clj))
 
 
-
-
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])
       dx (ops/c [[1.] [1.]])
@@ -148,6 +146,15 @@
         first
         tsr/get-value-clj))
 
+(let [a (ops/v :a [[0.2] [0.7]])
+      b (ops/v :b [[0.3 0.6]])
+      y (ops/matmul :y a b)
+      g (ft/build->graph y)]
+  (def g1 g)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(-> (sess/run-plan-w-session s [y])
+        first
+        tsr/get-value-clj))
 
 (-> dd1 vec first ops/handle->plan)
 
