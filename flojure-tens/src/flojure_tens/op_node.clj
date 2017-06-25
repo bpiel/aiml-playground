@@ -51,14 +51,75 @@
        :name
        keyword))
 
+(defn get-output-info
+  [graph-handle op-handle]
+  (let [n-outs (tfnative.Operation/numOutputs op-handle)
+        idxs (range n-outs)]
+    {:num-outputs n-outs
+     :shapes (mapv #(vec (tfnative.Operation/shape graph-handle op-handle %))
+                   idxs)
+     :dtypes (mapv #(:kw (dt/native->dt (tfnative.Operation/dtype graph-handle op-handle %)))
+                   idxs)}))
+
 (defn create-from-handle
   ([op-handle output-idx ^GraphRef graph-ref]
    (let [{:keys [id op aliases inputs ctrl-inputs attrs] :as plan} (handle->plan op-handle)]
-     (Op. id (or aliases []) op inputs ctrl-inputs (compute-hash plan) attrs op-handle (or output-idx 0) graph-ref)))
+     (Op. id
+          (or aliases [])
+          op
+          inputs
+          ctrl-inputs
+          (compute-hash plan)
+          attrs
+          op-handle
+          (or output-idx 0)
+          1 nil nil ;;TODO
+          graph-ref)))
   ([op-handle ^GraphRef graph-ref]
    (create-from-handle op-handle 0 graph-ref)))
 
-(defn assoc-plan-output
-  [plan & [idx]]
-  (assoc plan :output-idx (or idx 0)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

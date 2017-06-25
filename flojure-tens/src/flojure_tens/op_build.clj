@@ -47,8 +47,6 @@
                                         0)) ;; hard coded to 0, because we should really be dealing with `output`s here
   builder-handle)
 
-
-
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
   (let [{:keys [id op inputs ctrl-inputs attrs assignment output-idx]} plan
@@ -62,6 +60,7 @@
                    (set-attrs attrs')
                    (add-inputs input-handles)
                    tfnative.OperationBuilder/finish)
+        {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
         oper (Op. id'
                   [] ;; TODO add :0, when appropriate
                   op
@@ -71,6 +70,9 @@
                   attrs'
                   handle
                   (or output-idx 0)
+                  num-outputs
+                  shapes
+                  dtypes
                   (gr/mk-graph-ref g))]
     (gr/add-op-to-state! g oper assignment)
     oper))
@@ -114,3 +116,10 @@
     (mapv #(op-node/create-from-handle (:handle %) gref )
           (discover-new-plans-from-ids g
                                        (map op-node/handle->id op-handles)))))
+
+
+
+
+
+
+

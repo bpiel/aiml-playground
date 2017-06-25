@@ -1,8 +1,11 @@
 (ns flojure-tens.scratch2
   (:require [flojure-tens.core :as ft]
             [flojure-tens.session :as sess]
+            [flojure-tens.graph :as gr]
             [flojure-tens.ops2 :as ops]
+            [flojure-tens.ops-src-gen :as osg]
             [flojure-tens.op-node :as op-node]
+            [flojure-tens.op-build :as op-build]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.data-type :as dt]
             [flojure-tens.builder :as bdr]
@@ -16,14 +19,9 @@
 
 (ft/produce (ops/add 1 3))
 
+(ft/produce (ops/max-tf 1. 4.))
+
 (ft/produce (ops/add (ops/v :x 1) 3))
-
-#_(def r1 (ft/fetch-plan-root (ops/c [[1. 2.] [3. 4.]])))
-
-#_(-> r1 first tsr/get-value-clj)
-
-#_(def s1 (sess/run-plan->session (ops/add (ops/v :x 1) 3)))
-
 
 (def training-data
   ;; input => output
@@ -67,44 +65,98 @@
   (->> train-network
        (repeat 2000)
        (ft/run-all session))
-#_  (dotimes [_ 2000]
-    (ft/run session train-network))
   (ft/produce session test1))
-
-
-(-> r1 first tsr/get-value-clj)
-
-#_(tfnative.Graph/addGradients 0
-                             (long-array 1) (int-array 1)
-                             (long-array 1) (int-array 1)
-                             (long-array 1) (int-array 1)
-                             (long-array 1) (int-array 1))
 
 
 (let [a (ops/c [[(int 1) (int 2)]])
       b (ops/c [[(int 2)] [(int 3)]])
-      o1 (ops/matmul a b)
-      g (bdr/graph-plan->graph o1)
-      s (sess/create g)
-      a' (:handle (ops/get-op-by-plan g a))
-      b' (:handle (ops/get-op-by-plan g b))
-      c' (:handle (ops/get-op-by-plan g o1))
+      y (ops/matmul a b)
+      g (ft/build->graph y)
+      s (ft/graph->session g)
+      a' (:handle (op-node/get-op-by-plan g a))
+      b' (:handle (op-node/get-op-by-plan g b))
+      y' (:handle (op-node/get-op-by-plan g y))
       d1' (long-array 2)
       d2' (int-array 2)
-      grads (tfnative.Graph/addGradients (:handle g)
-                                   (long-array [c']) (int-array [0])
-                                   (long-array [a' b']) (int-array [0 0])
-                                   (long-array [c' c']) (int-array [0 0])
-                                   d1' d2')]
+      _ (tfnative.Graph/addGradients (:handle g)
+                                     (long-array [y']) (int-array [0])
+                                     (long-array [a' b']) (int-array [0 0])
+                                     (long-array [y']) (int-array [0])
+                                     d1' d2')]
   (def dd1 d1')
   (def dd2 d2')
-  [a' b' c' (vec d1') (vec d2')]
+  [a' b' y' (vec d1') (vec d2')]
   (def g1 g)
   #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(->  (sess/run-plan-w-session s [o1])
          first
          tsr/get-value-clj))
 
+(dorun (map (partial gr/add-op-to-state! g1)
+            (op-build/discover-new-ops-from-handles g1
+                                                (vec dd1))))
+
+(clojure.pprint/pprint g1)
+
+(let [a (ops/c [[1. 2.]])
+      y (ops/sin a)
+      g (ft/build->graph y)
+      s (ft/graph->session g)
+      a' (:handle (op-node/get-op-by-plan g a))
+      y' (:handle (op-node/get-op-by-plan g y))
+      d1' (long-array 1)
+      d2' (int-array 1)
+      _ (tfnative.Graph/addGradients (:handle g)
+                                     (long-array [y']) (int-array [0])
+                                     (long-array [a']) (int-array [0])
+                                     (long-array [y']) (int-array [0])
+                                     d1' d2')]
+  (def dd1 d1')
+  (def dd2 d2')
+  [a' y' (vec d1') (vec d2')]
+  (def g2 g)
+  #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(->  (sess/run-plan-w-session s [o1])
+         first
+         tsr/get-value-clj))
+
+(dorun (map (partial gr/add-op-to-state! g2)
+            (op-build/discover-new-ops-from-handles g2
+                                                (vec dd1))))
+
+
+(let [a (ops/c [[1. 2.]])
+      y (ops/relu a)
+      g (ft/build->graph y)
+      s (ft/graph->session g)
+      a' (:handle (op-node/get-op-by-plan g a))
+      y' (:handle (op-node/get-op-by-plan g y))
+      d1' (long-array 1)
+      d2' (int-array 1)
+      _ (tfnative.Graph/addGradients (:handle g)
+                                     (long-array [y']) (int-array [0])
+                                     (long-array [a']) (int-array [0])
+                                     (long-array [y']) (int-array [0])
+                                     d1' d2')]
+  (def dd1 d1')
+  (def dd2 d2')
+  [a' y' (vec d1') (vec d2')]
+  (def g3 g)
+  #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  #_(->  (sess/run-plan-w-session s [o1])
+         first
+         tsr/get-value-clj))
+
+(dorun (map (partial gr/add-op-to-state! g3)
+            (op-build/discover-new-ops-from-handles g3
+                                                (vec dd1))))
+
+
+(clojure.pprint/pprint  (osg/graph->src g1))
+
+(clojure.pprint/pprint  (osg/graph->src g2))
+
+(clojure.pprint/pprint  (osg/graph->src g3))
 
 (let [a (ops/c [[0.2] [0.7]])
       b (ops/c [[0.3 0.6]])
@@ -431,7 +483,11 @@
 
 #_(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/metagraph2.pb")))
 
-(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/py2.mgpb")))
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/matmul.mgpb")))
+
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/add.mgpb")))
+
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/sin.mgpb")))
 
 (-> mg2 :graph-def clojure.pprint/pprint )
 
@@ -443,11 +499,13 @@
 
 (clojure.pprint/pprint n2)
 
-(def add1 (:add (eval (ops/node-defs->src n2))))
+(def add1 (:add (eval (osg/node-defs->src n2))))
 
 (clojure.pprint/pprint add1)
 
-(clojure.pprint/pprint (ops/node-defs->src n2))
+(clojure.pprint/pprint (osg/node-defs->src n2))
+
+(clojure.pprint/pprint  (mapv op-node/node-def->plan n2))
 
 (def g2 (bdr/graph-plan->graph add1))
 
@@ -456,3 +514,113 @@
 (clojure.pprint/pprint (vals (eval (ops/node-defs->src n2))))
 
 (clojure.pprint/pprint g2)
+
+(osg/graph->src g1)
+
+
+(defn find-plan-deps [plans ids]
+  (let [m (into {}
+                (for [p plans]
+                  [(:id p) p]))]
+    (loop [agg []
+           [head & tail] ids]
+      (cond (nil? head) (->> agg reverse distinct (mapv m))
+            :else (let [{:keys [inputs ctrl-inputs]} (m head)
+                        new-ids (into inputs ctrl-inputs)]
+                    (recur (into agg new-ids)
+                           (into tail new-ids)))))))
+
+#_(find-plan-deps (mapv op-node/node-def->plan n2)
+                :g1)
+
+
+(clojure.pprint/pprint 
+ (osg/plans->exprs (find-plan-deps (mapv op-node/node-def->plan n2)
+                                   [:g1])
+                   "flojure-tens.ops2" `assoc-plan-output))
+
+(defn sss
+  [plans out-ids]
+  (let [m (into {}
+                (for [p plans]
+                  [(:id p) p]))
+        id-expr-pairs (osg/plans->exprs (find-plan-deps (mapv op-node/node-def->plan n2)
+                                                        out-ids)
+                                        "flojure-tens.ops2" `assoc-plan-output)
+        assigns (vec (mapcat (fn [[k v]]
+                               [(-> k name symbol) v])
+                             id-expr-pairs))
+        body (->> out-ids
+                  (map m)
+                  (mapcat :inputs)
+                  (mapv (comp symbol name)))]
+    `(let ~assigns ~body)))
+
+(clojure.pprint/pprint 
+ (eval
+  (sss (mapv op-node/node-def->plan n2)
+       [:g1])))
+
+(clojure.pprint/pprint 
+ (sss (mapv op-node/node-def->plan n2)
+      [:g1]))
+
+
+
+(clojure.core/let
+ [dy1
+  (flojure-tens.ops2/v
+   :dy1
+   {:shared_name "",
+    :dtype :float,
+    :shape [1 2],
+    :_output_shapes [[1 2]],
+    :container ""}
+   nil)
+  x1
+  (flojure-tens.ops2/v
+   :x1
+   {:_output_shapes [[1 2]],
+    :container "",
+    :dtype :float,
+    :shared_name "",
+    :shape [1 2]}
+   nil)
+  dy1>read
+  (flojure-tens.ops2/identity-tf
+   :dy1>read
+   {:T :float, :_class ["loc:@dy1"], :_output_shapes [[1 2]]}
+   dy1)
+  x1>read
+  (flojure-tens.ops2/identity-tf
+   :x1>read
+   {:_output_shapes [[1 2]], :_class ["loc:@x1"], :T :float}
+   x1)
+  gradients>Sin_grad>Cos
+  (flojure-tens.ops2/cos
+   :gradients>Sin_grad>Cos
+   {:_output_shapes [[1 2]], :T :float, :ctrl-inputs [:dy1>read]}
+   x1>read)
+  gradients>Sin_grad>mul
+  (flojure-tens.ops2/mul
+   :gradients>Sin_grad>mul
+   {:T :float, :_output_shapes [[1 2]]}
+   dy1>read
+   gradients>Sin_grad>Cos)]
+  [gradients>Sin_grad>mul])
+
+
+
+
+
+(clojure.core/let
+    [gradients>Sin_grad>Cos (flojure-tens.ops2/cos
+                             :gradients>Sin_grad>Cos
+                             {:ctrl-inputs [:dy1]}
+                             x1)
+     gradients>Sin_grad>mul (flojure-tens.ops2/mul
+                             :gradients>Sin_grad>mul
+                             {}
+                             dy1
+                             gradients>Sin_grad>Cos)]
+    [gradients>Sin_grad>mul])

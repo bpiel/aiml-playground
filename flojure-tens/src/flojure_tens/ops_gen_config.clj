@@ -232,7 +232,6 @@
         (for [[k op-def] proc-op-list-by-name]
           [(:kw op-def) op-def])))
 
-
 (register-op-gen-cfg!
  :default
  {:op-def-processor op-def-processor-default

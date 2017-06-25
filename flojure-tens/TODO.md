@@ -9,6 +9,12 @@ x get basic nn example working
 x const and variables takes seqs
 x auto gen ops from protobuf
 
+
+
+x get src gen working again
+
+
+
 x clj graph to tensorboard
   - graph -> graphdef
    -- SavedModelBundle

@@ -116,15 +116,17 @@
 
 
 
-(defn dyn-defn
+#_(defn dyn-defn
   [name-sym bodies]
   (eval `(def ~name-sym
            (fn ~@bodies))))
 
-#_(defn dyn-defn
-  [name-sym bodies & []]
-  (eval `(def ~name-sym
-           (fn ~@bodies))))
+(defn dyn-defn
+  [name-sym bodies & [docs]]
+  (let [d (or docs "UNDOCUMENTED")]
+    (eval `(defn ~name-sym
+             ~d
+             ~@bodies))))
 
 (defn dyn-defmethod
   [name-sym dispatch-val body]

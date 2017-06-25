@@ -4,4 +4,16 @@
 
 (defrecord GraphRef [^clojure.lang.Atom closed ^Object handle-lock])
 
-(defrecord Op [id aliases op inputs ctrl-inputs hash attrs handle output-idx ^GraphRef graphref])
+(defrecord Op [id
+               aliases
+               op
+               inputs
+               ctrl-inputs
+               hash
+               attrs
+               handle
+               output-idx
+               n-outputs
+               shapes
+               dtypes
+               ^GraphRef graphref])

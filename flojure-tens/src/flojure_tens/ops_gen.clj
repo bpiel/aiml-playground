@@ -4,8 +4,6 @@
             [flojure-tens.ops-gen-util :as ogu]))
 
 
-
-
 (defn fetch-pre-build-op-fn
   [op-def]
   (cfg/fetch-config op-def :hook-pre-build))
@@ -52,7 +50,10 @@
   (let [fn-name-sym (get-op-fn-name-sym op-def)]
     (ogu/dyn-defn
      fn-name-sym
-     (get-op-fn-body fn-name-sym op-def))))
+     (get-op-fn-body fn-name-sym op-def)
+     (str "\n"
+          (with-out-str
+            (clojure.pprint/pprint op-def))))))
 
 (defn dyn-def-op-fns [op-def]
   (let [op (cfg/op-def-processor op-def)]
@@ -67,13 +68,3 @@
       (catch Exception e
         (clojure.pprint/pprint op-def)
         (throw e)))))
-
-#_(do
-  (doseq [op-def (:op ogc/op-list)]
-    (try
-      (when-not (ogc/skip-ops (:name op-def))
-        (dyn-def-op-fns op-def))
-      (catch Exception e
-        (clojure.pprint/pprint op-def)
-        (throw e))))
-  (println "done"))
