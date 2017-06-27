@@ -33,6 +33,7 @@ x import (gradient) nodes created by c++
 - gradient descent optimizer macro
  - graph building
  - 1s shape
+ - learning rate arg
 
 ~ build entire matmul gdo?
 
@@ -40,7 +41,7 @@ x import (gradient) nodes created by c++
 
 - how are id scopes/contexts going to work?? when does it matter?
 
-- macro id maps to output op node
+? macro id maps to output op node(s) ?
 
 
 
