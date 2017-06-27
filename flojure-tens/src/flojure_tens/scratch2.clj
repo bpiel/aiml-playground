@@ -153,9 +153,9 @@
 (let [a (ops/v :a [[0.2] [0.7]])
       b (ops/v :b [[0.3 0.6]])
       y (ops/matmul a b)
-      gdo (mcro/grad-desc-opt :gdo y)
+      gdo (mcro/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
-      s (ft/graph->session g1)]
+      s (ft/graph->session g)]
   (def g1 g)
   (def s1 s)
   (def gdo1 gdo)
@@ -168,6 +168,7 @@
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))
   (clojure.pprint/pprint (ft/produce s1 y)))
+
 
 (def s1 (ft/graph->session g1))
 

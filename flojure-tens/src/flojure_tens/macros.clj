@@ -1,6 +1,8 @@
 (ns flojure-tens.macros
   (:require flojure-tens.common
             [flojure-tens.graph :as gr]
+            [flojure-tens.ops2 :as ops]
+            [flojure-tens.scope :as sc]
             [flojure-tens.op-build :as obld]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.gradients :as grad])
@@ -13,33 +15,40 @@
 (defmethod build-macro :default [_ plan] plan)
 
 (defn grad-desc-opt
-  [id target]
-  {:macro :grad-desc-opt
-   :id id
-   :inputs [target]})
+  [id target & [scope]]
+  (sc/with-id-scopes (if scope [scope] [])
+    (sc/assoc-id-scope
+     {:macro :grad-desc-opt
+      :id id
+      :inputs [target]})))
+
+(defn gradient
+  [id y dx]
+  (sc/assoc-id-scope
+   {:macro :grad
+    :id id
+    :output-idx 0
+    :inputs [y dx]}))
 
 (defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
-  (let [{:keys [id inputs]} plan
+  (let [{:keys [id inputs scope]} plan
         [input] inputs
         [v-a v-b] (:inputs input)
-        mm-grad {:macro :grad
-                 :id :g_MatMul_grad_1
-                 :output-idx 0
-                 :inputs [input
-                          [[1.0 1.0][1.0 1.0]]]}]
-    {:id id
-     :op :NoOp
-     :ctrl-inputs [{:id :g_update_a_1
-                    :op :ApplyGradientDescent
-                    :inputs [v-a
-                             0.5
-                             mm-grad]}
-                   {:id :g_update_b_1
-                    :op :ApplyGradientDescent
-                    :inputs [v-b
-                             0.5
-                             (assoc mm-grad :output-idx 1)]}]}))
+        mm-grad (sc/with-id-scopes scope
+                  (gradient :MatMul_grad_1
+                            input
+                            [[1.0 1.0][1.0 1.0]]))]
+    (sc/with-id-scopes scope
+      (ops/noop id
+                {:ctrl-inputs [(ops/applygradientdescent :update_a_1
+                                                         v-a
+                                                         0.5
+                                                         mm-grad)
+                               (ops/applygradientdescent :update_b_1
+                                                         v-b
+                                                         0.5
+                                                         (assoc mm-grad :output-idx 1))]}))))
 
 {:id :g>final
  :op :NoOp
@@ -138,7 +147,8 @@
         y-inputs (->> y-op
                       :inputs
                       (map (gr/nodes g)))]
-    (nth (case (:op y-op)
-           :Sin (grad/sin y-op y-inputs dx-op)
-           :MatMul (grad/matmul y-op y-inputs dx-op))
-         (out-idx-fn plan))))
+    (sc/with-id-scopes (:scope plan)
+      (nth (case (:op y-op)
+             :Sin (grad/sin y-op y-inputs dx-op)
+             :MatMul (grad/matmul y-op y-inputs dx-op))
+           (out-idx-fn plan)))))

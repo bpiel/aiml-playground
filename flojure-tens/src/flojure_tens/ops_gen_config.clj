@@ -47,7 +47,7 @@
     (list (list args-id-attrs
                 {:op (ogu/get-op-kw op-def)
                  :inputs input-syms
-                 :ctrl-inputs (:ctrl-inputs 'attrs)
+                 :ctrl-inputs '(:ctrl-inputs attrs)
                  :id 'id
                  :attrs '(dissoc attrs :ctrl-inputs)})
           (list args-id
@@ -172,7 +172,7 @@
   ['([id attrs vari value]
      (let [vari-id (or (:id vari)
                        vari)]
-       (when (-> vari-id keyword? not)
+       (when (-> vari-id string? not)
          (throw (Exception. (str "Invalid assignment target: " vari))))
        (cond-> {:op :Assign :vari vari-id :inputs [value]}
          (not-empty attrs) (assoc :attrs attrs)

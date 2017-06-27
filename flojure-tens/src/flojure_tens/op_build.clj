@@ -54,12 +54,24 @@
                                                input-handle))
   builder-handle)
 
+(defn mk-id
+  [scope id op]
+  (let [s (or (some->> scope
+                       not-empty
+                       (map name)
+                       (clojure.string/join "/")
+                       (#(str % "/")))
+              "")
+        id' (or (some-> id name)
+                (str (name op) "_" (swap! id-atom inc)))]
+    (str s id')))
+
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
-  (let [{:keys [id op inputs ctrl-inputs attrs assignment output-idx]} plan
+  (let [{:keys [id scope op inputs ctrl-inputs attrs assignment output-idx]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
-        id' (or id (keyword (str (name op) (swap! id-atom inc))))
+        id' (mk-id scope id op)
         input-handles (mapv :handle inputs)
         ctrl-input-handles (mapv :handle ctrl-inputs)
         handle (-> g

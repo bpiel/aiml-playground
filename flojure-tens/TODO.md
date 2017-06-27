@@ -15,6 +15,7 @@ x get src gen working again
 
 - does op builder c api take context arg?
 
+- use -dashes- in op fn names
 
 x clj graph to tensorboard
   - graph -> graphdef
