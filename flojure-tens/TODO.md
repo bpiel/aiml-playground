@@ -44,7 +44,8 @@ x import (gradient) nodes created by c++
 
 ? macro id maps to output op node(s) ?
 
-
+- variable macro
+- varaible scope
 
 x resolve :control-inputs (as with :inputs)
 - "init" NoOp takes init assignments as ctrl inputs
