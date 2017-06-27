@@ -1,5 +1,6 @@
 (ns flojure-tens.ops-gen
   (:require [flojure-tens.op-build :as obld]
+            [flojure-tens.scope :as sc]
             [flojure-tens.ops-gen-config :as cfg]
             [flojure-tens.ops-gen-util :as ogu]))
 
@@ -31,13 +32,8 @@
       (clojure.pprint/pprint e)
       (println "^^^^^^^^^^^^^^^^^"))))
 
-
-
 (defn get-op-fn-body [fn-name-sym op-def]
   (cfg/call-config op-def :plan-fn-bodies [fn-name-sym op-def]))
-
-
-
 
 (defn get-op-fn-name-sym [op-def]
   (let [s1 (or (cfg/fetch-config op-def :fn-name)
@@ -46,11 +42,21 @@
       (symbol (str s1 "-tf"))
       s1)))
 
+(defn finalize-plan
+  [plan]
+  (sc/assoc-id-scope plan))
+
+(defn inject-finalizer
+  [bodies]
+  (for [[args & b] bodies]
+    `(~args (finalize-plan (do ~@b)))))
+
 (defn dyn-defn-op [op-def]
   (let [fn-name-sym (get-op-fn-name-sym op-def)]
     (ogu/dyn-defn
      fn-name-sym
-     (get-op-fn-body fn-name-sym op-def)
+     (inject-finalizer
+      (get-op-fn-body fn-name-sym op-def))
      (str "\n"
           (with-out-str
             (clojure.pprint/pprint op-def))))))
@@ -68,3 +74,34 @@
       (catch Exception e
         (clojure.pprint/pprint op-def)
         (throw e)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

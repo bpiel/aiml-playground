@@ -90,11 +90,11 @@
 
 
 
-(defn assoc-meta-handle-to-plan
+#_(defn assoc-meta-handle-to-plan
   [p]
   (assoc p :handle (-> p meta ::op-node/handle)))
 
-(defn discover-new-plans-from-id*
+#_(defn discover-new-plans-from-id*
   [^Graph g discovered id]
   (if (contains? discovered id)
     [discovered []]
@@ -105,7 +105,7 @@
        (flatten (into (:inputs plan)
                       (:ctrl-inputs plan)))])))
 
-(defn discover-new-plans-from-ids
+#_(defn discover-new-plans-from-ids
   [^Graph g ids]
   (loop [discovered (into {}
                           (for [[k _] (-> g :state deref :nodes)]
@@ -118,8 +118,8 @@
            vals
            (remove nil?)))))
 
-;; TODO this is crazy
-(defn discover-new-ops-from-handles
+
+#_(defn discover-new-ops-from-handles
   [^Graph g op-handles]
   (let [gref (gr/mk-graph-ref g)]
     (mapv #(op-node/create-from-handle (:handle %) gref )

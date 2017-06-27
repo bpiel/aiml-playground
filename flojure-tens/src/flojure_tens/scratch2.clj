@@ -1,5 +1,6 @@
 (ns flojure-tens.scratch2
   (:require [flojure-tens.core :as ft]
+            [flojure-tens.scope :as sc]
             [flojure-tens.session :as sess]
             [flojure-tens.graph :as gr]
             [flojure-tens.ops2 :as ops]

@@ -6,21 +6,6 @@
             [flojure-tens.gradients :as grad])
   (:import [flojure_tens.common Graph]))
 
-{:macro :grad-desc-opt
- :id :required
- :inputs [{:id :...}]}
-
-{:macro :grad
- :id :required
- :inputs [{} ;; y -- target 
-          {} ;; dx -- 1s or inputs from previous grad
-          ]}
-
-
-#_(def macro-defs
-  {:grad-desc-opt {:pre? true}
-   :grad {:pre? false}})
-
 (defmulti pre-build-macro (fn [^Graph g plan] (:macro plan)))
 (defmulti build-macro (fn [^Graph g plan] (:macro plan)))
 
@@ -32,15 +17,6 @@
   {:macro :grad-desc-opt
    :id id
    :inputs [target]})
-
-#_(defmethod pre-build-macro :grad-desc-opt
-  [^Graph g plan]
-  (let [{:keys [id inputs]} plan
-        [input] inputs]
-    {:macro :grad
-     :id :a>b
-     #_ :aliases
-     :inputs [input [[1.] [1.]]]}))
 
 (defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
@@ -153,50 +129,6 @@
                                                                   :assignment [1]}]}]}
                                              [111]]}]}
                          0.5]}]}
-
-
-#_(defmethod build-macro :grad
-  [^Graph g plan]
-  (let [out-idx-fn #(or (:output-idx %) 0)
-        [y-op dx-op] (:inputs plan)
-        y (:handle y-op)
-        y-idx (or (:output-idx y) 0)
-        y-inputs (->> y-op
-                      :inputs
-                      (map (gr/nodes g)))
-        x (mapv :handle y-inputs)
-        x-idx  (mapv out-idx-fn y-inputs)
-        dx (:handle dx-op)
-        dx-idx (out-idx-fn dx)
-        dy-handles (long-array (count x))
-        dy-idx (int-array (count x))]
-    (def ag1 {:y-op y-op
-              :dx-op dx-op
-              :y y
-              :y-idx y-idx
-              :y-inputs y-inputs
-              :x x
-              :x-idx x-idx
-              :dx dx
-              :dx-idx dx-idx
-              :dy-handles dy-handles
-              :dy-idx dy-idx})
-    (tfnative.Graph/addGradients (:handle g)
-                                 (long-array [y]) (int-array [y-idx])
-                                 (long-array x) (int-array x-idx)
-                                 (long-array [dx]) (int-array [dx-idx])
-                                 dy-handles dy-idx)
-    (let [dy-handles-vec (vec dy-handles)
-          dy-idx-vec (vec dy-idx)]
-      (def ag2 [dy-handles-vec dy-idx-vec])
-      (clojure.pprint/pprint ag2)
-      (dorun (map (partial gr/add-op-to-state! g)
-                  (obld/discover-new-ops-from-handles g
-                                                      dy-handles-vec)))
-      ;; TODO dy-idx? aliases? what? do something!
-      (op-node/create-from-handle (first dy-handles-vec)
-                                  (first dy-idx-vec)
-                                  (gr/mk-graph-ref g)))))
 
 ;; TODO caching
 (defmethod build-macro :grad
