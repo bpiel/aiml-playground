@@ -161,8 +161,12 @@
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   (ft/run-init-variable-assignments s1)
   (clojure.pprint/pprint (ft/fetch s1 a))
-  (ft/run-all s1 [{:id :g_update_a_1}])
-  (clojure.pprint/pprint (ft/fetch s1 a)))
+  (clojure.pprint/pprint (ft/fetch s1 b))
+  (clojure.pprint/pprint (ft/produce s1 y))
+  (ft/run-all s1 [gdo1 gdo1 gdo1 gdo1 gdo1 gdo1 gdo1])
+  (clojure.pprint/pprint (ft/fetch s1 a))
+  (clojure.pprint/pprint (ft/fetch s1 b))
+  (clojure.pprint/pprint (ft/produce s1 y)))
 
 (def s1 (ft/graph->session g1))
 

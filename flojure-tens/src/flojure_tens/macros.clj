@@ -52,7 +52,7 @@
                  :output-idx 0
                  :inputs [input
                           [[1.0 1.0][1.0 1.0]]]}]
-    {:id :g_final
+    {:id id
      :op :NoOp
      :ctrl-inputs [{:id :g_update_a_1
                     :op :ApplyGradientDescent

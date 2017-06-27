@@ -30,25 +30,21 @@ x import (gradient) nodes created by c++
 
 - use `intern` to create op fn vars
 
-- gradient descent optimizer -- macros?
+- gradient descent optimizer macro
+ - graph building
+ - 1s shape
 
-===========================================
-
-- build entire matmul gdo?
+~ build entire matmul gdo?
 
 - cache macros by id?
 
-- outputs
-
-- dumbest thing
-
 - how are id scopes/contexts going to work?? when does it matter?
 
-===========================================
+- macro id maps to output op node
 
 
 
-- resolve :control-inputs (as with :inputs)
+x resolve :control-inputs (as with :inputs)
 - "init" NoOp takes init assignments as ctrl inputs
 - :output-idx
 - :subgraph

@@ -33,21 +33,27 @@
 (defn run-req->handles
   [^Session s ^RunRequest req]
   (let [g (:graph s)
-        outputs (long-array [(:handle (tsr/create-from-value 0))])
+        outputs (long-array (vec
+                             (take (count (:fetch req))
+                                   (repeatedly #(:handle (tsr/create-from-value 0))))))
         maybe-meta (tfnative.Session/run (:handle s) 
                      (:options req)
-                     (long-array [])      ;; inputTensorHandles
-                     (long-array [])      ;; inputOpHandles
-                     (int-array [])       ;; inputOpIndices
-                     (long-array (->> req
-                                      :fetch
-                                      (mapv (partial op-node/get-op-by-plan g))
-                                      (mapv :handle))) ;; outputOpHandles
+                     (long-array []) ;; inputTensorHandles
+                     (long-array []) ;; inputOpHandles
+                     (int-array [])  ;; inputOpIndices
+                     (long-array (or (some->> req
+                                              :fetch
+                                              not-empty
+                                              (mapv (partial op-node/get-op-by-plan g))
+                                              (mapv :handle))
+                                     [])) ;; outputOpHandles
                      (int-array (repeat (count (:fetch req)) 0)) ;; outputOpIndices
-                     (long-array (->> req
-                                      :targets
-                                      (mapv (partial op-node/get-op-by-plan g))
-                                      (mapv :handle)))
+                     (long-array (or (some->> req
+                                              :targets
+                                              not-empty
+                                              (mapv (partial op-node/get-op-by-plan g))
+                                              (mapv :handle))
+                                     []))
                      ;; targetOpHandles
                      (:return-meta req)
                      outputs)]
@@ -78,7 +84,7 @@
 
 (defn run [^Session session plan]
   (run-req->tensors session
-                    (mk-run-req [plan]))
+                    (mk-run-req [] [plan]))
   session)
 
 (defn run-all [^Session session plans]
