@@ -20,7 +20,7 @@
                          :ctrl-inputs ctrl-input-ops)
                  (op-node/compute-hash opp)))))
 
-(defn- apply-plan-to-graph
+#_(defn- apply-plan-to-graph
   [^Graph g opp]
   (let [op (cond
              (map? opp)
@@ -35,6 +35,26 @@
                                             :ctrl-inputs ctrl-input-ops))
                  (call-op-builder g opp input-ops ctrl-inputs)))
              (op-node/Op? opp) opp
+             :else (call-op-builder g (ops/c opp) [] []))]
+    op))
+
+(defn- apply-plan-to-graph
+  [^Graph g opp]
+  (let [op (cond
+             (op-node/Op? opp) opp
+             (map? opp)
+             (let [{:keys [inputs ctrl-inputs]} opp
+                   input-ops (mapv (partial apply-plan-to-graph g)
+                                   inputs)
+                   ctrl-input-ops (mapv (partial apply-plan-to-graph g)
+                                        ctrl-inputs)]
+               (if (:macro opp)
+                 (apply-plan-to-graph g
+                                      (mcro/build-macro g
+                                                        (assoc opp
+                                                               :inputs input-ops
+                                                               :ctrl-inputs ctrl-input-ops)))
+                 (call-op-builder g opp input-ops ctrl-input-ops)))
              :else (call-op-builder g (ops/c opp) [] []))]
     op))
 

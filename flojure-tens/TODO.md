@@ -13,6 +13,7 @@ x auto gen ops from protobuf
 
 x get src gen working again
 
+- does op builder c api take context arg?
 
 
 x clj graph to tensorboard
@@ -21,22 +22,31 @@ x clj graph to tensorboard
   - write graphdef to file
   - write summary w/ python
 
-- import (gradient) nodes created by c++
+x import (gradient) nodes created by c++
 - support nullptr for dx
 
-- nullptr for add gradients
 - reorg-plan
 - recursive hash???
 
 - use `intern` to create op fn vars
 
 - gradient descent optimizer -- macros?
-  - simpler gdo case?
-  - build in py
-  - export graphdef
-  - build in clj
-  - export graphdef 
-  - compare, tweak, iterate
+
+===========================================
+
+- build entire matmul gdo?
+
+- cache macros by id?
+
+- outputs
+
+- dumbest thing
+
+- how are id scopes/contexts going to work?? when does it matter?
+
+===========================================
+
+
 
 - resolve :control-inputs (as with :inputs)
 - "init" NoOp takes init assignments as ctrl inputs

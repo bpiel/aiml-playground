@@ -47,6 +47,13 @@
                                         0)) ;; hard coded to 0, because we should really be dealing with `output`s here
   builder-handle)
 
+(defn- add-ctrl-inputs
+  [builder-handle inputs]
+  (doseq [input-handle inputs]
+    (tfnative.OperationBuilder/addControlInput builder-handle
+                                               input-handle))
+  builder-handle)
+
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
   (let [{:keys [id op inputs ctrl-inputs attrs assignment output-idx]} plan
@@ -54,11 +61,13 @@
         attrs' (or attrs {})
         id' (or id (keyword (str (name op) (swap! id-atom inc))))
         input-handles (mapv :handle inputs)
+        ctrl-input-handles (mapv :handle ctrl-inputs)
         handle (-> g
                    :handle
                    (tfnative.OperationBuilder/allocate tf-op (name id'))
                    (set-attrs attrs')
                    (add-inputs input-handles)
+                   (add-ctrl-inputs ctrl-input-handles)
                    tfnative.OperationBuilder/finish)
         {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
         oper (Op. id'

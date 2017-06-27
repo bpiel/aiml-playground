@@ -74,7 +74,8 @@ with graph.as_default():
 
     print(x1)
     
-    y = tf.matmul(tf.matmul(x1, x2),  tf.sin(x1))
+    #y = tf.matmul(tf.matmul(x1, x2),  tf.sin(x1))
+    y = tf.matmul(x1, x2)
     print(y)    
 
     optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(y)

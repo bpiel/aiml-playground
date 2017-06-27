@@ -8,7 +8,7 @@
   (->> x-op
        o/cos
        (o/matmul grad)
-       vec))
+       vector))
 
 ;; TODO conj and check transpose
 (defn matmul
@@ -19,61 +19,3 @@
 (defn add
   [op [x1 x2] grad]
   )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

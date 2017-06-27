@@ -2,7 +2,8 @@
   (:require flojure-tens.common
             [flojure-tens.graph :as gr]
             [flojure-tens.op-build :as obld]
-            [flojure-tens.op-node :as op-node])
+            [flojure-tens.op-node :as op-node]
+            [flojure-tens.gradients :as grad])
   (:import [flojure_tens.common Graph]))
 
 {:macro :grad-desc-opt
@@ -32,7 +33,7 @@
    :id id
    :inputs [target]})
 
-(defmethod pre-build-macro :grad-desc-opt
+#_(defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs]} plan
         [input] inputs]
@@ -41,6 +42,28 @@
      #_ :aliases
      :inputs [input [[1.] [1.]]]}))
 
+(defmethod pre-build-macro :grad-desc-opt
+  [^Graph g plan]
+  (let [{:keys [id inputs]} plan
+        [input] inputs
+        [v-a v-b] (:inputs input)
+        mm-grad {:macro :grad
+                 :id :g_MatMul_grad_1
+                 :output-idx 0
+                 :inputs [input
+                          [[1.0 1.0][1.0 1.0]]]}]
+    {:id :g_final
+     :op :NoOp
+     :ctrl-inputs [{:id :g_update_a_1
+                    :op :ApplyGradientDescent
+                    :inputs [v-a
+                             0.5
+                             mm-grad]}
+                   {:id :g_update_b_1
+                    :op :ApplyGradientDescent
+                    :inputs [v-b
+                             0.5
+                             (assoc mm-grad :output-idx 1)]}]}))
 
 {:id :g>final
  :op :NoOp
@@ -132,7 +155,7 @@
                          0.5]}]}
 
 
-(defmethod build-macro :grad
+#_(defmethod build-macro :grad
   [^Graph g plan]
   (let [out-idx-fn #(or (:output-idx %) 0)
         [y-op dx-op] (:inputs plan)
@@ -175,6 +198,15 @@
                                   (first dy-idx-vec)
                                   (gr/mk-graph-ref g)))))
 
-#_(clojure.pprint/pprint ag1)
-
-#_(clojure.pprint/pprint ag2)
+;; TODO caching
+(defmethod build-macro :grad
+  [^Graph g plan]
+  (let [out-idx-fn #(or (:output-idx %) 0)
+        [y-op dx-op] (:inputs plan)
+        y-inputs (->> y-op
+                      :inputs
+                      (map (gr/nodes g)))]
+    (nth (case (:op y-op)
+           :Sin (grad/sin y-op y-inputs dx-op)
+           :MatMul (grad/matmul y-op y-inputs dx-op))
+         (out-idx-fn plan))))
