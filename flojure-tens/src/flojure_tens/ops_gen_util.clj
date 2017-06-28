@@ -114,13 +114,6 @@
                              (:input node-def)))
      :attrs attrs}))
 
-
-
-#_(defn dyn-defn
-  [name-sym bodies]
-  (eval `(def ~name-sym
-           (fn ~@bodies))))
-
 (defn dyn-defn
   [name-sym bodies & [docs]]
   (let [d (or docs "UNDOCUMENTED")]
@@ -133,6 +126,14 @@
   (eval `(defmethod ~name-sym ~dispatch-val
            ~body)))
 
-(defn fn-name-default [op-def]
+#_(defn fn-name-default [op-def]
   (symbol (clojure.string/lower-case (:name op-def))))
+
+(defn fn-name-default
+  [{n :name}]
+  (->> n
+       (re-seq #"[A-Z][a-z0-9]*")
+       (map clojure.string/lower-case)
+       (clojure.string/join "-")
+       symbol))
 

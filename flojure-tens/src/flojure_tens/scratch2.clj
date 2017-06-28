@@ -37,7 +37,7 @@
                                3 (fn [] (repeatedly 1 #(dec (rand 2))))))
       network (fn [x]
                 (-> x
-                    (ops/matmul weights)
+                    (ops/mat-mul weights)
                     ops/sigmoid))
       network-inputs (network inputs)
       error (fn [network-output]
@@ -55,7 +55,7 @@
       deltas (fn [network-output]
                (->> (sigmoid' network-inputs)
                     (ops/mul (error' network-inputs))
-                    (ops/matmul (ops/transpose inputs))))
+                    (ops/mat-mul (ops/transpose inputs))))
       train-network (->> network-inputs
                          deltas
                          (ops/sub weights)
@@ -150,9 +150,9 @@
   (def g1 g)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g))))
 
-(let [a (ops/v :a [[0.2] [0.7]])
-      b (ops/v :b [[0.3 0.6]])
-      y (ops/matmul a b)
+(let [a (ops/v :a [[0.1] [0.1]])
+      b (ops/v :b [[0.1 0.1]])
+      y (ops/mat-mul a b)
       gdo (mcro/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
       s (ft/graph->session g)]
@@ -160,14 +160,16 @@
   (def s1 s)
   (def gdo1 gdo)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+  (println "===================")
   (ft/run-init-variable-assignments s1)
+(Thread/sleep 200)
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))
-  (clojure.pprint/pprint (ft/produce s1 y))
-  (ft/run-all s1 [gdo1 gdo1 gdo1 gdo1 gdo1 gdo1 gdo1])
+#_  (clojure.pprint/pprint (ft/fetch s1 y)) ;; RACE CONDITION!!!
+  (ft/run-all s1 [gdo1])
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))
-  (clojure.pprint/pprint (ft/produce s1 y)))
+  (clojure.pprint/pprint (ft/fetch s1 y)))
 
 
 (def s1 (ft/graph->session g1))

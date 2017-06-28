@@ -15,9 +15,9 @@
 
 ;; TODO move to utils?
 (defn compute-hash
-  [{:keys [id] :as plan}]
+  [{:keys [id scope] :as plan}]
   (if id
-    (hash id)
+    (hash [id scope])
     (hash plan)))
 
 (defn get-op-by-plan

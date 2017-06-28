@@ -40,15 +40,15 @@
                             input
                             [[1.0 1.0][1.0 1.0]]))]
     (sc/with-id-scopes scope
-      (ops/noop id
-                {:ctrl-inputs [(ops/applygradientdescent :update_a_1
-                                                         v-a
-                                                         0.5
-                                                         mm-grad)
-                               (ops/applygradientdescent :update_b_1
-                                                         v-b
-                                                         0.5
-                                                         (assoc mm-grad :output-idx 1))]}))))
+      (ops/no-op id
+                {:ctrl-inputs [(ops/apply-gradient-descent :update_a_1
+                                                           v-a
+                                                           0.5
+                                                           mm-grad)
+                               (ops/apply-gradient-descent :update_b_1
+                                                           v-b
+                                                           0.5
+                                                           (assoc mm-grad :output-idx 1))]}))))
 
 {:id :g>final
  :op :NoOp
@@ -150,5 +150,5 @@
     (sc/with-id-scopes (:scope plan)
       (nth (case (:op y-op)
              :Sin (grad/sin y-op y-inputs dx-op)
-             :MatMul (grad/matmul y-op y-inputs dx-op))
+             :MatMul (grad/mat-mul y-op y-inputs dx-op))
            (out-idx-fn plan)))))

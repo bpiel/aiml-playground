@@ -7,14 +7,14 @@
   [op [x-op] grad]
   (->> x-op
        o/cos
-       (o/matmul grad)
+       (o/mat-mul grad)
        vector))
 
 ;; TODO conj and check transpose
-(defn matmul
+(defn mat-mul
   [op [x1 x2] grad]
-  [(o/matmul nil {:transpose_b true} grad x2)
-   (o/matmul nil {:transpose_a true} x1 grad)])
+  [(o/mat-mul nil {:transpose_b true} grad x2)
+   (o/mat-mul nil {:transpose_a true} x1 grad)])
 
 (defn add
   [op [x1 x2] grad]
