@@ -29,31 +29,31 @@
   (Session. (tfnative.Session/allocate (:handle g))
             g))
 
+(defn- plans->handles
+  [plans ^Graph g]
+  (or (some->> plans
+               not-empty
+               (mapv (partial op-node/get-op-by-plan g))
+               (mapv :handle))
+      []))
+
 ;; TODO use Graph doSync
 (defn run-req->handles
   [^Session s ^RunRequest req]
-  (let [g (:graph s)
+  (let [fetch-count (-> req :fetch count)
+        g (:graph s)
         outputs (long-array (vec
-                             (take (count (:fetch req))
+                             (take fetch-count
                                    (repeatedly #(:handle (tsr/create-from-value 0))))))
-        maybe-meta (tfnative.Session/run (:handle s) 
+        maybe-meta (tfnative.Session/run
+                     (:handle s) 
                      (:options req)
                      (long-array []) ;; inputTensorHandles
                      (long-array []) ;; inputOpHandles
                      (int-array [])  ;; inputOpIndices
-                     (long-array (or (some->> req
-                                              :fetch
-                                              not-empty
-                                              (mapv (partial op-node/get-op-by-plan g))
-                                              (mapv :handle))
-                                     [])) ;; outputOpHandles
-                     (int-array (repeat (count (:fetch req)) 0)) ;; outputOpIndices
-                     (long-array (or (some->> req
-                                              :targets
-                                              not-empty
-                                              (mapv (partial op-node/get-op-by-plan g))
-                                              (mapv :handle))
-                                     []))
+                     (long-array (-> req :fetch (plans->handles g))) ;; outputOpHandles
+                     (int-array (repeat fetch-count 0)) ;; outputOpIndices
+                     (long-array (-> req :targets (plans->handles g)))
                      ;; targetOpHandles
                      (:return-meta req)
                      outputs)]
@@ -66,13 +66,6 @@
   (let [handles (run-req->handles s req)]
     (mapv tsr/create-from-handle
           handles)))
-
-#_(defn run-all
-  [^Session s plans]
-  (doseq [p (drop-last)]
-    (run s (mk-run-req [p])))
-  (run s (mk-run-req [(last plans)])))
-
 
 (defn fetch-all->tensors [^Session session plans]
   (->> plans

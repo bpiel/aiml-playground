@@ -69,7 +69,7 @@
   (->> g
        :state
        deref
-       :ids-by-handle
+       :handle->id
        keys
        (mapv handle->id-expr)
        (into {})))

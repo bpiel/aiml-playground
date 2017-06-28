@@ -146,7 +146,7 @@
         [y-op dx-op] (:inputs plan)
         y-inputs (->> y-op
                       :inputs
-                      (map (gr/nodes g)))]
+                      (map (gr/id->node g)))]
     (sc/with-id-scopes (:scope plan)
       (nth (case (:op y-op)
              :Sin (grad/sin y-op y-inputs dx-op)

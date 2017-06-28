@@ -16,12 +16,10 @@ x resolve :control-inputs (as with :inputs)
 x check for auto-gen overides during compile time
 x docstrings for auto gen op fns
 
-
-- reorg-plan
-- recursive hash???
-- use `intern` to create op fn vars
+- clean up graph state
 
 - cache macros by id? 
+
 - id scopes for gdo 
 ? macro id maps to output op node(s) ?
 
@@ -31,6 +29,10 @@ x docstrings for auto gen op fns
  - learning rate arg
 
 ~ build entire matmul gdo?
+
+- reorg-plan
+- recursive hash???
+- use `intern` to create op fn vars
 
 - variable macro
 - varaible scope

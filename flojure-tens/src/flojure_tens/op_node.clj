@@ -22,8 +22,10 @@
 
 (defn get-op-by-plan
   [^Graph g plan]
-  ((gr/nodes g)
-   ((gr/ids-by-hash g) (compute-hash plan))))
+  (->> plan
+       compute-hash
+       ((gr/hash->id g))
+       ((gr/id->node g))))
 
 (defn node-def->plan
   [node-def]

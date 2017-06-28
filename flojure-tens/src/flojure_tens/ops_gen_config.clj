@@ -160,9 +160,9 @@
 
 (defn hook-pre-build-op-override-assign
   [args]
-  (let [nodes (-> args :g :state deref :nodes)
+  (let [id->node (-> args :g :state deref :id->node)
         value (-> args :plan :inputs first)
-        vari (-> args :plan :vari nodes)]
+        vari (-> args :plan :vari id->node)]
     (-> args
         (assoc-in [:plan :inputs] [vari value])
         (dissoc :vari)

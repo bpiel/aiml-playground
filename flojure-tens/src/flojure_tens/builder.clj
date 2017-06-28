@@ -10,9 +10,9 @@
 
 (defn call-op-builder
   [^Graph g opp input-ops ctrl-input-ops]
-  (let [{:keys [nodes ids-by-hash]} (-> g :state deref)
+  (let [{:keys [id->node hash->id]} (-> g :state deref)
         hsh (op-node/compute-hash opp)]
-    (if-let [op (some-> hsh ids-by-hash nodes)]
+    (if-let [op (some-> hsh hash->id id->node)]
       op
       (obld/build g
                   (assoc opp
