@@ -32,6 +32,14 @@
     :output-idx 0
     :inputs [y dx]}))
 
+(defn const-same-shape
+  [id input value]
+  (sc/assoc-id-scope
+   {:macro :const-same-shape
+    :id id
+    :inputs [input]
+    :value value}))
+
 (defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
@@ -40,7 +48,9 @@
         mm-grad (sc/with-id-scopes scope
                   (gradient :MatMul_grad_1
                             input
-                            [[1.0 1.0][1.0 1.0]]))]
+                            (const-same-shape :ones
+                                              input
+                                              1.0 )))]
     (sc/with-id-scopes scope
       (ops/no-op id
                 {:ctrl-inputs [(ops/apply-gradient-descent :update_a_1
@@ -154,6 +164,12 @@
       (case (:op y-op)
         :Sin (grad/sin y-op y-inputs dx-op)
         :MatMul (grad/mat-mul y-op y-inputs dx-op)))))
+
+
+(defmethod build-macro :const-same-shape
+  [^Graph g plan]
+  (let [shape (-> plan :inputs first :shapes first)]
+    [(ops/c (sh/const-md-vec shape (:value plan)))]))
 
 (defn build
   [^Graph g plan hsh]
