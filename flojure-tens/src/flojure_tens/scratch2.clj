@@ -150,8 +150,8 @@
   (def g1 g)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g))))
 
-(let [a (ops/v :a [[0.1] [0.1]])
-      b (ops/v :b [[0.1 0.1]])
+(let [a (ops/v :a [[0.2] [0.7]])
+      b (ops/v :b [[0.3 0.6]])
       y (ops/mat-mul a b)
       gdo (mcro/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
@@ -165,7 +165,7 @@
 (Thread/sleep 200)
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))
-#_  (clojure.pprint/pprint (ft/fetch s1 y)) ;; RACE CONDITION!!!
+#_  (clojure.pprint/pprint (ft/fetch s1 y)) ;; RACE CONDITION!!! ...this doesn't fix it
   (ft/run-all s1 [gdo1])
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))

@@ -142,13 +142,17 @@
 ;; TODO caching
 (defmethod build-macro :grad
   [^Graph g plan]
-  (let [out-idx-fn #(or (:output-idx %) 0)
-        [y-op dx-op] (:inputs plan)
+  (let [[y-op dx-op] (:inputs plan)
         y-inputs (->> y-op
                       :inputs
                       (map (gr/id->node g)))]
     (sc/with-id-scopes (:scope plan)
-      (nth (case (:op y-op)
-             :Sin (grad/sin y-op y-inputs dx-op)
-             :MatMul (grad/mat-mul y-op y-inputs dx-op))
-           (out-idx-fn plan)))))
+      (case (:op y-op)
+        :Sin (grad/sin y-op y-inputs dx-op)
+        :MatMul (grad/mat-mul y-op y-inputs dx-op)))))
+
+(defn build
+  [^Graph g plan hsh]
+  (let [outputs (build-macro g plan)]
+    (gr/add-macro-to-state! g hsh outputs)
+    outputs))

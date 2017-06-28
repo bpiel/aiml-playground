@@ -18,7 +18,9 @@
   [{:keys [id scope] :as plan}]
   (if id
     (hash [id scope])
-    (hash plan)))
+    (-> plan
+        (dissoc :output-idx)
+        hash)))
 
 (defn get-op-by-plan
   [^Graph g plan]

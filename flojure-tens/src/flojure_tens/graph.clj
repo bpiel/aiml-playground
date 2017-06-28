@@ -11,7 +11,8 @@
 (defn init-graph-state []
   {:id->node {}
    :hash->id {}
-   :handle->id {}})
+   :handle->id {}
+   :macro-hash->outputs {}})
 
 ;; don't overwrite!
 (defn- add-to-id->node
@@ -47,6 +48,16 @@
   [^Graph {:keys [handle handle-lock state]} ^Op op & [variable-assigment]]
   (swap! state add-op-to-state* op variable-assigment))
 
+(defn add-macro-to-state*
+  [graph-state hsh outputs]
+  (update graph-state
+          :macro-hash->outputs
+          assoc hsh outputs))
+
+(defn add-macro-to-state!
+  [^Graph {:keys [handle handle-lock state]} hsh outputs]
+  (swap! state add-macro-to-state* hsh outputs))
+
 (defn mk-graph-ref
   [^Graph g]
   (GraphRef. (:closed g) (:handle-lock g)))
@@ -79,4 +90,26 @@
 (defn add-output-by-handle! [^Graph g handle idx]
     
   (throw (Exception. "NOT IMPLEMENTED")))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

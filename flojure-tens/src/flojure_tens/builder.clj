@@ -9,16 +9,30 @@
   (:import [flojure_tens.common Graph Op]))
 
 (defn call-op-builder
-  [^Graph g opp input-ops ctrl-input-ops]
+  [^Graph g {:keys [output-idx] :as opp} input-ops ctrl-input-ops]
   (let [{:keys [id->node hash->id]} (-> g :state deref)
         hsh (op-node/compute-hash opp)]
     (if-let [op (some-> hsh hash->id id->node)]
-      op
+      (assoc op :output-idx (or output-idx 0))
       (obld/build g
                   (assoc opp
                          :inputs input-ops
-                         :ctrl-inputs ctrl-input-ops)
+                         :ctrl-inputs ctrl-input-ops
+                         :output-idx (or output-idx 0))
                  (op-node/compute-hash opp)))))
+
+(defn call-macro-builder
+  [^Graph g {:keys [output-idx] :as opp} input-ops ctrl-input-ops]
+  (let [{:keys [macro-hash->outputs]} (-> g :state deref)
+        hsh (op-node/compute-hash opp)]
+    (let [outputs (or (some-> hsh macro-hash->outputs)
+                      (mcro/build g
+                                  (assoc opp
+                                         :inputs input-ops
+                                         :ctrl-inputs ctrl-input-ops)
+                                  hsh))]
+      (def o1 outputs)
+      (nth outputs (or output-idx 0)))))
 
 (defn- apply-plan-to-graph
   [^Graph g opp]
@@ -31,10 +45,7 @@
                    ctrl-input-ops (mapv (partial apply-plan-to-graph g)
                                         ctrl-inputs)]
                (if (:macro opp)
-                 (->> (assoc opp
-                             :inputs input-ops
-                             :ctrl-inputs ctrl-input-ops)
-                      (mcro/build-macro g)
+                 (->> (call-macro-builder g opp input-ops ctrl-input-ops)
                       (apply-plan-to-graph g))
                  (call-op-builder g opp input-ops ctrl-input-ops)))
              :else (call-op-builder g (ops/c opp) [] []))]
