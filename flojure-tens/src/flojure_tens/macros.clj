@@ -25,11 +25,11 @@
       :inputs [target]})))
 
 (defn gradient
-  [id y dx]
+  [id y dx output-idx]
   (sc/assoc-id-scope
    {:macro :grad
     :id id
-    :output-idx 0
+    :output-idx output-idx
     :inputs [y dx]}))
 
 (defn const-same-shape
@@ -40,28 +40,63 @@
     :inputs [input]
     :value value}))
 
+(defn merge-things
+  [& ms]
+  {:vars (vec (apply concat (mapv :vars ms)))
+   :plan->outputs (apply merge-with
+                        (partial merge-with into)
+                        (mapv :plan->outputs ms))})
+
+(defn grad-desc-opt****
+  [output input-idx plan]
+  (apply merge-things
+         {:vars (if (= :VariableV2 (:op plan))
+                  [plan]
+                  [])
+          :plan->outputs {plan [[output input-idx]]}}
+         (map-indexed (partial grad-desc-opt**** plan)
+                      (:inputs plan))))
+
+(defn grad-desc-opt*
+  [plan]
+  (apply merge-things
+         (map-indexed (partial grad-desc-opt**** nil)
+                      (:inputs plan))))
+
+(defn grad-desc-opt***
+  [x alpha input input-idx]
+  (let [[[output output-idx]] ((:plan->outputs x) input)]
+    (gradient (gensym "grad")
+              input
+              (if output
+                (grad-desc-opt*** x alpha output output-idx)
+                (const-same-shape (gensym "ones")
+                                  input
+                                  1.0))
+              input-idx)))
+
+(defn grad-desc-opt**
+  [x alpha]
+  (mapv #(let [[[output input-idx]] ((:plan->outputs x) %)]
+           (ops/apply-gradient-descent (gensym "update")
+                                       %
+                                       alpha
+                                       (grad-desc-opt*** x
+                                                         alpha
+                                                         output
+                                                         input-idx)))
+        (:vars x)))
+
 (defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
         [input] inputs
-        [v-a v-b] (:inputs input)
-        mm-grad (sc/with-id-scopes scope
-                  (gradient :MatMul_grad_1
-                            input
-                            (const-same-shape :ones
-                                              input
-                                              1.0 )))]
+        [v-a v-b] (:inputs input)]
     (sc/with-id-scopes scope
       (ops/no-op id
-                {:ctrl-inputs [(ops/apply-gradient-descent :update_a_1
-                                                           v-a
-                                                           0.5
-                                                           mm-grad)
-                               (ops/apply-gradient-descent :update_b_1
-                                                           v-b
-                                                           0.5
-                                                           (assoc mm-grad :output-idx 1))]}))))
-
+                 {:ctrl-inputs
+                  (grad-desc-opt** (grad-desc-opt* plan)
+                                   0.5 )}))))
 
 {:id :g>final
  :op :NoOp
