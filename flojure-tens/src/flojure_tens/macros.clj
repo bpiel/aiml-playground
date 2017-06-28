@@ -5,7 +5,9 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.op-build :as obld]
             [flojure-tens.op-node :as op-node]
-            [flojure-tens.gradients :as grad])
+            [flojure-tens.gradients :as grad]
+            [flojure-tens.shape :as sh]
+            [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph]))
 
 (defmulti pre-build-macro (fn [^Graph g plan] (:macro plan)))
@@ -49,6 +51,7 @@
                                                            v-b
                                                            0.5
                                                            (assoc mm-grad :output-idx 1))]}))))
+
 
 {:id :g>final
  :op :NoOp
@@ -145,8 +148,9 @@
   (let [[y-op dx-op] (:inputs plan)
         y-inputs (->> y-op
                       :inputs
-                      (map (gr/id->node g)))]
-    (sc/with-id-scopes (:scope plan)
+                      (map (gr/id->node g)))
+        local-scope (str (:id y-op) "_grad")]
+    (sc/with-id-scopes (conj (:scope plan) local-scope)
       (case (:op y-op)
         :Sin (grad/sin y-op y-inputs dx-op)
         :MatMul (grad/mat-mul y-op y-inputs dx-op)))))

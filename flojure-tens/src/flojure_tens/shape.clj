@@ -33,6 +33,15 @@
                             #(zeros-array-by-fn (drop 1 sh)
                                                 f))))))
 
+(defn const-md-vec
+  [sh c]
+  (case (count sh)
+    0 c
+    1 (vec (repeat (first sh) c))
+    (vec (repeatedly (first sh)
+                     #(const-md-vec (drop 1 sh)
+                                    c)))))
+
 (defn shape-of-seq
   [s]
   (loop [agg []
@@ -56,3 +65,34 @@
 (defn tensor-attr-shape->vec
   [tas]
   (mapv :size (:dim tas)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

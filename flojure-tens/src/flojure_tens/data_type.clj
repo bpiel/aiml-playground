@@ -227,14 +227,6 @@
     (mapv md-array->vecs a)
     a))
 
-#_(defn vec->md-array
-  [v]
-  (if (vector? v)
-    (if-let [dt (data-type-of-seq v)]
-      ((:array-fn dt) v)
-      (to-array (map vec->md-array v)))
-    v))
-
 (defn seq->md-array
   [v]
   (if (sequential? v)

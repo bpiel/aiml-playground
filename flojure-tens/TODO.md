@@ -15,17 +15,13 @@ x clj graph to tensorboard
 x resolve :control-inputs (as with :inputs)
 x check for auto-gen overides during compile time
 x docstrings for auto gen op fns
-
-- clean up graph state
-
-- cache macros by id? 
-
-- id scopes for gdo 
-? macro id maps to output op node(s) ?
+x clean up graph state
+x cache macros by hash
+x id scopes for gdo 
 
 - gradient descent optimizer macro
- - graph building
  - 1s shape
+ - graph building
  - learning rate arg
 
 ~ build entire matmul gdo?
