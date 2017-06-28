@@ -1,6 +1,6 @@
 (ns flojure-tens.common)
 
-(defrecord Graph [^long handle ^clojure.lang.Atom state ^clojure.lang.Atom closed ^Object handle-lock])
+(defrecord Graph [^long handle ^clojure.lang.Atom state ^clojure.lang.Atom closed ^Object handle-lock ^clojure.lang.Atom counter])
 
 (defrecord GraphRef [^clojure.lang.Atom closed ^Object handle-lock])
 

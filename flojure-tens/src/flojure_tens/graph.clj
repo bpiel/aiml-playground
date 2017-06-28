@@ -70,11 +70,13 @@
   ([] (Graph. (tfnative.Graph/allocate)
               (atom (init-graph-state))
               (atom false)
-              (Object.)))
+              (Object.)
+              (atom 0)))
   ([graph-handle] (Graph. graph-handle
                           (atom (init-graph-state))
                           (atom false)
-                          (Object.))))
+                          (Object.)
+                          (atom 0))))
 
 (defn- spit-bytes
   "Is there a better way?"

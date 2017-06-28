@@ -10,8 +10,6 @@
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
-(def id-atom (atom 0))
-
 (defn get-attr-bytes
   [v]
   (cond (string? v) (.getBytes v)
@@ -56,7 +54,7 @@
 
 ;; TODO combine w/ utils
 (defn mk-id
-  [scope id op]
+  [scope id op counter]
   (let [s (or (some->> scope
                        not-empty
                        (map name)
@@ -64,7 +62,7 @@
                        (#(str % "/")))
               "")
         id' (or (some-> id name)
-                (str (name op) "_" (swap! id-atom inc)))]
+                (str (name op) "_" (swap! counter inc)))]
     (str s id')))
 
 (defn build-op
@@ -72,7 +70,7 @@
   (let [{:keys [id scope op inputs ctrl-inputs attrs assignment output-idx]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
-        id' (mk-id scope id op)
+        id' (mk-id scope id op (:counter g))
         input-handles (mapv :handle inputs)
         ctrl-input-handles (mapv :handle ctrl-inputs)
         handle (-> g
