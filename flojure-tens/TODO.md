@@ -20,9 +20,12 @@ x cache macros by hash
 x id scopes for gdo 
 
 - gradient descent optimizer macro
- - 1s shape
- - graph building
- - learning rate arg
+ x 1s shape
+ x graph building
+ x learning rate arg
+ - AddN
+ 
+- more grad fns
 
 ~ build entire matmul gdo?
 

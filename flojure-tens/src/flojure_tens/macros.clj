@@ -65,16 +65,23 @@
 
 (defn grad-desc-opt***
   [x alpha input input-idx]
-  (let [[[output output-idx]] ((:plan->outputs x) input)]
-    (gradient (gensym "grad")
-              input
-              (if output
-                (grad-desc-opt*** x alpha output output-idx)
-                (const-same-shape (gensym "ones")
-                                  input
-                                  1.0))
-              input-idx)))
+  (let [pairs ((:plan->outputs x) input)]
+    (if (= 1 (count pairs))
+      (let [[[output output-idx]] pairs]
+        (gradient (gensym "grad")
+                  input
+                  (if output
+                    (grad-desc-opt*** x alpha output output-idx)
+                    (const-same-shape (gensym "ones")
+                                      input
+                                      1.0))
+                  input-idx))
+      (ops/add-n nil
+                 (mapv (fn [[a b]]
+                         (grad-desc-opt*** x alpha a b))
+                       pairs)))))
 
+;; TODO AddN
 (defn grad-desc-opt**
   [x alpha]
   (mapv #(let [[[output input-idx]] ((:plan->outputs x) %)]
