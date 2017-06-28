@@ -54,6 +54,7 @@
                                                input-handle))
   builder-handle)
 
+;; TODO combine w/ utils
 (defn mk-id
   [scope id op]
   (let [s (or (some->> scope

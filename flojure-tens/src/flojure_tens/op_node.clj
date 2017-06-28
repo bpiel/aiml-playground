@@ -13,8 +13,6 @@
 (def NodeDefP (pr/protodef NodeDef))
 
 
-(defn Op? [o] (= (type o) Op))
-
 ;; TODO move to utils?
 (defn compute-hash
   [{:keys [id] :as plan}]

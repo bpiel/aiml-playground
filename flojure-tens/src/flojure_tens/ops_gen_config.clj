@@ -3,7 +3,8 @@
             [flojure-tens.data-type :as dt]
             [flojure-tens.shape :as sh]
             [flatland.protobuf.core :as pr]
-            flojure-tens.common)
+            [flojure-tens.common :as com]
+            [flojure-tens.util :as util])
   (:import [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.framework OpDef OpList NodeDef]))
 
@@ -167,18 +168,31 @@
         (dissoc :vari)
         hook-pre-build-op-default)))
 
+(defn ->tf-id
+  [x]
+  (cond (com/Op? x) (:id x)
+        (map? x) (util/mk-tf-id (:scope x) (:id x))
+        (keyword? x) (name x)
+        (string? x) x
+        :else nil))
+
+(defn plan-assign
+  ([id attrs vari value]
+   (let [vari-id (->tf-id vari)]
+     (when-not vari-id
+       (throw (Exception. (str "Invalid assignment target: " vari))))
+     (cond-> {:op :Assign :vari vari-id :inputs [value]}
+       (not-empty attrs) (assoc :attrs attrs)
+       id (assoc :id id))))
+  ([vari value]
+   (plan-assign nil nil vari value)))
+
 (defn plan-fn-bodies-assign
-  [fn-name-sym _]
-  ['([id attrs vari value]
-     (let [vari-id (or (:id vari)
-                       vari)]
-       (when (-> vari-id string? not)
-         (throw (Exception. (str "Invalid assignment target: " vari))))
-       (cond-> {:op :Assign :vari vari-id :inputs [value]}
-         (not-empty attrs) (assoc :attrs attrs)
-         id (assoc :id id))))
+  [_ _]
+  [`([~'id ~'attrs ~'vari ~'value]
+     (plan-assign ~'id ~'attrs ~'vari ~'value))
    `([~'vari ~'value]
-     (~fn-name-sym nil nil ~'vari ~'value))])
+     (plan-assign nil nil ~'vari ~'value))])
 
 (register-op-gen-cfg!
  "Assign"

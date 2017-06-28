@@ -30,12 +30,13 @@
         (coll? v) (vec v)
         :else [v]))
 
-(defn tf-name->id
-  [name-str]
-  (keyword (clojure.string/replace name-str #"/" ">")))
-
-(defn id->tf-name
-  [id-kw]
-  (-> id-kw
-      name
-      (clojure.string/replace  #">" "/")))
+(defn mk-tf-id
+  [scope id]
+  (let [s (or (some->> scope
+                       not-empty
+                       (map name)
+                       (clojure.string/join "/")
+                       (#(str % "/")))
+              "")
+        id' (name id)]
+    (str s id')))

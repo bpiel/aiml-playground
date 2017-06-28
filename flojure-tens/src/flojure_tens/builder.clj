@@ -1,5 +1,5 @@
 (ns flojure-tens.builder
-  (:require flojure-tens.common
+  (:require [flojure-tens.common :as com]
             [flojure-tens.ops2 :as ops]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.op-build :as obld]
@@ -23,7 +23,7 @@
 (defn- apply-plan-to-graph
   [^Graph g opp]
   (let [op (cond
-             (op-node/Op? opp) opp
+             (com/Op? opp) opp
              (map? opp)
              (let [{:keys [inputs ctrl-inputs]} opp
                    input-ops (mapv (partial apply-plan-to-graph g)
