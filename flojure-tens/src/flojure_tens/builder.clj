@@ -48,6 +48,9 @@
                  (->> (call-macro-builder g opp input-ops ctrl-input-ops)
                       (apply-plan-to-graph g))
                  (call-op-builder g opp input-ops ctrl-input-ops)))
+             (vector? opp)
+             (mapv (partial apply-plan-to-graph g)
+                   opp)
              :else (call-op-builder g (ops/c opp) [] []))]
     op))
 
@@ -85,6 +88,8 @@
     (doseq [p inits]
       (build->graph g p))
     g))
+
+
 
 
 

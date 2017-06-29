@@ -36,9 +36,6 @@
   (-> args
       (update-in [:plan :attrs] ogu/convert-attrs (-> args :op-def :attr))))
 
-
-
-
 (defn get-op-fn-body-default
   [fn-name-sym op-def]
   (let [input-syms (mapv #(-> % :name symbol)
@@ -91,6 +88,19 @@
 
 
 ;; Op Gen Custom Overrides =================================================
+
+
+(defn hook-pre-build-op-override-addn
+  [args]
+  (let [dtype (-> args :plan :attrs :value dt/data-type-of-whatever :native)]
+    (-> args
+        (assoc-in [:plan :attrs :N] (-> args :plan :inputs first count))
+        hook-pre-build-op-default)))
+
+(register-op-gen-cfg!
+ "AddN"
+ {:hook-pre-build `hook-pre-build-op-override-addn})
+
 
 (defn hook-pre-build-op-override-const
   [args]

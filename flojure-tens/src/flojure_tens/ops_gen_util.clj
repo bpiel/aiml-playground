@@ -14,10 +14,11 @@
 
 (defn convert-attr
   [value def-type]
-  (case def-type
+  (case def-type ;; wtf
     :tensor (:handle (tsr/create-from-value value))
     :type (dt/->tf-attr-val :int64 value)
     :shape (dt/->tf-attr-val :int64 value)
+    :int (dt/->tf-attr-val :int32 value)
     (dt/->tf-attr-val def-type value)))
 
 (defn convert-attrs*

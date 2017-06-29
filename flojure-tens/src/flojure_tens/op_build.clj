@@ -5,6 +5,7 @@
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.shape :as sh]
+            [flojure-tens.util :as util]
             [flatland.protobuf.core :as pr]
             [flojure-tens.common])
   (:import [flojure_tens.common Graph Op GraphRef]
@@ -18,7 +19,7 @@
 
 (defn- set-attr
   [builder-handle k v ty]
-  (case ty
+  (case ty ;; wtf
     :tensor (tfnative.OperationBuilder/setAttrTensor builder-handle
                                                      k v)
     :type (tfnative.OperationBuilder/setAttrType builder-handle
@@ -27,6 +28,8 @@
                                                    k v (count v))
     :string (tfnative.OperationBuilder/setAttrString builder-handle
                                                      k (get-attr-bytes v))
+    :int (tfnative.OperationBuilder/setAttrInt builder-handle
+                                                 k v)
     (tfnative.OperationBuilder/setAttr builder-handle
                                        k v)))
 
@@ -40,9 +43,14 @@
 (defn- add-inputs
   [builder-handle inputs]
   (doseq [input-handle inputs]
-    (tfnative.OperationBuilder/addInput builder-handle
-                                        input-handle
-                                        0)) ;; hard coded to 0, because we should really be dealing with `output`s here
+    (if (vector? input-handle)
+      (tfnative.OperationBuilder/addInputList builder-handle
+                                              (long-array input-handle)
+                                              (int-array (repeat (count input-handle)
+                                                                  0)))      
+      (tfnative.OperationBuilder/addInput builder-handle
+                                          input-handle
+                                          0))) ;; hard coded to 0, because we should really be dealing with `output`s here
   builder-handle)
 
 (defn- add-ctrl-inputs
@@ -65,13 +73,21 @@
                 (str (name op) "_" (swap! counter inc)))]
     (str s id')))
 
+(defn- get-handles
+  [inputs]
+  (util/visit-pre #(if (map? %) (:handle %) %)
+                  vector?
+                  identity
+                  #(vec %2)
+                  inputs))
+
 (defn build-op
   [{:keys [^Graph g plan hsh op-def]}]
   (let [{:keys [id scope op inputs ctrl-inputs attrs assignment output-idx]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
         id' (mk-id scope id op (:counter g))
-        input-handles (mapv :handle inputs)
+        input-handles #_(mapv :handle inputs) (get-handles inputs)
         ctrl-input-handles (mapv :handle ctrl-inputs)
         handle (-> g
                    :handle

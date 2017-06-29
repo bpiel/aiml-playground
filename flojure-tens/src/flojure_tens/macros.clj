@@ -44,7 +44,7 @@
   [& ms]
   {:vars (vec (apply concat (mapv :vars ms)))
    :plan->outputs (apply merge-with
-                        (partial merge-with into)
+                         into
                         (mapv :plan->outputs ms))})
 
 (defn grad-desc-opt****
@@ -69,22 +69,22 @@
     (let [[[input input-idx]] pairs]
       (when input
         (let [p2 ((:plan->outputs x) input)]
-          (gradient (gensym "grad")
+          (gradient nil
                     input
                     (or (grad-desc-opt*** x alpha p2)
-                        (const-same-shape (gensym "ones")
+                        (const-same-shape nil
                                           input
                                           1.0))
                     input-idx))))
     (ops/add-n nil
                (mapv (fn [p]
-                       (grad-desc-opt*** x alpha p))
+                       (grad-desc-opt*** x alpha [p]))
                      pairs))))
 
 (defn grad-desc-opt**
   [x alpha]
   (mapv #(let [pairs ((:plan->outputs x) %)]
-           (ops/apply-gradient-descent (gensym "update")
+           (ops/apply-gradient-descent nil
                                        %
                                        alpha
                                        (grad-desc-opt*** x

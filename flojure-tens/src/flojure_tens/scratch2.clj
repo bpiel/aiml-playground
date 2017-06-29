@@ -131,12 +131,16 @@
         tsr/get-value-clj))
 
 
-(let [a (ops/c [[0.2] [0.7]])
-      b (ops/c [[0.3 0.6]])
+(let [a (ops/v :a [[0.2] [0.7]])
+      b (ops/v :b [[0.3 0.6]])
       y (ops/mat-mul (ops/mat-mul a b) (ops/sin a))
-      gdo (mcro/grad-desc-opt :gdo y)
-      g (ft/build->graph gdo)]
+      gdo (mcro/grad-desc-opt :gdo y :gradients)
+      g (ft/build->graph gdo)
+      s (ft/graph->session g)]
   (def g1 g)
+  (ft/run-init-variable-assignments s)
+  (ft/run-all s [gdo])
+  (ft/produce s y)
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(-> (sess/run-plan-w-session s [y])
         first
