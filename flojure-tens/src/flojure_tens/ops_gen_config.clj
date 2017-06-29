@@ -153,10 +153,10 @@
 
 (defn plan-fn-bodies-assign
   [fn-name-sym _]
-  ['([id value] {:op :VariableV2   ;; TODO fix!!
+  ['([id value] {:op :VariableV2
                  :id id
                  :assignment value})
-   '([id attrs value] {:op :VariableV2 ;; TODO fix!!
+   '([id attrs value] {:op :VariableV2
                        :id id
                        :assignment value
                        :attrs attrs})])
@@ -230,9 +230,6 @@
 (register-op-gen-cfg!
  :default
  {:op-def-processor op-def-processor-default})
-
-
-
 
 
 (defn op-def-processor [op-def]

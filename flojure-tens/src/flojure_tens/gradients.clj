@@ -17,7 +17,7 @@
         (for [[k v _] (:attrs op)]
           [(keyword k) v])))
 
-;; TODO conj and check transpose
+;; TODO conj
 (defn mat-mul
   [op [x1 x2] grad]
   (let [{ta :transpose_a tb :transpose_b} (get-attrs-map op)]

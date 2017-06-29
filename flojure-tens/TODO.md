@@ -19,22 +19,23 @@ x clean up graph state
 x cache macros by hash
 x id scopes for gdo 
 
-- gradient descent optimizer macro
+x gradient descent optimizer macro
  x 1s shape
  x graph building
  x learning rate arg
- - AddN
+ x AddN
  
 - more grad fns
 
-~ build entire matmul gdo?
+- udacity 2
+- next udacity!?!?
 
 - reorg-plan
 - recursive hash???
 - use `intern` to create op fn vars
 
 - variable macro
-- varaible scope
+- variable scope
 
 
 - "init" NoOp takes init assignments as ctrl inputs
@@ -44,6 +45,7 @@ x id scopes for gdo
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 - ref counting instead of hard lock?
 
+- NN!?!!
 
 
 -----

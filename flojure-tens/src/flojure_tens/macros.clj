@@ -193,7 +193,6 @@
                                              [111]]}]}
                          0.5]}]}
 
-;; TODO caching
 (defmethod build-macro :grad
   [^Graph g plan]
   (let [[y-op dx-op] (:inputs plan)
