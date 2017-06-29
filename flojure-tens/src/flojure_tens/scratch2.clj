@@ -140,7 +140,9 @@
   (def g1 g)
   (ft/run-init-variable-assignments s)
   (ft/run-all s [gdo])
-  (ft/produce s y)
+  (clojure.pprint/pprint (ft/produce s y))
+  (ft/run-all s [gdo])
+  (clojure.pprint/pprint (ft/produce s y))
   (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_(-> (sess/run-plan-w-session s [y])
         first

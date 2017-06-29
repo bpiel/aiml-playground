@@ -48,7 +48,7 @@
                  (->> (call-macro-builder g opp input-ops ctrl-input-ops)
                       (apply-plan-to-graph g))
                  (call-op-builder g opp input-ops ctrl-input-ops)))
-             (vector? opp)
+             (and (vector? opp) (some-> opp first map?))
              (mapv (partial apply-plan-to-graph g)
                    opp)
              :else (call-op-builder g (ops/c opp) [] []))]
