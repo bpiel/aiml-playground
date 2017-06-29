@@ -227,3 +227,27 @@
 (clojure.pprint/pprint 
  (sss (mapv op-node/node-def->plan n2)
       [:g1]))
+
+
+
+(let [tr-ds (ops/c [[0.1 0.2] [0.3 0.4]])
+      tr-ls (ops/c [[0. 1.] [1. 0.]])
+      va-ds (ops/c [[0.1 0.2] [0.3 0.4]])
+      te-ds (ops/c [[0.1 0.2] [0.3 0.4]])
+      weights (ops/v :weights [[1.] [1.]])
+      biases (ops/v :biases [0. 0.])
+      logits (ops/add (ops/mat-mul tr-ds
+                                   weights)
+                      biases)
+      loss (ops/mean (ops/softmax-cross-entropy-with-logits logits
+                                                            tr-ls)
+                     [(int 0)])
+      opt (mcro/grad-desc-opt :opt loss :gradients)
+      tr-pred (ops/softmax logits)
+      va-pred (ops/softmax (ops/add (ops/mat-mul va-ds weights)
+                                    biases))
+      te-pred (ops/softmax (ops/add (ops/mat-mul te-ds weights)
+                                    biases))
+      g (ft/build-all->graph [opt tr-pred va-pred te-pred])
+      s (ft/graph->session g)]
+  (ft/fetch s te-pred))

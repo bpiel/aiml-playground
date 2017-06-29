@@ -22,8 +22,12 @@
   (case ty ;; wtf
     :tensor (tfnative.OperationBuilder/setAttrTensor builder-handle
                                                      k v)
-    :type (tfnative.OperationBuilder/setAttrType builder-handle
-                                                 k v)
+    :type (if (keyword? v)
+            (tfnative.OperationBuilder/setAttrType builder-handle
+                                                   k
+                                                   (-> v dt/protobuf->dt :native))
+            (tfnative.OperationBuilder/setAttrType builder-handle
+                                                   k v))
     :shape (tfnative.OperationBuilder/setAttrShape builder-handle
                                                    k v (count v))
     :string (tfnative.OperationBuilder/setAttrString builder-handle

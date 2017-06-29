@@ -203,7 +203,8 @@
     (sc/with-id-scopes (conj (:scope plan) local-scope)
       (case (:op y-op)
         :Sin (grad/sin y-op y-inputs dx-op)
-        :MatMul (grad/mat-mul y-op y-inputs dx-op)))))
+        :MatMul (grad/mat-mul y-op y-inputs dx-op)
+        :Mean (grad/mean y-op y-inputs dx-op)))))
 
 
 (defmethod build-macro :const-same-shape

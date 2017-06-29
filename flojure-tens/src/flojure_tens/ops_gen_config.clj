@@ -217,6 +217,29 @@
                                :inputs [input [(int 1) (int 0)]]
                                :attrs {}})])})
 
+(defn hook-pre-build-op-override-cast
+  [args]
+  (-> args
+      (assoc-in [:plan :attrs :SrcT]
+                (-> args :plan :inputs first :dtypes first dt/kw->dt :native))
+      hook-pre-build-op-default))
+
+(register-op-gen-cfg!
+ "Cast"
+ {:hook-pre-build  `hook-pre-build-op-override-cast})
+
+
+(defn hook-pre-build-op-override-dynamic-stitch
+  [args]
+  (-> args
+      (assoc-in [:plan :attrs :N]
+                (-> args :plan :inputs first count))
+      hook-pre-build-op-default))
+
+(register-op-gen-cfg!
+ "DynamicStitch"
+ {:hook-pre-build  `hook-pre-build-op-override-dynamic-stitch})
+
 ;; END Op Gen Custom Overrides =================================================
 
 (defn op-def-processor-default
@@ -260,4 +283,14 @@
   :hook-pre-build `hook-pre-build-op-default
   :node-def->plan ogu/node-def->plan-default
   :plan->expr plan->expr-default})
+
+
+
+
+
+
+
+
+
+
 

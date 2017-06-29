@@ -16,7 +16,9 @@
   [value def-type]
   (case def-type ;; wtf
     :tensor (:handle (tsr/create-from-value value))
-    :type (dt/->tf-attr-val :int64 value)
+    :type (if (keyword? value)
+            (dt/->tf-attr-val :int64 (-> value dt/kw->dt :native))
+            (dt/->tf-attr-val :int64 value))
     :shape (dt/->tf-attr-val :int64 value)
     :int (dt/->tf-attr-val :int32 value)
     (dt/->tf-attr-val def-type value)))
