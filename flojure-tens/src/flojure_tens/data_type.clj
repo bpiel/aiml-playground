@@ -1,5 +1,6 @@
 (ns flojure-tens.data-type
-  (:require [flojure-tens.shape :as sh]))
+  (:require [flojure-tens.shape :as sh]
+            [clojure.walk :as w]))
 
 (defn is-type?-fn
   [t]
@@ -243,3 +244,16 @@
       (to-array (map #(->tf-attr-val ty % (dec dims'))
                      v)))))
 
+(defn convert-vecs
+  [v f]
+  (w/prewalk #(if (coll? %)
+                %
+                (f %))
+             v))
+
+(defn convert-whatever
+  [v dt-kw]
+  (let [{:keys [scalar-fn]} (kw->dt dt-kw)]
+    (if (sh/scalar? v)
+      (scalar-fn v)
+      (convert-vecs v scalar-fn)))) 

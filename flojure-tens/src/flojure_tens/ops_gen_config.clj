@@ -104,10 +104,23 @@
 
 (defn hook-pre-build-op-override-const
   [args]
-  (let [dtype (-> args :plan :attrs :value dt/data-type-of-whatever :native)]
-    (-> args
-        (assoc-in [:plan :attrs :dtype] dtype)
-        hook-pre-build-op-default)))
+  (let [attrs (-> args :plan :attrs)
+        dtype (:dtype attrs)
+        val-type (-> attrs :value dt/data-type-of-whatever :kw)]
+    (cond (nil? dtype) (-> args
+                           (assoc-in [:plan :attrs :dtype]
+                                     (-> val-type dt/kw->dt :native))
+                           hook-pre-build-op-default)
+          (= dtype val-type) (-> args
+                                 (assoc-in [:plan :attrs :dtype]
+                                           (-> val-type dt/kw->dt :native))
+                                 hook-pre-build-op-default)
+          :else (-> args
+                    (update-in [:plan :attrs :value]
+                               #(dt/convert-whatever % dtype))
+                    (update-in [:plan :attrs :dtype]
+                               #(-> % dt/kw->dt :native))
+                    hook-pre-build-op-default))))
 
 (defn plan->expr-const
   [plan fn-name _ _]
