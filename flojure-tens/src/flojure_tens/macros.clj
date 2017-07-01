@@ -5,6 +5,7 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.op-build :as obld]
             [flojure-tens.op-node :as op-node]
+            [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.gradients :as grad]
             [flojure-tens.shape :as sh]
             [flojure-tens.data-type :as dt])
@@ -25,12 +26,12 @@
       :inputs [target]})))
 
 (defn gradient
-  [id y dx output-idx]
+  [id y dxs output-idx]
   (sc/assoc-id-scope
    {:macro :grad
     :id id
     :output-idx output-idx
-    :inputs [y dx]}))
+    :inputs [y dxs]}))
 
 (defn const-same-shape
   [id input value]
@@ -40,58 +41,87 @@
     :inputs [input]
     :value value}))
 
-(defn merge-things
+(defn merge-plan->consumers
   [& ms]
   {:vars (vec (apply concat (mapv :vars ms)))
-   :plan->outputs (apply merge-with
-                         into
-                        (mapv :plan->outputs ms))})
+   :plan->consumers (apply merge-with
+                           (partial merge-with into)
+                           (mapv :plan->consumers ms))})
 
-(defn grad-desc-opt****
-  [output input-idx plan]
-  (apply merge-things
-         {:vars (if (= :VariableV2 (:op plan))
+(defn mk-plan->consumers*
+  [consumer input-idx {:keys [output-idx op inputs] :as plan}]
+  (apply merge-plan->consumers
+         {:vars (if (= :VariableV2 op)
                   [plan]
                   [])
-          :plan->outputs {plan [[output input-idx]]}}
-         (map-indexed (partial grad-desc-opt**** plan)
-                      (:inputs plan))))
+          :plan->consumers {(dissoc plan :output-idx)
+                            {(or output-idx 0)
+                             [[consumer input-idx]]}}}
+         (map-indexed (partial mk-plan->consumers* plan)
+                      inputs)))
 
-(defn grad-desc-opt*
+(defn mk-plan->consumers
   [plan]
-  (apply merge-things
-         (map-indexed (partial grad-desc-opt**** nil)
+  (apply merge-plan->consumers
+         (map-indexed (partial mk-plan->consumers* nil)
                       (:inputs plan))))
 
-(defn grad-desc-opt***
-  [x alpha pairs]
+(declare mk-grad-graph-plan*)
+
+(defn mk-grad-graph-plan***
+  [{:keys [op] :as consumer} p->c cache]
+  (let [out-count (-> op ogc/op-list-by-kw :output-arg count)]
+    (->> (range out-count)
+         (map #(assoc consumer :output-idx %))
+         (reduce (partial mk-grad-graph-plan*
+                          p->c)
+                 {:cache cache :graph []})
+         :graph)))
+
+(defn mk-grad-graph-plan**
+  [pairs p->c cache]
   (if (= 1 (count pairs))
-    (let [[[input input-idx]] pairs]
-      (when input
-        (let [p2 ((:plan->outputs x) input)]
-          (gradient nil
-                    input
-                    (or (grad-desc-opt*** x alpha p2)
-                        (const-same-shape nil
-                                          input
-                                          1.0))
-                    input-idx))))
-    (ops/add-n nil
-               (mapv (fn [p]
-                       (grad-desc-opt*** x alpha [p]))
+    (let [[[consumer input-idx]] pairs]
+      (when consumer
+        (gradient nil
+                  consumer
+                  (mk-grad-graph-plan*** consumer
+                                         p->c
+                                         cache)
+                  input-idx)))
+    (ops/add-n (mapv (fn [p]
+                       (mk-grad-graph-plan** [p] p->c cache))
                      pairs))))
 
-(defn grad-desc-opt**
-  [x alpha]
-  (mapv #(let [pairs ((:plan->outputs x) %)]
-           (ops/apply-gradient-descent nil
-                                       %
-                                       alpha
-                                       (grad-desc-opt*** x
-                                                         alpha
-                                                         pairs)))
-        (:vars x)))
+(defn mk-grad-graph-plan*
+  [p->c {:keys [cache graph] :as agg} {:keys [output-idx] :as plan}]
+  (if-let [cached (cache plan)]
+    (update agg :graph conj cached)
+    (let [output-idx' (or output-idx 0)
+          output-idx->consumer (-> plan
+                                   (dissoc :output-idx)
+                                   p->c)
+          g (or (mk-grad-graph-plan** (output-idx->consumer output-idx')
+                                      p->c
+                                      cache)
+                (const-same-shape nil
+                                  plan
+                                  1.0))]
+      {:cache (assoc cache plan g)
+       :graph (conj graph g)})))
 
+(defn mk-grad-graph-plan
+  [plan->consumers alpha]
+  (let [vs (:vars plan->consumers)]
+    (->> vs
+         (reduce (partial mk-grad-graph-plan*
+                          (:plan->consumers plan->consumers))
+                 {:cache {} :graph []})
+         :graph
+         (mapv #(ops/apply-gradient-descent %
+                                            alpha
+                                            %2)
+               vs))))
 
 (defmethod pre-build-macro :grad-desc-opt
   [^Graph g plan]
@@ -101,115 +131,26 @@
     (sc/with-id-scopes scope
       (ops/no-op id
                  {:ctrl-inputs
-                  (grad-desc-opt** (grad-desc-opt* plan)
-                                   0.5 )}))))
-
-{:id :g>final
- :op :NoOp
- :ctrl-inputs [{:id :g>update_a_1
-                :op :ApplyGradientDescent
-                :inputs [{:id :a
-                          :op :VariableV2
-                          :assignment [1]}
-                         {:id :g>AddN_1
-                          :op :AddN
-                          :inputs [{:macro :grad
-                                    :id :g>MatMul_grad_1
-                                    :output-idx 0
-                                    :inputs [{:op :MatMul
-                                              :inputs [{:id :a
-                                                        :op :VariableV2
-                                                        :assignment [1]}
-                                                       {:id :b
-                                                        :op :VariableV2
-                                                        :assignment [1]}]}
-                                             {:macro :grad
-                                              :id :g>MatMul_grad_2
-                                              :output-idx 0
-                                              :inputs [{:op :MatMul
-                                                        :inputs [{:op :MatMul
-                                                                  :inputs [{:id :a
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}
-                                                                           {:id :b
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}]}
-                                                                 {:op :Sin
-                                                                  :inputs [{:id :a
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}]}]}
-                                                       [111]]}]}
-                                   {:macro :grad
-                                    :id :g>Sin_grad_1
-                                    :inputs [{:op :Sin
-                                              :inputs [{:id :a
-                                                        :op :VariableV2
-                                                        :assignment [1]}]}
-                                             {:macro :grad
-                                              :id :g>MatMul_grad_2
-                                              :output-idx 1
-                                              :inputs [{:op :MatMul
-                                                        :inputs [{:op :MatMul
-                                                                  :inputs [{:id :a
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}
-                                                                           {:id :b
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}]}
-                                                                 {:op :Sin
-                                                                  :inputs [{:id :a
-                                                                            :op :VariableV2
-                                                                            :assignment [1]}]}]}
-                                                       [111]]}]}]}
-                         0.5]}
-               {:id :g>update_b_1
-                :op :ApplyGradientDescent
-                :inputs [:b
-                         {:macro :grad
-                          :id :g>MatMul_grad_1
-                          :output-idx 1
-                          :inputs [{:op :MatMul
-                                    :inputs [{:id :a
-                                              :op :VariableV2
-                                              :assignment [1]}
-                                             {:id :b
-                                              :op :VariableV2
-                                              :assignment [1]}]}
-                                   {:macro :grad
-                                    :id :g>MatMul_grad_2
-                                    :output-idx 0
-                                    :inputs [{:op :MatMul
-                                              :inputs [{:op :MatMul
-                                                        :inputs [{:id :a
-                                                                  :op :VariableV2
-                                                                  :assignment [1]}
-                                                                 {:id :b
-                                                                  :op :VariableV2
-                                                                  :assignment [1]}]}
-                                                       {:op :Sin
-                                                        :inputs [{:id :a
-                                                                  :op :VariableV2
-                                                                  :assignment [1]}]}]}
-                                             [111]]}]}
-                         0.5]}]}
+                  (mk-grad-graph-plan (mk-plan->consumers plan)
+                                      0.5)}))))
 
 (defmethod build-macro :grad
   [^Graph g plan]
-  (let [[y-op dx-op] (:inputs plan)
+  (let [[y-op dx-ops] (:inputs plan)
         y-inputs (->> y-op
                       :inputs
                       (map (gr/id->node g)))
         local-scope (str (:id y-op) "_grad")]
     (sc/with-id-scopes (conj (:scope plan) local-scope)
       (case (:op y-op)
-        :Sin (grad/sin y-op y-inputs dx-op)
-        :MatMul (grad/mat-mul y-op y-inputs dx-op)
-        :Mean (grad/mean y-op y-inputs dx-op)))))
+        :Sin (grad/sin y-op y-inputs dx-ops)
+        :MatMul (grad/mat-mul y-op y-inputs dx-ops)
+        :Mean (grad/mean y-op y-inputs dx-ops)))))
 
 
 (defmethod build-macro :const-same-shape
   [^Graph g plan]
-  (let [shape (-> plan :inputs first :shapes first)]
+  (let [shape (-> plan :inputs first :shapes first)] ;; TODO output-idx
     [(ops/c (sh/const-md-vec shape (:value plan)))]))
 
 (defn build

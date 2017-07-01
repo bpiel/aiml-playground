@@ -297,13 +297,3 @@
   :node-def->plan ogu/node-def->plan-default
   :plan->expr plan->expr-default})
 
-
-
-
-
-
-
-
-
-
-

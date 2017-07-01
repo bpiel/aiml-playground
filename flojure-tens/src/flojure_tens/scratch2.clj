@@ -251,3 +251,5 @@
       g (ft/build-all->graph [opt tr-pred va-pred te-pred])
       s (ft/graph->session g)]
   (ft/fetch s te-pred))
+
+ops/softmax-cross-entropy-with-logits

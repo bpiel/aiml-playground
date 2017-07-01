@@ -5,7 +5,7 @@
 
 ;; TODO add ctrl and conj
 (defn sin
-  [op [x-op] grad]
+  [op [x-op] [grad]]
   (->> x-op
        o/cos
        (o/mul grad)
@@ -20,7 +20,7 @@
 
 ;; TODO conj
 (defn mat-mul
-  [op [x1 x2] grad]
+  [op [x1 x2] [grad]]
   (let [{ta :transpose_a tb :transpose_b} (op->attrs-map op)]
     (case [(true? ta) (true? tb)]
       [false false]
@@ -41,7 +41,7 @@
 
 ;; TODO fast path
 (defn sum
-  [op [x1 x2] grad]
+  [op [x1 x2] [grad]]
   (let [input-shape (o/c nil
                          (-> x1 :shapes (get (:output-idx x1 0)) )
                          :int32)
@@ -51,7 +51,7 @@
     [(o/tile grad tile-scaling) nil]))
 
 (defn mean
-  [op [x1 x2 :as x] grad]
+  [op [x1 x2 :as x] [grad]]
   (let [sum-grad (first (sum op x grad))
         input-shape (o/shape x1)
         output-shape (o/shape op)
@@ -61,7 +61,7 @@
      nil]))
 
 (defn add
-  [op [x1 x2] grad]
+  [op [x1 x2] [grad]]
   )
 
 
