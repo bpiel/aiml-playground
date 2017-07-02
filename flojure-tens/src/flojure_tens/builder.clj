@@ -54,25 +54,10 @@
              :else (call-op-builder g (ops/c opp) [] []))]
     op))
 
-(defn visit-pre-plan
-  [f gp]
-  (util/visit-pre #(if (vector? %)
-                      %
-                      (f %))
-                   #(or (vector? %)
-                        (some-> % :inputs vector?))
-                   #(if (vector? %)
-                      %
-                      (:inputs %))
-                   #(if (vector? %)
-                      (vec %2)
-                      (assoc % :inputs (vec %2)))
-                   gp))
-
 (defn build->graph
   [^Graph g plan]
   (->> plan
-       (visit-pre-plan (partial mcro/pre-build-macro g))
+       (util/pre-visit-plan (partial mcro/pre-build-macro g))
        (apply-plan-to-graph g))
   g)
 
@@ -88,6 +73,41 @@
     (doseq [p inits]
       (build->graph g p))
     g))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

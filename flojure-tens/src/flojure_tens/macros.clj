@@ -33,6 +33,7 @@
     :output-idx output-idx
     :inputs [y dxs]}))
 
+;; use "OnesLike" / "ZerosLike" ???
 (defn const-same-shape
   [id input value]
   (sc/assoc-id-scope
@@ -63,7 +64,8 @@
 (defn mk-plan->consumers
   [plan]
   (apply merge-plan->consumers
-         (map-indexed (partial mk-plan->consumers* nil)
+         (map-indexed (partial mk-plan->consumers*
+                               {:target? true})
                       (:inputs plan))))
 
 (declare mk-grad-graph-plan*)
@@ -79,18 +81,20 @@
          :graph)))
 
 (defn mk-grad-graph-plan**
-  [pairs p->c cache]
+  [plan pairs p->c cache]
   (if (= 1 (count pairs))
     (let [[[consumer input-idx]] pairs]
-      (when consumer
-        (gradient nil
-                  consumer
-                  (mk-grad-graph-plan*** consumer
-                                         p->c
-                                         cache)
-                  input-idx)))
+      (cond
+        (:target? consumer) (ops/ones-like plan)
+        (nil? consumer) (ops/zeros-like plan)
+        :else (gradient nil
+                        consumer
+                        (mk-grad-graph-plan*** consumer
+                                               p->c
+                                               cache)
+                        input-idx)))
     (ops/add-n (mapv (fn [p]
-                       (mk-grad-graph-plan** [p] p->c cache))
+                       (mk-grad-graph-plan** plan [p] p->c cache))
                      pairs))))
 
 (defn mk-grad-graph-plan*
@@ -101,12 +105,13 @@
           output-idx->consumer (-> plan
                                    (dissoc :output-idx)
                                    p->c)
-          g (or (mk-grad-graph-plan** (output-idx->consumer output-idx')
+          g (or (mk-grad-graph-plan** plan
+                                      (output-idx->consumer output-idx')
                                       p->c
                                       cache)
-                (const-same-shape nil
+                (const-same-shape nil  
                                   plan
-                                  1.0))]
+                                  1.0))] ;; TODO I **think** this should be 1 for the op being optimized, and 0 otherwise
       {:cache (assoc cache plan g)
        :graph (conj graph g)})))
 
@@ -158,3 +163,4 @@
   (let [outputs (build-macro g plan)]
     (gr/add-macro-to-state! g hsh outputs)
     outputs))
+

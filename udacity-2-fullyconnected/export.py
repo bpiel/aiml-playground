@@ -69,12 +69,13 @@ train_subset = 2
 graph = tf.Graph()
 with graph.as_default():
 
-    x1 = tf.Variable([[0.2], [0.7]])
-    x2 = tf.Variable([[0.3 , 0.6]])
+    x1 = tf.Variable([0.1, 0.9], [0.9, 0.1]) 
+    x2 = tf.Variable([0.1, 0.2], [0.3, 0.4])
 
     print(x1)
     
-    y = tf.matmul(tf.matmul(x1, x2),  tf.sin(x1))
+    y = tf.nn.softmax_cross_entropy_with_logits(labels=x1, logits=x2)
+    
     #y = tf.matmul(x1, x2)
     print(y)    
 
