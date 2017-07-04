@@ -52,7 +52,7 @@
 
 (defn mean
   [op [x1 x2 :as x] [grad]]
-  (let [sum-grad (first (sum op x grad))
+  (let [sum-grad (first (sum op x [grad]))
         input-shape (o/shape x1)
         output-shape (o/shape op)
         factor (oh/safe-shape-div (oh/reduce-prod input-shape)

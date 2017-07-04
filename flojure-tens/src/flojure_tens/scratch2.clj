@@ -252,4 +252,17 @@
       s (ft/graph->session g)]
   (ft/fetch s te-pred))
 
+(let [weights (ops/v :weights [[1.] [1.]])
+      loss (ops/mean weights
+                     [(int 0)])
+      opt (mcro/grad-desc-opt :opt loss :gradients)
+      g (ft/build-all->graph [opt])
+      s (ft/graph->session g)]
+  (ft/fetch s weights))
+
+
 ops/softmax-cross-entropy-with-logits
+
+(map println
+ (filter #(re-find #"number-attr" %)
+         (map #(-> % meta :doc) (vals (ns-interns 'flojure-tens.ops2)))))

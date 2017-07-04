@@ -51,15 +51,17 @@
 
 (defn mk-plan->consumers*
   [consumer input-idx {:keys [output-idx op inputs] :as plan}]
-  (apply merge-plan->consumers
-         {:vars (if (= :VariableV2 op)
-                  [plan]
-                  [])
-          :plan->consumers {(dissoc plan :output-idx)
-                            {(or output-idx 0)
-                             [[consumer input-idx]]}}}
-         (map-indexed (partial mk-plan->consumers* plan)
-                      inputs)))
+  (if (map? plan)
+    (apply merge-plan->consumers
+           {:vars (if (= :VariableV2 op)
+                    [plan]
+                    [])
+            :plan->consumers {(dissoc plan :output-idx)
+                              {(or output-idx 0)
+                               [[consumer input-idx]]}}}
+           (map-indexed (partial mk-plan->consumers* plan)
+                        inputs))
+    {}))
 
 (defn mk-plan->consumers
   [plan]
@@ -105,13 +107,10 @@
           output-idx->consumer (-> plan
                                    (dissoc :output-idx)
                                    p->c)
-          g (or (mk-grad-graph-plan** plan
-                                      (output-idx->consumer output-idx')
-                                      p->c
-                                      cache)
-                (const-same-shape nil  
-                                  plan
-                                  1.0))] ;; TODO I **think** this should be 1 for the op being optimized, and 0 otherwise
+          g (mk-grad-graph-plan** plan
+                                  (output-idx->consumer output-idx')
+                                  p->c
+                                  cache)] 
       {:cache (assoc cache plan g)
        :graph (conj graph g)})))
 

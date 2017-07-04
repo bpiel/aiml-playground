@@ -34,7 +34,7 @@
       (def o1 outputs)
       (nth outputs (or output-idx 0)))))
 
-(defn- apply-plan-to-graph
+#_(defn- apply-plan-to-graph
   [^Graph g opp]
   (let [op (cond
              (com/Op? opp) opp
@@ -54,11 +54,44 @@
              :else (call-op-builder g (ops/c opp) [] []))]
     op))
 
-(defn build->graph
+(declare build->graph)
+
+(defn- apply-plan-to-graph
+  [^Graph g opp]
+  (cond
+    (com/Op? opp) opp
+
+    (map? opp)
+    (let [{input-ops :inputs ctrl-input-ops :ctrl-inputs}
+          (-> opp meta ::pre)]
+      (if (:macro opp)
+        (->> (call-macro-builder g opp input-ops ctrl-input-ops)
+             (build->graph g))
+        (call-op-builder g opp input-ops ctrl-input-ops)))
+    
+    :else (call-op-builder g (ops/c opp) [] [])))
+
+#_(defn build->graph
   [^Graph g plan]
   (->> plan
        (util/pre-visit-plan (partial mcro/pre-build-macro g))
        (apply-plan-to-graph g))
+  g)
+
+(defn merge-plan-pre
+  [plan pre-plan]
+  (if (map? plan)
+    (with-meta plan
+      {::pre pre-plan})
+    pre-plan))
+
+(defn build->graph
+  [^Graph g plan]
+  (->> plan
+       (util/pre-visit-plan (partial mcro/pre-build-macro g))
+       (util/visit-plan nil
+                        merge-plan-pre
+                        (partial apply-plan-to-graph g)))
   g)
 
 (defn mk-init-assignments-plan
