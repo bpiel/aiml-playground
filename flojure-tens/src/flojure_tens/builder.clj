@@ -34,7 +34,8 @@
         output-idx (if (map? plan)
                      (:output-idx plan')
                      0)]
-    (cond (:op plan')
+    (cond (com/Op? plan) plan
+          (:op plan')
           (let [{:keys [id->node hash->id]} (-> g :state deref)
                 hsh (op-node/compute-hash plan')]
             (when-let [node (some-> hsh hash->id id->node)]
@@ -53,13 +54,9 @@
                                        post
                                        {})]
     (cond
-      (com/Op? plan) plan
-
       (:op plan) (call-op-builder g plan inputs ctrl-inputs)
-
       (:macro plan) (->> (call-macro-builder g plan inputs ctrl-inputs)
                          (build->graph g))
-      
       :else (call-op-builder g (ops/c plan) [] []))))
 
 (defn build->graph
@@ -84,16 +81,3 @@
     (doseq [p inits]
       (build->graph g p))
     g))
-
-
-
-
-
-
-
-
-
-
-
-
-
