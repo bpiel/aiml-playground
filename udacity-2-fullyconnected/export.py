@@ -69,14 +69,18 @@ train_subset = 2
 graph = tf.Graph()
 with graph.as_default():
 
-    x1 = tf.Variable([0.1, 0.9], [0.9, 0.1]) 
-    x2 = tf.Variable([0.1, 0.2], [0.3, 0.4])
+    x1 = tf.Variable([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]) 
+    x2 = tf.Variable([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
 
     print(x1)
     
-    y = tf.nn.softmax_cross_entropy_with_logits(labels=x1, logits=x2)
+    y = tf.reduce_mean(
+         tf.nn.softmax_cross_entropy_with_logits(labels=x1, logits=x2))
     
-    #y = tf.matmul(x1, x2)
+    # y = tf.nn.softmax_cross_entropy_with_logits(labels=x1, logits=x2)
+
+    y2 = tf.nn.softmax(x2)
+
     print(y)    
 
     optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(y)
@@ -85,11 +89,26 @@ with tf.Session(graph=graph) as session:
 
   tf.global_variables_initializer().run()
 
+  print(x2.eval())
+  print()
   l = session.run([optimizer])
 
   LOGDIR='/home/bill/tf-logs'
   train_writer = tf.summary.FileWriter(LOGDIR)
   train_writer.add_graph(session.graph)
+
+  print(y2.eval())
+  print(x2.eval())
+  print()
+  l = session.run([optimizer])
+
+  print(x2.eval())
+  print()
+  for i in range(100):
+      l = session.run([optimizer])
+
+  print(x2.eval())
+  print(y2.eval())
 
 
 
