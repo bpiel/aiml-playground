@@ -41,21 +41,20 @@
         id' (name id)]
     (str s id')))
 
-
-;; TODO descend?-fn ????
 (defn- visit-plan**
-  [pre-fn merge-fn post-fn top-fn plan]
-  (let [plan' (pre-fn plan)
-        plan'' (if (map? plan') ;; skip if Op?
-                 (cond-> plan'
-                   (-> plan' :inputs not-empty)
-                   (update :inputs top-fn)
-                   (-> plan' :ctrl-inputs not-empty)
-                   (update :ctrl-inputs top-fn))
-                 plan')]
-    (-> plan
-        (merge-fn plan'')
-        post-fn)))
+  [cache-fn pre-fn merge-fn post-fn top-fn plan]
+  (or (cache-fn plan)
+      (let [{:keys [inputs ctrl-inputs] :as pre} (pre-fn plan)
+            post (if (map? pre)
+                   (cond-> pre
+                     (not-empty inputs)
+                     (update :inputs top-fn)
+                     (not-empty ctrl-inputs)
+                     (update :ctrl-inputs top-fn))
+                   pre)]
+        (-> plan
+            (merge-fn post)
+            post-fn))))
 
 (defn- visit-plan*
   [f plan]
@@ -65,12 +64,13 @@
     (f plan)))
 
 (defn visit-plan
-  [pre-fn merge-fn post-fn root]
-  (let [pre-fn' (or pre-fn identity)
+  [cache-fn pre-fn merge-fn post-fn root]
+  (let [cache-fn' (or cache-fn (constantly nil))
+        pre-fn' (or pre-fn identity)
         merge-fn' (or merge-fn (fn [_ x] x))
         post-fn' (or post-fn identity)
-        top-fn (partial visit-plan pre-fn' merge-fn' post-fn')
-        f (partial visit-plan** pre-fn' merge-fn' post-fn' top-fn)]
+        top-fn (partial visit-plan cache-fn' pre-fn' merge-fn' post-fn')
+        f (partial visit-plan** cache-fn' pre-fn' merge-fn' post-fn' top-fn)]
     (if (sequential? root)
       (mapv (partial visit-plan* f)
             root)
@@ -78,4 +78,30 @@
 
 (defn pre-visit-plan
   [f root]
-  (visit-plan f nil nil root))
+  (visit-plan nil f nil nil root))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

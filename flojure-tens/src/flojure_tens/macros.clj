@@ -17,6 +17,14 @@
 (defmethod pre-build-macro :default [_ plan] plan)
 (defmethod build-macro :default [_ plan] plan)
 
+(defn compute-hash
+  [{:keys [id scope] :as plan}]
+  (if id
+    (hash [id scope])
+    (-> plan
+        (dissoc :output-idx)
+        hash)))
+
 (defn grad-desc-opt
   [id target & [scope]]
   (sc/with-id-scopes (if scope [scope] [])
@@ -158,8 +166,8 @@
     [(ops/c (sh/const-md-vec shape (:value plan)))]))
 
 (defn build
-  [^Graph g plan hsh]
+  [^Graph g plan]
   (let [outputs (build-macro g plan)]
-    (gr/add-macro-to-state! g hsh outputs)
+    (gr/add-macro-to-state! g (:hsh plan) outputs)
     outputs))
 

@@ -11,10 +11,10 @@
 
 (defn get-op-build-fn-body
   [op-def]
-  (let [r (list '[g plan hsh]
+  (let [r (list '[g plan]
               `(obld/build-op
                 (~(fetch-pre-build-op-fn op-def)
-                 {:g ~'g :plan ~'plan :hsh ~'hsh
+                 {:g ~'g :plan ~'plan
                   :op-def (~'cfg/proc-op-list-by-name ~(:name op-def))})))]
 
     r))

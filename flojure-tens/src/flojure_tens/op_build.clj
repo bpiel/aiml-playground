@@ -86,12 +86,12 @@
                   inputs))
 
 (defn build-op
-  [{:keys [^Graph g plan hsh op-def]}]
-  (let [{:keys [id scope op inputs ctrl-inputs attrs assignment output-idx]} plan
+  [{:keys [^Graph g plan op-def]}]
+  (let [{:keys [id scope op hsh inputs ctrl-inputs attrs assignment output-idx]} plan
         {tf-op :name def-attr :attr} op-def
         attrs' (or attrs {})
         id' (mk-id scope id op (:counter g))
-        input-handles #_(mapv :handle inputs) (get-handles inputs)
+        input-handles (get-handles inputs)
         ctrl-input-handles (mapv :handle ctrl-inputs)
         handle (-> g
                    :handle
@@ -117,7 +117,8 @@
     (gr/add-op-to-state! g oper assignment)
     oper))
 
-(defmulti build (fn [g op-plan hsh] (:op op-plan)))
+
+(defmulti build (fn [g op-plan] (:op op-plan)))
 
 
 
