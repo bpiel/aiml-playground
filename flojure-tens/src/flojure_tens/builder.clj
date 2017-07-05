@@ -46,9 +46,9 @@
             (when-let [outputs (some-> hsh macro-hash->outputs)]
               (nth outputs (or output-idx 0)))))))
 
-(declare build->graph)
+(declare apply-plan-to-graph)
 
-(defn- apply-plan-to-graph
+(defn- apply-plan-to-graph*
   [^Graph g plan post]
   (let [{:keys [inputs ctrl-inputs]} (if (map? post)
                                        post
@@ -56,17 +56,21 @@
     (cond
       (:op plan) (call-op-builder g plan inputs ctrl-inputs)
       (:macro plan) (->> (call-macro-builder g plan inputs ctrl-inputs)
-                         (build->graph g))
+                         (apply-plan-to-graph g))
       :else (call-op-builder g (ops/c plan) [] []))))
 
-(defn build->graph
+(defn- apply-plan-to-graph
   [^Graph g plan]
   (->> plan
        (util/pre-visit-plan (partial mcro/pre-build-macro g))
        (util/visit-plan (partial built? g)
                         nil
-                        (partial apply-plan-to-graph g)
-                        nil))
+                        (partial apply-plan-to-graph* g)
+                        nil)))
+
+(defn build->graph
+  [^Graph g plan]
+  (apply-plan-to-graph g plan)
   g)
 
 (defn mk-init-assignments-plan

@@ -28,8 +28,8 @@
     (o/dynamic-stitch [(o/range-tf (int 0)
                                    input-rank
                                    (int 1))
-                       axes]
-                      [input-shape' (o/fill axes-shape 1)])))
+                       axes'']
+                      [input-shape' (o/fill axes-shape (int 1))])))
 
 (defn reduce-prod
   [input-tensor & {:keys [axis keep-dims id]}]

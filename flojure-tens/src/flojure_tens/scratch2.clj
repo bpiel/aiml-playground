@@ -258,6 +258,8 @@
       opt (mcro/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
+  (ft/run-init-variable-assignments s)
+  (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
 

@@ -79,7 +79,10 @@
 
 (defn- get-handles
   [inputs]
-  (util/visit-pre #(if (map? %) (:handle %) %)
+  (util/visit-pre #(do
+                     (when (:state %)
+                       (throw (Exception. (str "WTF is this? " %))))
+                     (if (map? %) (:handle %) %))
                   vector?
                   identity
                   #(vec %2)

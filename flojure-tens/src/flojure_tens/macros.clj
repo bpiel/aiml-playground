@@ -159,7 +159,6 @@
         :MatMul (grad/mat-mul y-op y-inputs dx-ops)
         :Mean (grad/mean y-op y-inputs dx-ops)))))
 
-
 (defmethod build-macro :const-same-shape
   [^Graph g plan]
   (let [shape (-> plan :inputs first :shapes first)] ;; TODO output-idx
