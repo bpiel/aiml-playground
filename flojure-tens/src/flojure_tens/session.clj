@@ -37,6 +37,18 @@
                (mapv :handle))
       []))
 
+(defn feed->
+  [^Graph g feed]
+  (let [{:keys [id->node]} (-> g :state deref)]
+    (if (not-empty feed)
+      (apply map vector
+             (for [[k v] feed]
+               [(-> v tsr/create-from-value :handle)
+                (-> k name id->node :handle)
+                ;; TODO don't hard code 0
+                0]))
+      [[] [] []])))
+
 ;; TODO use Graph doSync
 (defn run-req->handles
   [^Session s ^RunRequest req]
@@ -45,12 +57,13 @@
         outputs (long-array (vec
                              (take (count fetch)
                                    (repeatedly #(:handle (tsr/create-from-value 0))))))
+        [in-tsrs in-ops in-idx] (feed-> g feed)
         maybe-meta (tfnative.Session/run
                      (:handle s) 
                      options
-                     (long-array []) ;; inputTensorHandles
-                     (long-array []) ;; inputOpHandles
-                     (int-array [])  ;; inputOpIndices
+                     (long-array in-tsrs) ;; inputTensorHandles
+                     (long-array in-ops) ;; inputOpHandles
+                     (int-array in-idx)  ;; inputOpIndices
                      (long-array (plans->handles fetch g)) ;; outputOpHandles
                      (int-array (map #(:output-idx % 0) fetch)) ;; outputOpIndices
                      (long-array (plans->handles targets g))
@@ -74,12 +87,12 @@
 (defn fetch->tensor [^Session session plan & [feed]]
   (first (fetch-all->tensors session [plan] feed)))
 
-(defn run [^Session session plan]
+(defn run [^Session session plan & [feed]]
   (run-req->tensors session
-                    (mk-run-req [] [plan]))
+                    (mk-run-req [] [plan] feed))
   session)
 
-(defn run-all [^Session session plans]
+(defn run-all [^Session session plans & [feed]]
   (doseq [p plans]
-    (run session p))
+    (run session p feed))
   session)

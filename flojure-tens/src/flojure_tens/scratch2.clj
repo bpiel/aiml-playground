@@ -265,11 +265,17 @@
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
-(let [x (ops/placeholder :x :double [1])
-      g (ft/build-all->graph [x])
-      s (ft/graph->session g)]
-  (ft/run-init-variable-assignments s)
-  (ft/fetch s x))
+(let [x1 (ops/placeholder :x1 :double [1])
+      x2 (ops/placeholder :x2 :double [1])
+      y (ops/add x1 x2)
+      g (ft/build-all->graph [y])
+      s (ft/graph->session g)
+      ]
+  #_  (ft/run-init-variable-assignments s)
+  #_  (ft/fetch s y {:x1 [2.0]
+                     :x2 [11.0]})
+  (ft/fetch s y {:x1 [2.0]
+                 :x2 [11.0]}))
 
 
 (let [weights (ops/v :weights [[1.] [1.]])
@@ -288,3 +294,41 @@ ops/softmax-cross-entropy-with-logits
 (map println
  (filter #(re-find #"number-attr" %)
          (map #(-> % meta :doc) (vals (ns-interns 'flojure-tens.ops2)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

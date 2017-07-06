@@ -62,25 +62,24 @@ Returns a value."
   ([plans])
   ([^Graph graph plans]))
 
-(defn run [^Session session plan]
-  (sess/run session plan))
+(defn run [^Session session plan & [feed]]
+  (sess/run session plan feed))
 
-(defn run-all [^Session session plans]
-  (sess/run-all session plans))
+(defn run-all [^Session session plans & [feed]]
+  (sess/run-all session plans feed))
 
 (defn fetch->tensor [^Session session plan & [feed]]
   (sess/fetch->tensor session plan feed))
 
-(defn fetch-all->tensors [^Session session plans]
-  (sess/fetch-all->tensors session plans))
+(defn fetch-all->tensors [^Session session plans & [feed]]
+  (sess/fetch-all->tensors session plans feed))
 
 (defn fetch [^Session session plan & [feed]]
   (-> (fetch->tensor session plan feed)
       tensor->value))
 
-(defn fetch-all [^Session session plans]
-  (->> plans
-       (fetch-all->tensors session)
+(defn fetch-all [^Session session plans & [feed]]
+  (->> (fetch-all->tensors session plans feed)
        (map tensor->value)))
 
 (defn exec
@@ -88,20 +87,20 @@ Returns a value."
    (-> plan
        build->graph
        (exec plan)))
-  ([^Graph graph plan]
-   (->> graph
-        graph->session
-        (run plan))))
+  ([^Graph graph plan & [feed]]
+   (-> graph
+       graph->session
+       (run plan feed))))
 
 (defn exec-all
   ([plans]
    (-> plans
        build-all->session
        (run-all plans)))
-  ([^Graph graph plans]
+  ([^Graph graph plans & [feed]]
    (-> plans
        (build->session graph)
-       (run-all plans))))
+       (run-all plans feed))))
 
 (defn run-init-variable-assignments [^Session session]
   (let [g (:graph session)
@@ -110,24 +109,24 @@ Returns a value."
     (run-all session inits)
     session))
 
-(defn produce->tensor [plan]
+(defn produce->tensor [plan & [feed]]
   (-> plan
       build->session
       run-init-variable-assignments
-      (fetch->tensor plan)))
+      (fetch->tensor plan feed)))
 
-(defn produce-all->tensors [plans]
+(defn produce-all->tensors [plans & [feed]]
   (-> plans
       build-all->session
       run-init-variable-assignments
-      (fetch-all->tensors plans)))
+      (fetch-all->tensors plans feed)))
 
 
-(defn produce-all [plans]
+(defn produce-all [plans & [feed]]
   (-> plans
       build-all->session
       run-init-variable-assignments
-      (fetch-all plans)))
+      (fetch-all plans feed)))
 
 (defn produce
   ([plan]
@@ -135,6 +134,6 @@ Returns a value."
        build->session
        run-init-variable-assignments
        (fetch plan)))
-  ([^Session session plan]
+  ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)
-   (fetch session plan)))
+   (fetch session plan feed)))
