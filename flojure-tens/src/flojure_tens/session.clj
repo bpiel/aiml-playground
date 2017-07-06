@@ -40,22 +40,22 @@
 ;; TODO use Graph doSync
 (defn run-req->handles
   [^Session s ^RunRequest req]
-  (let [fetch-count (-> req :fetch count)
+  (let [{:keys [fetch targets feed return-meta options]} req
         g (:graph s)
         outputs (long-array (vec
-                             (take fetch-count
+                             (take (count fetch)
                                    (repeatedly #(:handle (tsr/create-from-value 0))))))
         maybe-meta (tfnative.Session/run
                      (:handle s) 
-                     (:options req)
+                     options
                      (long-array []) ;; inputTensorHandles
                      (long-array []) ;; inputOpHandles
                      (int-array [])  ;; inputOpIndices
-                     (long-array (-> req :fetch (plans->handles g))) ;; outputOpHandles
-                     (int-array (->> req :fetch (map #(:output-idx % 0)))) ;; outputOpIndices
-                     (long-array (-> req :targets (plans->handles g)))
+                     (long-array (plans->handles fetch g)) ;; outputOpHandles
+                     (int-array (map #(:output-idx % 0) fetch)) ;; outputOpIndices
+                     (long-array (plans->handles targets g))
                      ;; targetOpHandles
-                     (:return-meta req)
+                     return-meta
                      outputs)]
     outputs
     #_    {:output-handles outputs
@@ -67,13 +67,12 @@
     (mapv tsr/create-from-handle
           handles)))
 
-(defn fetch-all->tensors [^Session session plans]
-  (->> plans
-       mk-run-req
-       (run-req->tensors session)))
+(defn fetch-all->tensors [^Session session plans & [feed]]
+  (-> (mk-run-req plans nil feed)
+      (run-req->tensors session)))
 
-(defn fetch->tensor [^Session session plan]
-  (first (fetch-all->tensors session [plan])))
+(defn fetch->tensor [^Session session plan & [feed]]
+  (first (fetch-all->tensors session [plan] feed)))
 
 (defn run [^Session session plan]
   (run-req->tensors session

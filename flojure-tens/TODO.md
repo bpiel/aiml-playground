@@ -25,10 +25,12 @@ x gradient descent optimizer macro
  x learning rate arg
  x AddN
  
-- more grad fns
+x more grad fns
 
 - udacity 2
 - next udacity!?!?
+
+- Session.run delete things / clean up
 
 - reorg-plan
 - recursive hash???

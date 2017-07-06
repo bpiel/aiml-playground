@@ -288,38 +288,3 @@ ops/softmax-cross-entropy-with-logits
 (map println
  (filter #(re-find #"number-attr" %)
          (map #(-> % meta :doc) (vals (ns-interns 'flojure-tens.ops2)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

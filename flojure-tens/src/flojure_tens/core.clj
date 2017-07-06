@@ -74,10 +74,9 @@ Returns a value."
 (defn fetch-all->tensors [^Session session plans]
   (sess/fetch-all->tensors session plans))
 
-(defn fetch [^Session session plan]
-  (->> plan
-       (fetch->tensor session)
-       tensor->value))
+(defn fetch [^Session session plan & [feed]]
+  (-> (fetch->tensor session plan feed)
+      tensor->value))
 
 (defn fetch-all [^Session session plans]
   (->> plans
