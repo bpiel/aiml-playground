@@ -28,9 +28,23 @@ x gradient descent optimizer macro
 x more grad fns
 
 - udacity 2
+ - actually do notMNIST
+ 
 - next udacity!?!?
 
+
+---- WHAT ARE THE GOALS??
+ - implement all udacity assignments
+ - OJ uses
+ - ready for prod/public
+
+- random init fns
+
+- when to use a macro?
+
+- with-let ??
 - Session.run delete things / clean up
+- memory leaks stuff -- call delete on graph, tensors? other stuff?
 
 - reorg-plan
 - recursive hash???
@@ -44,7 +58,7 @@ x more grad fns
 - :output-idx
 
 - compile time vs run time op gen
-- memory leaks stuff -- call delete on graph, tensors? other stuff?
+
 - ref counting instead of hard lock?
 
 - NN!?!!

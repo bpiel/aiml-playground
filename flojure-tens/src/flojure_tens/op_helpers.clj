@@ -37,7 +37,7 @@
           {:keep_dims (true? keep-dims)}
           input-tensor
           (reduction-dims input-tensor axis)))
-                                        ;
+
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/math_ops.py#L1224
 (defn reduce-sum
   [input-tensor & {:keys [axis keep-dims id]}]
