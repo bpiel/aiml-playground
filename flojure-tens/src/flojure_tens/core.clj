@@ -68,8 +68,8 @@ Returns a value."
 (defn run-all [^Session session plans]
   (sess/run-all session plans))
 
-(defn fetch->tensor [^Session session plan]
-  (sess/fetch->tensor session plan))
+(defn fetch->tensor [^Session session plan & [feed]]
+  (sess/fetch->tensor session plan feed))
 
 (defn fetch-all->tensors [^Session session plans]
   (sess/fetch-all->tensors session plans))

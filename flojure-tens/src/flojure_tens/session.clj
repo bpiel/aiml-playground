@@ -68,8 +68,8 @@
           handles)))
 
 (defn fetch-all->tensors [^Session session plans & [feed]]
-  (-> (mk-run-req plans nil feed)
-      (run-req->tensors session)))
+  (->> (mk-run-req plans nil feed)
+       (run-req->tensors session)))
 
 (defn fetch->tensor [^Session session plan & [feed]]
   (first (fetch-all->tensors session [plan] feed)))
