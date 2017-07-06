@@ -44,12 +44,12 @@
 (defn- visit-plan**
   [cache-fn pre-fn merge-fn post-fn top-fn plan]
   (or (cache-fn plan)
-      (let [{:keys [inputs ctrl-inputs] :as pre} (pre-fn plan)
+      (let [pre (pre-fn plan)
             post (if (map? pre)
                    (cond-> pre
-                     (not-empty inputs)
+                     (-> pre :inputs not-empty)
                      (update :inputs top-fn)
-                     (not-empty ctrl-inputs)
+                     (-> pre :ctrl-inputs not-empty)
                      (update :ctrl-inputs top-fn))
                    pre)]
         (-> plan

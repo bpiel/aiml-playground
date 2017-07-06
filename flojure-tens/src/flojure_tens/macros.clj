@@ -41,15 +41,6 @@
     :output-idx output-idx
     :inputs [y dxs]}))
 
-;; use "OnesLike" / "ZerosLike" ???
-(defn const-same-shape
-  [id input value]
-  (sc/assoc-id-scope
-   {:macro :const-same-shape
-    :id id
-    :inputs [input]
-    :value value}))
-
 (defn merge-plan->consumers
   [& ms]
   {:vars (vec (apply concat (mapv :vars ms)))
@@ -92,7 +83,7 @@
 
 (defn mk-grad-graph-plan**
   [plan pairs p->c cache]
-  (if (= 1 (count pairs))
+  (if (>= 1 (count pairs))
     (let [[[consumer input-idx]] pairs]
       (cond
         (:target? consumer) (ops/ones-like plan)
@@ -158,11 +149,6 @@
         :Sin (grad/sin y-op y-inputs dx-ops)
         :MatMul (grad/mat-mul y-op y-inputs dx-ops)
         :Mean (grad/mean y-op y-inputs dx-ops)))))
-
-(defmethod build-macro :const-same-shape
-  [^Graph g plan]
-  (let [shape (-> plan :inputs first :shapes first)] ;; TODO output-idx
-    [(ops/c (sh/const-md-vec shape (:value plan)))]))
 
 (defn build
   [^Graph g plan]
