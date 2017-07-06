@@ -3,7 +3,8 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.session :as sess]
             [flojure-tens.graph :as gr]
-            [flojure-tens.ops2 :as ops]
+            [flojure-tens.ops2 :as o]
+            [flojure-tens.op-helpers :as oh]
             [flojure-tens.ops-src-gen :as osg]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.op-build :as op-build]
@@ -15,9 +16,9 @@
   (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
            [flojure_tens.common Graph Op GraphRef]))
 
-(ft/produce (ops/add 1 3))
+(ft/produce (o/add 1 3))
 
-(ft/produce (ops/add (ops/v :x 1) 3))
+(ft/produce (o/add (o/v :x 1) 3))
 
 (def training-data
   ;; input => output
@@ -26,35 +27,35 @@
     [1. 1. 1.]   [1.]
    [1. 0. 1.]   [0.] ])
 
-(let [inputs (ops/c (take-nth 2 training-data))
-      outputs (ops/c (take-nth 2 (rest training-data)))
-      weights (ops/v :weights (repeatedly
+(let [inputs (o/c (take-nth 2 training-data))
+      outputs (o/c (take-nth 2 (rest training-data)))
+      weights (o/v :weights (repeatedly
                                3 (fn [] (repeatedly 1 #(dec (rand 2))))))
       network (fn [x]
                 (-> x
-                    (ops/mat-mul weights)
-                    ops/sigmoid))
+                    (o/mat-mul weights)
+                    o/sigmoid))
       network-inputs (network inputs)
       error (fn [network-output]
               (-> outputs
-                  (ops/sub network-output)
-                  (ops/pow 2.)
-                  (ops/div 2.)))
+                  (o/sub network-output)
+                  (o/pow 2.)
+                  (o/div 2.)))
       error' (fn [network-output]
-               (ops/sub network-output
+               (o/sub network-output
                         outputs))
       sigmoid' (fn [x]
                  (->> x
-                      (ops/sub 1.)
-                      (ops/mul x)))
+                      (o/sub 1.)
+                      (o/mul x)))
       deltas (fn [network-output]
                (->> (sigmoid' network-inputs)
-                    (ops/mul (error' network-inputs))
-                    (ops/mat-mul (ops/transpose inputs))))
+                    (o/mul (error' network-inputs))
+                    (o/mat-mul (o/transpose inputs))))
       train-network (->> network-inputs
                          deltas
-                         (ops/sub weights)
-                         (ops/assign weights))
+                         (o/sub weights)
+                         (o/assign weights))
       session (ft/build->session train-network)
       test1 (network [[1. 1. 1.]])]
   (ft/run-init-variable-assignments session)
@@ -63,11 +64,11 @@
        (ft/run-all session))
   (ft/produce session test1))
 
-(let [a (ops/c [[0.2] [0.7]])
-      b (ops/c [[0.3 0.6]])
-      dx (ops/c [[1.] [1.]])
-                                        ;      y (ops/add (ops/matmul a b) (ops/sin a))
-      y (ops/mat-mul (ops/mat-mul a b) (ops/sin a))
+(let [a (o/c [[0.2] [0.7]])
+      b (o/c [[0.3 0.6]])
+      dx (o/c [[1.] [1.]])
+                                        ;      y (o/add (o/matmul a b) (o/sin a))
+      y (o/mat-mul (o/mat-mul a b) (o/sin a))
       g (ft/build->graph y)
       _ (ft/build->graph g dx)
       s (ft/graph->session g)
@@ -92,9 +93,9 @@
         tsr/get-value-clj))
 
 
-(let [a (ops/v :a [[0.2] [0.7]])
-      b (ops/v :b [[0.3 0.6]])
-      y (ops/mat-mul (ops/mat-mul a b) (ops/sin a))
+(let [a (o/v :a [[0.2] [0.7]])
+      b (o/v :b [[0.3 0.6]])
+      y (o/mat-mul (o/mat-mul a b) (o/sin a))
       gdo (mcro/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
       s (ft/graph->session g)]
@@ -109,9 +110,9 @@
         first
         tsr/get-value-clj))
 
-(let [a (ops/v :a [[0.2] [0.7]])
-      b (ops/v :b [[0.3 0.6]])
-      y (ops/mat-mul a b)
+(let [a (o/v :a [[0.2] [0.7]])
+      b (o/v :b [[0.3 0.6]])
+      y (o/mat-mul a b)
       gdo (mcro/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
       s (ft/graph->session g)]
@@ -230,23 +231,23 @@
 
 
 
-(let [tr-ds (ops/c [[0.1 0.2] [0.3 0.4]])
-      tr-ls (ops/c [[0. 1.] [1. 0.]])
-      va-ds (ops/c [[0.1 0.2] [0.3 0.4]])
-      te-ds (ops/c [[0.1 0.2] [0.3 0.4]])
-      weights (ops/v :weights [[1. 1.] [1. 1.]])
-      biases (ops/v :biases [0. 0.])
-      logits (ops/add (ops/mat-mul tr-ds
+(let [tr-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      tr-ls (o/c [[0. 1.] [1. 0.]])
+      va-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      te-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      weights (o/v :weights [[1. 1.] [1. 1.]])
+      biases (o/v :biases [0. 0.])
+      logits (o/add (o/mat-mul tr-ds
                                    weights)
                       biases)
-      loss (ops/mean (ops/softmax-cross-entropy-with-logits logits
+      loss (o/mean (o/softmax-cross-entropy-with-logits logits
                                                             tr-ls)
                      [(int 0)])
       opt (mcro/grad-desc-opt :opt loss :gradients)
-      tr-pred (ops/softmax logits)
-      va-pred (ops/softmax (ops/add (ops/mat-mul va-ds weights)
+      tr-pred (o/softmax logits)
+      va-pred (o/softmax (o/add (o/mat-mul va-ds weights)
                                     biases))
-      te-pred (ops/softmax (ops/add (ops/mat-mul te-ds weights)
+      te-pred (o/softmax (o/add (o/mat-mul te-ds weights)
                                     biases))
       g (ft/build-all->graph [opt tr-pred va-pred te-pred])
       s (ft/graph->session g)]
@@ -256,8 +257,8 @@
   (clojure.pprint/pprint (ft/produce s tr-pred)))
 
 
-(let [weights (ops/v :weights [[1.] [1.]])
-      loss (ops/relu weights)
+(let [weights (o/v :weights [[1.] [1.]])
+      loss (o/relu weights)
       opt (mcro/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
@@ -265,21 +266,17 @@
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
-(let [x1 (ops/placeholder :x1 :double [1])
-      x2 (ops/placeholder :x2 :double [1])
-      y (ops/add x1 x2)
+(let [x1 (o/placeholder :x1 :double [1])
+      x2 (o/placeholder :x2 :double [1])
+      y (o/add x1 x2)
       g (ft/build-all->graph [y])
-      s (ft/graph->session g)
-      ]
-  #_  (ft/run-init-variable-assignments s)
-  #_  (ft/fetch s y {:x1 [2.0]
-                     :x2 [11.0]})
+      s (ft/graph->session g)]
   (ft/fetch s y {:x1 [2.0]
                  :x2 [11.0]}))
 
 
-(let [weights (ops/v :weights [[1.] [1.]])
-      loss (ops/mean weights
+(let [weights (o/v :weights [[1.] [1.]])
+      loss (o/mean weights
                      [(int 0)])
       opt (mcro/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
@@ -289,11 +286,37 @@
   (ft/fetch s weights))
 
 
-ops/softmax-cross-entropy-with-logits
+(let [tr-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      tr-ls (o/c [[0. 1.] [1. 0.]])
+      va-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      te-ds (o/c [[0.1 0.2] [0.3 0.4]])
+      weights01 (o/v :weights01 [[1. 1.] [1. 1.]])
+      weights12 (o/v :weights12 [[1. 1.] [1. 1.]])
+      biases01 (o/v :biases01 [0. 0.])
+      biases12 (o/v :biases12 [0. 0.])
+      z01 (o/add (o/mat-mul tr-ds weights01)
+                 biases01)
+      h1 (o/relu z01)
+      z12 (o/add (o/mat-mul h1 weights12)
+                 biases12)
+      loss (o/mean (o/softmax-cross-entropy-with-logits z12
+                                                        tr-ls)
+                   [(int 0)])
+      opt (mcro/grad-desc-opt :g1 loss :gradients)
+      tr-pred (o/softmax z12)
+      g (ft/build-all->graph [opt tr-pred])
+      s (ft/graph->session g)]
+  (ft/run-init-variable-assignments s)
+  (clojure.pprint/pprint (ft/fetch s tr-pred))
+  (ft/run-all s (repeat 100 opt))
+  (clojure.pprint/pprint (ft/fetch s tr-pred)))
 
-(map println
- (filter #(re-find #"number-attr" %)
-         (map #(-> % meta :doc) (vals (ns-interns 'flojure-tens.ops2)))))
+
+
+
+
+
+
 
 
 
