@@ -52,7 +52,7 @@
                      (long-array []) ;; inputOpHandles
                      (int-array [])  ;; inputOpIndices
                      (long-array (-> req :fetch (plans->handles g))) ;; outputOpHandles
-                     (int-array (repeat fetch-count 0)) ;; outputOpIndices
+                     (int-array (->> req :fetch (map #(:output-idx % 0)))) ;; outputOpIndices
                      (long-array (-> req :targets (plans->handles g)))
                      ;; targetOpHandles
                      (:return-meta req)

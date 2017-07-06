@@ -46,15 +46,15 @@
 
 (defn- add-inputs
   [builder-handle inputs]
-  (doseq [input-handle inputs]
-    (if (vector? input-handle)
+  (doseq [i inputs]
+    (if (vector? i)
       (tfnative.OperationBuilder/addInputList builder-handle
-                                              (long-array input-handle)
-                                              (int-array (repeat (count input-handle)
-                                                                  0)))      
+                                              (long-array (map :handle i))
+                                              (int-array (map #(:output-idx % 0)
+                                                              i)))      
       (tfnative.OperationBuilder/addInput builder-handle
-                                          input-handle
-                                          0))) ;; hard coded to 0, because we should really be dealing with `output`s here
+                                          (:handle i)
+                                          (:output-idx i 0)))) 
   builder-handle)
 
 (defn- add-ctrl-inputs
@@ -90,35 +90,39 @@
 
 (defn build-op
   [{:keys [^Graph g plan op-def]}]
-  (let [{:keys [id scope op hsh inputs ctrl-inputs attrs assignment output-idx]} plan
-        {tf-op :name def-attr :attr} op-def
-        attrs' (or attrs {})
-        id' (mk-id scope id op (:counter g))
-        input-handles (get-handles inputs)
-        ctrl-input-handles (mapv :handle ctrl-inputs)
-        handle (-> g
-                   :handle
-                   (tfnative.OperationBuilder/allocate tf-op (name id'))
-                   (set-attrs attrs')
-                   (add-inputs input-handles)
-                   (add-ctrl-inputs ctrl-input-handles)
-                   tfnative.OperationBuilder/finish)
-        {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
-        oper (Op. id'
-                  [] ;; TODO add :0, when appropriate
-                  op
-                  (mapv :id inputs)
-                  (mapv :id ctrl-inputs)
-                  hsh
-                  attrs'
-                  handle
-                  (or output-idx 0)
-                  num-outputs
-                  shapes
-                  dtypes
-                  (gr/mk-graph-ref g))]
-    (gr/add-op-to-state! g oper assignment)
-    oper))
+  (try
+    (let [{:keys [id scope op hsh inputs ctrl-inputs attrs assignment output-idx]} plan
+          {tf-op :name def-attr :attr} op-def
+          attrs' (or attrs {})
+          id' (mk-id scope id op (:counter g))
+;          input-handles (get-handles inputs)
+          ctrl-input-handles (mapv :handle ctrl-inputs)
+          handle (-> g
+                     :handle
+                     (tfnative.OperationBuilder/allocate tf-op (name id'))
+                     (set-attrs attrs')
+                     (add-inputs inputs)
+                     (add-ctrl-inputs ctrl-input-handles)
+                     tfnative.OperationBuilder/finish)
+          {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
+          oper (Op. id'
+                    [] ;; TODO add :0, when appropriate
+                    op
+                    (mapv :id inputs)
+                    (mapv :id ctrl-inputs)
+                    hsh
+                    attrs'
+                    handle
+                    (or output-idx 0)
+                    num-outputs
+                    shapes
+                    dtypes
+                    (gr/mk-graph-ref g))]
+      (gr/add-op-to-state! g oper assignment)
+      oper)
+    (catch Exception e
+      (clojure.pprint/pprint plan)
+      (throw e))))
 
 
 (defmulti build (fn [g op-plan] (:op op-plan)))

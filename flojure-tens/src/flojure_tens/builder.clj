@@ -26,6 +26,8 @@
                          :hsh (mcro/compute-hash plan)))
       (nth (or output-idx 0))))
 
+(declare apply-plan-to-graph)
+
 (defn built?
   [^Graph g plan]
   (let [plan' (if (map? plan)
@@ -44,9 +46,7 @@
           (let [{:keys [macro-hash->outputs]} (-> g :state deref)
                 hsh (mcro/compute-hash plan)]
             (when-let [outputs (some-> hsh macro-hash->outputs)]
-              (nth outputs (or output-idx 0)))))))
-
-(declare apply-plan-to-graph)
+              (built? g  (nth outputs (or output-idx 0)))))))) ;; TODO prevent macros from being run for each output-idx
 
 (defn- apply-plan-to-graph*
   [^Graph g plan post]

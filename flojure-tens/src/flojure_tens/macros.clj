@@ -148,7 +148,9 @@
       (case (:op y-op)
         :Sin (grad/sin y-op y-inputs dx-ops)
         :MatMul (grad/mat-mul y-op y-inputs dx-ops)
-        :Mean (grad/mean y-op y-inputs dx-ops)))))
+        :Mean (grad/mean y-op y-inputs dx-ops)
+        :SoftmaxCrossEntropyWithLogits (grad/softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
+        :Add (grad/add y-op y-inputs dx-ops)))))
 
 (defn build
   [^Graph g plan]

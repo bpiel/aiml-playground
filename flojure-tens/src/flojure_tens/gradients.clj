@@ -60,6 +60,71 @@
     [(o/div sum-grad (o/cast-tf nil {:DstT (-> op :dtypes first)} factor))
      nil]))
 
+;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L393
+(defn softmax-cross-entropy-with-logits
+  [op _ [grad-loss grad-grad]]
+  ;; TODO don't assume grad-grad is always zero
+  [(oh/broadcast-mul grad-loss
+                     (assoc op :output-idx 1))
+   nil])
+
+;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/math_grad.py#L683
 (defn add
-  [op [x1 x2] [grad]]
-  )
+  [op [x1 x2 :as x] [grad]]
+  (let [[s1 s2] (map o/shape x)
+        r1 (o/broadcast-gradient-args s1 s2)
+        r2 (assoc r1 :output-idx 1)]
+    [(o/reshape (oh/reduce-sum grad :axis r1)
+                s1)
+     (o/reshape (oh/reduce-sum grad :axis r2)
+                s2)]))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

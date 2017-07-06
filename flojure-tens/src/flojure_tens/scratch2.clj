@@ -234,7 +234,7 @@
       tr-ls (ops/c [[0. 1.] [1. 0.]])
       va-ds (ops/c [[0.1 0.2] [0.3 0.4]])
       te-ds (ops/c [[0.1 0.2] [0.3 0.4]])
-      weights (ops/v :weights [[1.] [1.]])
+      weights (ops/v :weights [[1. 1.] [1. 1.]])
       biases (ops/v :biases [0. 0.])
       logits (ops/add (ops/mat-mul tr-ds
                                    weights)
@@ -250,7 +250,10 @@
                                     biases))
       g (ft/build-all->graph [opt tr-pred va-pred te-pred])
       s (ft/graph->session g)]
-  (ft/fetch s te-pred))
+  (ft/run-init-variable-assignments s)
+  (clojure.pprint/pprint (ft/produce s tr-pred))
+  (ft/run-all s (repeat 1000 opt))
+  (clojure.pprint/pprint (ft/produce s tr-pred)))
 
 (let [weights (ops/v :weights [[1.] [1.]])
       loss (ops/mean weights
