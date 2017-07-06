@@ -255,6 +255,23 @@
   (ft/run-all s (repeat 1000 opt))
   (clojure.pprint/pprint (ft/produce s tr-pred)))
 
+
+(let [weights (ops/v :weights [[1.] [1.]])
+      loss (ops/relu weights)
+      opt (mcro/grad-desc-opt :opt loss :gradients)
+      g (ft/build-all->graph [opt])
+      s (ft/graph->session g)]
+  (ft/run-init-variable-assignments s)
+  (ft/run-all s (repeat 10 opt))
+  (ft/fetch s weights))
+
+(let [x (ops/placeholder :x :double [1])
+      g (ft/build-all->graph [x])
+      s (ft/graph->session g)]
+  (ft/run-init-variable-assignments s)
+  (ft/fetch s x))
+
+
 (let [weights (ops/v :weights [[1.] [1.]])
       loss (ops/mean weights
                      [(int 0)])
@@ -271,3 +288,38 @@ ops/softmax-cross-entropy-with-logits
 (map println
  (filter #(re-find #"number-attr" %)
          (map #(-> % meta :doc) (vals (ns-interns 'flojure-tens.ops2)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

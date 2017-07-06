@@ -84,9 +84,6 @@
 
 
 
-
-
-
 ;; Op Gen Custom Overrides =================================================
 
 
@@ -142,6 +139,14 @@
   :hook-pre-build `hook-pre-build-op-override-const
   :plan->expr plan->expr-const})
 
+(register-op-gen-cfg!
+ "Placeholder"
+ {:plan-fn-bodies (constantly
+                   '[([id data-type shape]
+                      {:op :Placeholder
+                       :id id
+                       :attrs {:dtype data-type
+                               :shape shape}})])})
 
 (defn hook-pre-build-op-override-variable-v2
   [args]

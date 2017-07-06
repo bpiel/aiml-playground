@@ -76,8 +76,8 @@ Returns a value."
 
 (defn fetch [^Session session plan]
   (->> plan
-      (fetch->tensor session)
-      tensor->value))
+       (fetch->tensor session)
+       tensor->value))
 
 (defn fetch-all [^Session session plans]
   (->> plans
@@ -139,55 +139,3 @@ Returns a value."
   ([^Session session plan]
    (build->graph (:graph session) plan)
    (fetch session plan)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

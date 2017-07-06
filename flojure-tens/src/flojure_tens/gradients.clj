@@ -79,52 +79,7 @@
      (o/reshape (oh/reduce-sum grad :axis r2)
                 s2)]))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L324
+(defn relu
+  [op [x1 :as x] [grad]]
+  [(o/relu-grad grad op)])
