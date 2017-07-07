@@ -80,28 +80,25 @@
   [f root]
   (visit-plan nil f nil nil root))
 
+(defn append-collections
+  [v colls]
+  (vary-meta v
+             update
+             ::collections
+             #(into (or % [])
+                    colls)))
 
+(defn get-collections
+  [v]
+  (-> v meta ::collections))
 
+(defn build-eagerly
+  [v]
+  (vary-meta v
+             assoc
+             ::build-eagerly?
+             true))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defn build-eagerly?
+  [v]
+  (-> v meta ::build-eagerly?))

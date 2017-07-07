@@ -8,6 +8,8 @@
             [flojure-tens.macros :as mcro])
   (:import [flojure_tens.common Graph Op]))
 
+(declare apply-plan-to-graph)
+
 (defn call-op-builder
   [^Graph g {:keys [output-idx] :as plan} input-ops ctrl-input-ops]
   (obld/build g
@@ -17,6 +19,14 @@
                      :output-idx (or output-idx 0)
                      :hsh (op-node/compute-hash plan))))
 
+(defn- build-eagers
+  [plans ^Graph g]
+  (some->> plans
+           (filter util/build-eagerly?)
+           not-empty
+           (apply-plan-to-graph g))
+  plans)
+
 (defn call-macro-builder
   [^Graph g {:keys [output-idx] :as plan} input-ops ctrl-input-ops]
   (-> (mcro/build g
@@ -24,9 +34,8 @@
                          :inputs input-ops
                          :ctrl-inputs ctrl-input-ops
                          :hsh (mcro/compute-hash plan)))
+      (build-eagers g)
       (nth (or output-idx 0))))
-
-(declare apply-plan-to-graph)
 
 (defn built?
   [^Graph g plan]
@@ -72,16 +81,3 @@
   [^Graph g plan]
   (apply-plan-to-graph g plan)
   g)
-
-(defn mk-init-assignments-plan
-  [^Graph g]
-  (let [va (gr/variable-assignments g)]
-    (mapv (fn [[vari value]] (ops/assign vari value))
-          va)))
-
-(defn build-init-assignments->graph
-  [^Graph g]
-  (let [inits (mk-init-assignments-plan g)]
-    (doseq [p inits]
-      (build->graph g p))
-    g))

@@ -87,37 +87,36 @@
        (build->session graph)
        (run-all plans feed))))
 
-(defn run-init-variable-assignments [^Session session]
+(defn run-global-vars-init [^Session session]
   (let [g (:graph session)
-        inits (bdr/mk-init-assignments-plan g)]
-    (build-all->graph g inits)
+        inits (gr/get-global-var-init-assign-ops g)]
     (run-all session inits)
     session))
 
 (defn produce->tensor [plan & [feed]]
   (-> plan
       build->session
-      run-init-variable-assignments
+      run-global-vars-init
       (fetch->tensor plan feed)))
 
 (defn produce-all->tensors [plans & [feed]]
   (-> plans
       build-all->session
-      run-init-variable-assignments
+      run-global-vars-init
       (fetch-all->tensors plans feed)))
 
 
 (defn produce-all [plans & [feed]]
   (-> plans
       build-all->session
-      run-init-variable-assignments
+      run-global-vars-init
       (fetch-all plans feed)))
 
 (defn produce
   ([plan]
    (-> plan
        build->session
-       run-init-variable-assignments
+       run-global-vars-init
        (fetch plan)))
   ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)

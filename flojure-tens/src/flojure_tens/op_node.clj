@@ -37,7 +37,7 @@
 
 (defn handle->plan
   [op-handle]
-  (with-meta
+  (with-meta ;; TODO use vary-meta
     (node-def->plan  (pr/protobuf-load NodeDefP (tfnative.Operation/toNodeDef op-handle)))
     {::handle op-handle}))
 

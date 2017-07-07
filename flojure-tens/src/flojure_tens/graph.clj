@@ -12,7 +12,8 @@
   {:id->node {}
    :hash->id {}
    :handle->id {}
-   :macro-hash->outputs {}})
+   :macro-hash->outputs {}
+   :collections {}})
 
 ;; don't overwrite!
 (defn- add-to-id->node
@@ -36,17 +37,28 @@
            value)
     m))
 
+(defn- add-to-collections
+  [m ^Op op colls]
+  (let [{:keys [id]} op]
+    (reduce (fn [agg c]
+              (update agg
+                      c
+                      #(conj (or % [])
+                             id)))
+            m
+            colls)))
+
 (defn- add-op-to-state*
-  [graph-state ^Op op variable-assigment]
+  [graph-state ^Op op collections]
   (-> graph-state
       (update :id->node add-to-id->node op)
       (update :hash->id add-to-hash->id op)
       (update :handle->id add-to-handle->id op)
-      (update :variable-assigments add-to-variable-assignments op variable-assigment)))
+      (update :collections add-to-collections op collections)))
 
 (defn add-op-to-state!
-  [^Graph {:keys [handle handle-lock state]} ^Op op & [variable-assigment]]
-  (swap! state add-op-to-state* op variable-assigment))
+  [^Graph {:keys [handle handle-lock state]} ^Op op & [collections]]
+  (swap! state add-op-to-state* op collections))
 
 (defn add-macro-to-state*
   [graph-state hsh outputs]
@@ -88,28 +100,14 @@
   (spit-bytes filename (->graph-def-byte-array g)))
 
 (defn add-output-by-handle! [^Graph g handle idx]
-    
   (throw (Exception. "NOT IMPLEMENTED")))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defn get-global-var-init-assign-ops
+  [^Graph g]
+  (let [i->n (id->node g)]
+    (->> g
+         :state
+         deref
+         :collections
+         :global-var-inits
+         (map i->n))))

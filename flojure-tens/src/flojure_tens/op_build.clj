@@ -91,7 +91,8 @@
 (defn build-op
   [{:keys [^Graph g plan op-def]}]
   (try
-    (let [{:keys [id scope op hsh inputs ctrl-inputs attrs assignment output-idx]} plan
+    (let [{:keys [id scope op hsh inputs ctrl-inputs attrs output-idx]} plan
+          collections (util/get-collections plan)
           {tf-op :name def-attr :attr} op-def
           attrs' (or attrs {})
           id' (mk-id scope id op (:counter g))
@@ -105,7 +106,7 @@
                      (add-ctrl-inputs ctrl-input-handles)
                      tfnative.OperationBuilder/finish)
           {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
-          oper (Op. id'
+          node (Op. id'
                     [] ;; TODO add :0, when appropriate
                     op
                     (mapv :id inputs)
@@ -118,56 +119,12 @@
                     shapes
                     dtypes
                     (gr/mk-graph-ref g))]
-      (gr/add-op-to-state! g oper assignment)
-      oper)
+      (gr/add-op-to-state! g node collections)
+      node)
     (catch Exception e
       (clojure.pprint/pprint plan)
       (throw e))))
 
 
 (defmulti build (fn [g op-plan] (:op op-plan)))
-
-
-
-#_(defn assoc-meta-handle-to-plan
-  [p]
-  (assoc p :handle (-> p meta ::op-node/handle)))
-
-#_(defn discover-new-plans-from-id*
-  [^Graph g discovered id]
-  (if (contains? discovered id)
-    [discovered []]
-    (let [plan (assoc-meta-handle-to-plan (op-node/id->plan g id))]
-      [(assoc discovered
-              (:id plan)
-              plan)
-       (flatten (into (:inputs plan)
-                      (:ctrl-inputs plan)))])))
-
-#_(defn discover-new-plans-from-ids
-  [^Graph g ids]
-  (loop [discovered (into {}
-                          (for [[k _] (-> g :state deref :nodes)]
-                            [k nil]))
-         [id & tail] ids]
-    (if id
-      (let [[d ids'] (discover-new-plans-from-id* g discovered id)]
-        (recur d (into ids' tail)))
-      (->> discovered
-           vals
-           (remove nil?)))))
-
-
-#_(defn discover-new-ops-from-handles
-  [^Graph g op-handles]
-  (let [gref (gr/mk-graph-ref g)]
-    (mapv #(op-node/create-from-handle (:handle %) gref )
-          (discover-new-plans-from-ids g
-                                       (map op-node/handle->id op-handles)))))
-
-
-
-
-
-
 

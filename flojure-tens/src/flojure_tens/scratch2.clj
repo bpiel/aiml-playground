@@ -18,7 +18,7 @@
 
 (ft/produce (o/add 1 3))
 
-(ft/produce (o/add (o/v :x 1) 3))
+(ft/produce (o/add (c/v :x 1) 3))
 
 (def training-data
   ;; input => output
@@ -257,12 +257,12 @@
   (clojure.pprint/pprint (ft/produce s tr-pred)))
 
 
-(let [weights (o/v :weights [[1.] [1.]])
+(let [weights (c/v :weights [[1.] [1.]])
       loss (o/relu weights)
       opt (c/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
-  (ft/run-init-variable-assignments s)
+  (ft/run-global-vars-init s)
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
@@ -290,10 +290,10 @@
       tr-ls (o/c [[0. 1.] [1. 0.]])
       va-ds (o/c [[0.1 0.2] [0.3 0.4]])
       te-ds (o/c [[0.1 0.2] [0.3 0.4]])
-      weights01 (o/v :weights01 [[1. 1.] [1. 1.]])
-      weights12 (o/v :weights12 [[1. 1.] [1. 1.]])
-      biases01 (o/v :biases01 [0. 0.])
-      biases12 (o/v :biases12 [0. 0.])
+      weights01 (c/v :weights01 [[1. 1.] [1. 1.]])
+      weights12 (c/v :weights12 [[1. 1.] [1. 1.]])
+      biases01 (c/v :biases01 [0. 0.])
+      biases12 (c/v :biases12 [0. 0.])
       z01 (o/add (o/mat-mul tr-ds weights01)
                  biases01)
       h1 (o/relu z01)
@@ -306,7 +306,7 @@
       tr-pred (o/softmax z12)
       g (ft/build-all->graph [opt tr-pred])
       s (ft/graph->session g)]
-  (ft/run-init-variable-assignments s)
+  (ft/run-global-vars-init s)
   (clojure.pprint/pprint (ft/fetch s tr-pred))
   (ft/run-all s (repeat 100 opt))
   (clojure.pprint/pprint (ft/fetch s tr-pred)))

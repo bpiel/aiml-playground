@@ -1,5 +1,5 @@
 (ns flojure-tens.session
-  (:require flojure-tens.common
+  (:require [flojure-tens.common :as com]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.util :as util]
             [flojure-tens.tensor :as tsr]
@@ -29,11 +29,17 @@
   (Session. (tfnative.Session/allocate (:handle g))
             g))
 
-(defn- plans->handles
+(defn- ->op
+  [^Graph g x]
+  (if (com/Op? x)
+    x
+    (op-node/get-op-by-plan g x)))
+
+(defn- ->handles
   [plans ^Graph g]
   (or (some->> plans
                not-empty
-               (mapv (partial op-node/get-op-by-plan g))
+               (mapv (partial ->op g))
                (mapv :handle))
       []))
 
@@ -64,9 +70,9 @@
                      (long-array in-tsrs) ;; inputTensorHandles
                      (long-array in-ops) ;; inputOpHandles
                      (int-array in-idx)  ;; inputOpIndices
-                     (long-array (plans->handles fetch g)) ;; outputOpHandles
+                     (long-array (->handles fetch g)) ;; outputOpHandles
                      (int-array (map #(:output-idx % 0) fetch)) ;; outputOpIndices
-                     (long-array (plans->handles targets g))
+                     (long-array (->handles targets g))
                      ;; targetOpHandles
                      return-meta
                      outputs)]

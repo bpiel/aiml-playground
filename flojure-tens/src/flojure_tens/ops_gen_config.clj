@@ -169,7 +169,7 @@
       ~(dissoc attrs :value)
       ~(:value attrs))))
 
-(defn plan-fn-bodies-assign
+#_(defn plan-fn-bodies-variable
   [fn-name-sym _]
   ['([id value] {:op :VariableV2
                  :id id
@@ -182,11 +182,12 @@
 (register-op-gen-cfg!
  "VariableV2"
  {:fn-name 'v
-  :plan-fn-bodies plan-fn-bodies-assign
-  :hook-pre-build  `hook-pre-build-op-override-variable-v2
-  :plan->expr plan->expr-variable-v2})
+;  :plan-fn-bodies plan-fn-bodies-variable
+;  :hook-pre-build  `hook-pre-build-op-override-variable-v2
+;  :plan->expr plan->expr-variable-v2
+  })
 
-(defn hook-pre-build-op-override-assign
+#_(defn hook-pre-build-op-override-assign
   [args]
   (let [id->node (-> args :g :state deref :id->node)
         value (-> args :plan :inputs first)
@@ -196,7 +197,7 @@
         (dissoc :vari)
         hook-pre-build-op-default)))
 
-(defn ->tf-id
+#_(defn ->tf-id
   [x]
   (cond (com/Op? x) (:id x)
         (map? x) (util/mk-tf-id (:scope x) (:id x))
@@ -204,7 +205,7 @@
         (string? x) x
         :else nil))
 
-(defn plan-assign
+#_(defn plan-assign
   ([id attrs vari value]
    (let [vari-id (->tf-id vari)]
      (when-not vari-id
@@ -215,14 +216,14 @@
   ([vari value]
    (plan-assign nil nil vari value)))
 
-(defn plan-fn-bodies-assign
+#_(defn plan-fn-bodies-assign
   [_ _]
   [`([~'id ~'attrs ~'vari ~'value]
      (plan-assign ~'id ~'attrs ~'vari ~'value))
    `([~'vari ~'value]
      (plan-assign nil nil ~'vari ~'value))])
 
-(register-op-gen-cfg!
+#_(register-op-gen-cfg!
  "Assign"
  {:plan-fn-bodies plan-fn-bodies-assign
   :hook-pre-build  `hook-pre-build-op-override-assign})
