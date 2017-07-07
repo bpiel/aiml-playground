@@ -3,6 +3,9 @@
             [flojure-tens.builder :as bdr]
             [flojure-tens.session :as sess]
             [flojure-tens.tensor :as tsr]
+            flojure-tens.gradients
+            flojure-tens.composite
+            flojure-tens.ops
             flojure-tens.common)
   (:import [flojure_tens.common Graph]
            [flojure_tens.session Session]))

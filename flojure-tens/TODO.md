@@ -18,6 +18,7 @@ x docstrings for auto gen op fns
 x clean up graph state
 x cache macros by hash
 x id scopes for gdo 
+x :output-idx
 
 x gradient descent optimizer macro
  x 1s shape
@@ -27,12 +28,16 @@ x gradient descent optimizer macro
  
 x more grad fns
 
+- reorg nses
+- variable macro
+
+
 - udacity 2
  - actually do notMNIST
  
 - next udacity!?!?
 
-- reorg nses
+
 
 ---- WHAT ARE THE GOALS??
  - implement all udacity assignments
@@ -41,31 +46,28 @@ x more grad fns
 
 - random init fns
 
-- when to use a macro?
- - multiple outputs
- - access to build Ops
- - simplicity of plan
-
 - with-let ??
 - Session.run delete things / clean up
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 
 - reorg-plan
-- recursive hash???
 - use `intern` to create op fn vars
 
-- variable macro
+
 - variable scope
 
 
 - "init" NoOp takes init assignments as ctrl inputs
-- :output-idx
 
 - compile time vs run time op gen
 
 - ref counting instead of hard lock?
 
-- NN!?!!
+- when to use a macro?
+ - multiple outputs
+ - access to build Ops
+ - caching
+ - simplicity of plan
 
 
 -----

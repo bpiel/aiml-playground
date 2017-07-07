@@ -44,7 +44,7 @@
   [node-def]
   (let [p (node-def->plan node-def)]
     [(:id p)
-     (plan->expr p "flojure-tens.ops2" `assoc-plan-output)]))
+     (plan->expr p "flojure-tens.ops" `assoc-plan-output)]))
 
 (defn node-defs->src
   [node-defs]
@@ -61,7 +61,7 @@
   [op-handle]
   (let [p (handle->plan op-handle)]
     [(:id p)
-     (plan->expr p "flojure-tens.ops2" `assoc-plan-output)]))
+     (plan->expr p "flojure-tens.ops" `assoc-plan-output)]))
 
 ;; TODO
 (defn graph->src

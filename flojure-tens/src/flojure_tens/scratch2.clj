@@ -3,8 +3,8 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.session :as sess]
             [flojure-tens.graph :as gr]
-            [flojure-tens.ops2 :as o]
-            [flojure-tens.op-helpers :as oh]
+            [flojure-tens.ops :as o]
+            [flojure-tens.composite :as c]
             [flojure-tens.ops-src-gen :as osg]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.op-build :as op-build]
@@ -96,7 +96,7 @@
 (let [a (o/v :a [[0.2] [0.7]])
       b (o/v :b [[0.3 0.6]])
       y (o/mat-mul (o/mat-mul a b) (o/sin a))
-      gdo (mcro/grad-desc-opt :gdo y :gradients)
+      gdo (c/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
       s (ft/graph->session g)]
   (def g1 g)
@@ -113,7 +113,7 @@
 (let [a (o/v :a [[0.2] [0.7]])
       b (o/v :b [[0.3 0.6]])
       y (o/mat-mul a b)
-      gdo (mcro/grad-desc-opt :gdo y :gradients)
+      gdo (c/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
       s (ft/graph->session g)]
   (def g1 g)
@@ -201,7 +201,7 @@
 (clojure.pprint/pprint 
  (osg/plans->exprs (find-plan-deps (mapv op-node/node-def->plan n2)
                                    [:g1])
-                   "flojure-tens.ops2" `assoc-plan-output))
+                   "flojure-tens.ops" `assoc-plan-output))
 
 (defn sss
   [plans out-ids]
@@ -210,7 +210,7 @@
                   [(:id p) p]))
         id-expr-pairs (osg/plans->exprs (find-plan-deps (mapv op-node/node-def->plan n2)
                                                         out-ids)
-                                        "flojure-tens.ops2" `assoc-plan-output)
+                                        "flojure-tens.ops" `assoc-plan-output)
         assigns (vec (mapcat (fn [[k v]]
                                [(-> k name symbol) v])
                              id-expr-pairs))
@@ -243,7 +243,7 @@
       loss (o/mean (o/softmax-cross-entropy-with-logits logits
                                                             tr-ls)
                      [(int 0)])
-      opt (mcro/grad-desc-opt :opt loss :gradients)
+      opt (c/grad-desc-opt :opt loss :gradients)
       tr-pred (o/softmax logits)
       va-pred (o/softmax (o/add (o/mat-mul va-ds weights)
                                     biases))
@@ -259,7 +259,7 @@
 
 (let [weights (o/v :weights [[1.] [1.]])
       loss (o/relu weights)
-      opt (mcro/grad-desc-opt :opt loss :gradients)
+      opt (c/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
   (ft/run-init-variable-assignments s)
@@ -278,7 +278,7 @@
 (let [weights (o/v :weights [[1.] [1.]])
       loss (o/mean weights
                      [(int 0)])
-      opt (mcro/grad-desc-opt :opt loss :gradients)
+      opt (c/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
   (ft/run-init-variable-assignments s)
@@ -302,7 +302,7 @@
       loss (o/mean (o/softmax-cross-entropy-with-logits z12
                                                         tr-ls)
                    [(int 0)])
-      opt (mcro/grad-desc-opt :g1 loss :gradients)
+      opt (c/grad-desc-opt :g1 loss :gradients)
       tr-pred (o/softmax z12)
       g (ft/build-all->graph [opt tr-pred])
       s (ft/graph->session g)]

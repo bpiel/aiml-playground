@@ -1,6 +1,6 @@
 (ns flojure-tens.builder
   (:require [flojure-tens.common :as com]
-            [flojure-tens.ops2 :as ops]
+            [flojure-tens.ops :as ops]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.op-build :as obld]
             [flojure-tens.graph :as gr]
