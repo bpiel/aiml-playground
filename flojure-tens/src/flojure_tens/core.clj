@@ -9,24 +9,6 @@
 
 (defn init-variable-assignments [^Graph g])
 
-#_(defn run-plan-ops [graph-plan ops]
-  (let [g (bdr/graph-plan->graph graph-plan)
-        s (sess/create g)]
-    (sess/init-variable-assignments s)
-    (sess/run s (sess/mk-run-req ops))))
-
-
-
-#_(defn fetch-plan-root [plan]
-  "Builds a graph and session. 
-Runs the `plan`.
-Fetches the value of the root node of `plan`. 
-Returns a value."
-  (run-plan-ops plan [plan])
-  #_  (->> (run-plan-ops plan [plan])
-           last
-           tsr/get-value))
-
 ;; =========================================================
 
 (defn tensor->value [tensor]

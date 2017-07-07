@@ -32,6 +32,7 @@ x more grad fns
  
 - next udacity!?!?
 
+- reorg nses
 
 ---- WHAT ARE THE GOALS??
  - implement all udacity assignments
@@ -41,6 +42,9 @@ x more grad fns
 - random init fns
 
 - when to use a macro?
+ - multiple outputs
+ - access to build Ops
+ - simplicity of plan
 
 - with-let ??
 - Session.run delete things / clean up
