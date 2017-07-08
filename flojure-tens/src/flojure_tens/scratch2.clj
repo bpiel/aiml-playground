@@ -29,7 +29,7 @@
 
 (let [inputs (o/c (take-nth 2 training-data))
       outputs (o/c (take-nth 2 (rest training-data)))
-      weights (o/v :weights (repeatedly
+      weights (c/v :weights (repeatedly
                                3 (fn [] (repeatedly 1 #(dec (rand 2))))))
       network (fn [x]
                 (-> x
@@ -58,7 +58,7 @@
                          (o/assign weights))
       session (ft/build->session train-network)
       test1 (network [[1. 1. 1.]])]
-  (ft/run-init-variable-assignments session)
+  (ft/run-global-vars-init session)
   (->> train-network
        (repeat 2000)
        (ft/run-all session))
@@ -93,8 +93,8 @@
         tsr/get-value-clj))
 
 
-(let [a (o/v :a [[0.2] [0.7]])
-      b (o/v :b [[0.3 0.6]])
+(let [a (c/v :a [[0.2] [0.7]])
+      b (c/v :b [[0.3 0.6]])
       y (o/mat-mul (o/mat-mul a b) (o/sin a))
       gdo (c/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
@@ -110,8 +110,8 @@
         first
         tsr/get-value-clj))
 
-(let [a (o/v :a [[0.2] [0.7]])
-      b (o/v :b [[0.3 0.6]])
+(let [a (c/v :a [[0.2] [0.7]])
+      b (c/v :b [[0.3 0.6]])
       y (o/mat-mul a b)
       gdo (c/grad-desc-opt :gdo y :gradients)
       g (ft/build->graph gdo)
@@ -235,8 +235,8 @@
       tr-ls (o/c [[0. 1.] [1. 0.]])
       va-ds (o/c [[0.1 0.2] [0.3 0.4]])
       te-ds (o/c [[0.1 0.2] [0.3 0.4]])
-      weights (o/v :weights [[1. 1.] [1. 1.]])
-      biases (o/v :biases [0. 0.])
+      weights (c/v :weights [[1. 1.] [1. 1.]])
+      biases (c/v :biases [0. 0.])
       logits (o/add (o/mat-mul tr-ds
                                    weights)
                       biases)
@@ -275,7 +275,7 @@
                  :x2 [11.0]}))
 
 
-(let [weights (o/v :weights [[1.] [1.]])
+(let [weights (c/v :weights [[1.] [1.]])
       loss (o/mean weights
                      [(int 0)])
       opt (c/grad-desc-opt :opt loss :gradients)

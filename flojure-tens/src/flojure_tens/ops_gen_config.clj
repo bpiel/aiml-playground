@@ -187,15 +187,16 @@
 ;  :plan->expr plan->expr-variable-v2
   })
 
-#_(defn hook-pre-build-op-override-assign
+(defn hook-pre-build-op-override-assign
   [args]
-  (let [id->node (-> args :g :state deref :id->node)
-        value (-> args :plan :inputs first)
-        vari (-> args :plan :vari id->node)]
-    (-> args
-        (assoc-in [:plan :inputs] [vari value])
-        (dissoc :vari)
-        hook-pre-build-op-default)))
+  (let [vari (-> args :plan :inputs first)]
+    (if (-> vari :op (= :VariableV2)) ;; might have received a "read" node instead of variable itself
+      (hook-pre-build-op-default args)
+      (let [id->node (-> args :g :state deref :id->node)
+            vari' (-> vari :inputs first id->node)]
+        (-> args
+            (assoc-in [:plan :inputs 0] vari')
+            hook-pre-build-op-default)))))
 
 #_(defn ->tf-id
   [x]
@@ -223,10 +224,9 @@
    `([~'vari ~'value]
      (plan-assign nil nil ~'vari ~'value))])
 
-#_(register-op-gen-cfg!
+(register-op-gen-cfg!
  "Assign"
- {:plan-fn-bodies plan-fn-bodies-assign
-  :hook-pre-build  `hook-pre-build-op-override-assign})
+ {:hook-pre-build  `hook-pre-build-op-override-assign})
 
 
 (register-op-gen-cfg!
