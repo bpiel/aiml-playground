@@ -1,6 +1,7 @@
 (ns flojure-tens.session
   (:require [flojure-tens.common :as com]
             [flojure-tens.op-node :as op-node]
+            [flojure-tens.macros :as mcro]
             [flojure-tens.util :as util]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.builder :as bdr])
@@ -29,17 +30,19 @@
   (Session. (tfnative.Session/allocate (:handle g))
             g))
 
-(defn- ->op
+(defn- ->op-node
   [^Graph g x]
-  (if (com/Op? x)
-    x
-    (op-node/get-op-by-plan g x)))
+  (cond (com/Op? x) x
+        (:op x) (op-node/get-op-by-plan g x)
+        (:macro x) (->> x
+                        (mcro/macro-plan->op-plan g)
+                        (op-node/get-op-by-plan g))))
 
 (defn- ->handles
   [plans ^Graph g]
   (or (some->> plans
                not-empty
-               (mapv (partial ->op g))
+               (mapv (partial ->op-node g))
                (mapv :handle))
       []))
 

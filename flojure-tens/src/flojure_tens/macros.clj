@@ -17,6 +17,13 @@
         (dissoc :output-idx)
         hash)))
 
+(defn macro-plan->op-plan
+  [^Graph g {:keys [output-idx] :as plan}]
+  (-> plan
+       compute-hash
+       ((gr/macro-hash->outputs g))
+       (nth (or output-idx 0))))
+
 (defn build
   [^Graph g plan]
   (let [outputs (build-macro g plan)]

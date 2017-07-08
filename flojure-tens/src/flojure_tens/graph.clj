@@ -6,6 +6,7 @@
 (defn id->node [^Graph {:keys [handle-lock state]}] (:id->node @state))
 (defn variable-assignments [^Graph {:keys [handle-lock state]}] (:variable-assigments @state))
 (defn hash->id [^Graph {:keys [handle-lock state]}] (:hash->id @state))
+(defn macro-hash->outputs [^Graph {:keys [handle-lock state]}] (:macro-hash->outputs @state))
 (defn handle->id [^Graph {:keys [handle-lock state]}] (:handle->id @state))
 
 (defn init-graph-state []

@@ -20,6 +20,8 @@
 
 (ft/produce (o/add (c/v :x 1) 3))
 
+(ft/produce (c/v :x 1))
+
 (def training-data
   ;; input => output
   [ [0. 0. 1.]   [0.]
@@ -281,7 +283,7 @@
       opt (c/grad-desc-opt :opt loss :gradients)
       g (ft/build-all->graph [opt])
       s (ft/graph->session g)]
-  (ft/run-init-variable-assignments s)
+  (ft/run-global-vars-init s)
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
