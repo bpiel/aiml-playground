@@ -46,7 +46,7 @@
                (mapv :handle))
       []))
 
-(defn feed->
+(defn- feed->
   [^Graph g feed]
   (let [{:keys [id->node]} (-> g :state deref)]
     (if (not-empty feed)

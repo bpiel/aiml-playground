@@ -70,12 +70,11 @@
 
 (defn- apply-plan-to-graph
   [^Graph g plan]
-  (->> plan
-       (util/pre-visit-plan (partial mcro/pre-build-macro g))
-       (util/visit-plan (partial built? g)
-                        nil
-                        (partial apply-plan-to-graph* g)
-                        nil)))
+  (util/visit-plan (partial built? g)
+                   nil
+                   (partial apply-plan-to-graph* g)
+                   nil
+                   plan))
 
 (defn build->graph
   [^Graph g plan]

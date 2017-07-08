@@ -163,16 +163,16 @@
                                           %2)
                vs))))
 
-(defmethod mcro/pre-build-macro :grad-desc-opt
+(defmethod mcro/build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
         [input] inputs
         [v-a v-b] (:inputs input)]
-    (sc/with-id-scopes scope
-      (o/no-op id
+    [(sc/with-id-scopes scope
+        (o/no-op id
                  {:ctrl-inputs
                   (mk-grad-graph-plan (mk-plan->consumers plan)
-                                      0.5)}))))
+                                      0.5)}))]))
 
 
 

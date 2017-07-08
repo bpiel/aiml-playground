@@ -31,15 +31,20 @@
         :else [v]))
 
 (defn mk-tf-id
-  [scope id]
-  (let [s (or (some->> scope
-                       not-empty
-                       (map name)
-                       (clojure.string/join "/")
-                       (#(str % "/")))
-              "")
-        id' (name id)]
-    (str s id')))
+  ([{:keys [scope id output-idx]}]
+   (mk-tf-id scope id (or output-idx 0)))
+  ([scope id output-idx]
+   (let [scope' (or (some->> scope
+                             not-empty
+                             (map name)
+                             (clojure.string/join "/")
+                             (#(str % "/")))
+                    "")
+         id' (name id)
+         output-idx' (if ((some-fn nil? zero?) output-idx)
+                       ""
+                       (str ":" output-idx))]
+     (str scope' id' output-idx'))))
 
 (defn- visit-plan**
   [cache-fn pre-fn merge-fn post-fn top-fn plan]

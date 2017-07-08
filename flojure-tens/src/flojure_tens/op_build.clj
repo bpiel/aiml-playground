@@ -109,8 +109,8 @@
           node (Op. id'
                     [] ;; TODO add :0, when appropriate
                     op
-                    (mapv :id inputs)
-                    (mapv :id ctrl-inputs)
+                    (mapv util/mk-tf-id inputs) ;; TODO include scope and output-idx
+                    (mapv util/mk-tf-id ctrl-inputs) ;; TODO include scope and output-idx
                     hsh
                     attrs'
                     handle

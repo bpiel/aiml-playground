@@ -287,7 +287,6 @@
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
-
 (let [tr-ds (o/c [[0.1 0.2] [0.3 0.4]])
       tr-ls (o/c [[0. 1.] [1. 0.]])
       va-ds (o/c [[0.1 0.2] [0.3 0.4]])

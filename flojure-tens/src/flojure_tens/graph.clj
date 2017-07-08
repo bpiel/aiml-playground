@@ -4,10 +4,14 @@
   (:import [flojure_tens.common GraphRef Graph Op]))
 
 (defn id->node [^Graph {:keys [handle-lock state]}] (:id->node @state))
-(defn variable-assignments [^Graph {:keys [handle-lock state]}] (:variable-assigments @state))
 (defn hash->id [^Graph {:keys [handle-lock state]}] (:hash->id @state))
 (defn macro-hash->outputs [^Graph {:keys [handle-lock state]}] (:macro-hash->outputs @state))
 (defn handle->id [^Graph {:keys [handle-lock state]}] (:handle->id @state))
+(defn id->outputs [^Graph {:keys [handle-lock state]}] (:id->outputs @state))
+
+{:id [[{:id "hello:1" :input-idx 0}
+       {:id "hello:0" :input-idx 0}]]}
+
 
 (defn init-graph-state []
   {:id->node {}
@@ -29,14 +33,6 @@
   [m {:keys [id handle] :as op}]
   (merge {handle id} m))
 
-
-(defn- add-to-variable-assignments
-  [m ^Op op value]
-  (if value
-    (assoc m
-           (:id op)
-           value)
-    m))
 
 (defn- add-to-collections
   [m ^Op op colls]
