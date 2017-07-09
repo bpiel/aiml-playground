@@ -311,3 +311,5 @@
   (clojure.pprint/pprint (ft/fetch s tr-pred))
   (ft/run-all s (repeat 100 opt))
   (clojure.pprint/pprint (ft/fetch s tr-pred)))
+
+(ft/produce (c/zeros [2 1] dt/long-kw))

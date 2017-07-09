@@ -2,6 +2,18 @@
   (:require [flojure-tens.shape :as sh]
             [clojure.walk :as w]))
 
+(def float-kw :float)
+(def double-kw :double)
+(def int-kw :int32)
+(def uint-kw :unit8)
+(def string-kw :string)
+(def long-kw :int64)
+(def bool-kw :bool)
+(def type-kw :type)
+(def list-kw :list)
+(def tensor-kw :tensor)
+(def shape-kw :shape)
+
 (defn is-type?-fn
   [t]
   #(= (type %) t))

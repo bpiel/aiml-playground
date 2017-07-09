@@ -130,12 +130,13 @@
   :plan-fn-bodies (constantly
                    '[([value] {:op :Const
                                :attrs {:value value}})
-                     ([id value] {:op :Const
-                               :id id
-                               :attrs {:value value}})
-                     ([id value data-type] {:op :Const
+                     ([value data-type] {:op :Const
+                                         :id nil
                                          :attrs {:value value
-                                                 :dtype data-type}})])
+                                                 :dtype data-type}})
+                     ([id value data-type] {:op :Const
+                                            :attrs {:value value
+                                                    :dtype data-type}})])
   :hook-pre-build `hook-pre-build-op-override-const
   :plan->expr plan->expr-const})
 

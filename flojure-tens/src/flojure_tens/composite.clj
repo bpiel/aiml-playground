@@ -360,3 +360,13 @@
            (util/append-collections [:global-var-inits])
            util/build-eagerly)
        vari])))
+
+
+(defn zeros
+  [shape dtype]
+  (let [z (case dtype
+            dt/bool-kw false
+            dt/string-kw ""
+            0)]
+    (o/fill (o/c shape dt/int-kw)
+            (o/c z dtype))))
