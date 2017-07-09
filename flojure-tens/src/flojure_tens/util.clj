@@ -1,5 +1,12 @@
 (ns flojure-tens.util)
 
+(defn ->int
+  [v]
+  (try (cond (integer? v) v
+             (string? v) (Integer/parseInt v)
+             (float? v) (int v))
+       (catch Exception e
+         nil)))
 
 (defn visit-post
   [f branch? children make-node root]
@@ -30,6 +37,7 @@
         (coll? v) (vec v)
         :else [v]))
 
+;; takes plan or Op
 (defn mk-tf-id
   ([{:keys [scope id output-idx]}]
    (mk-tf-id scope id (or output-idx 0)))
@@ -45,6 +53,17 @@
                        ""
                        (str ":" output-idx))]
      (str scope' id' output-idx'))))
+
+(defn parse-tf-id
+  [tf-id]
+  (let [[scoped-id idx-str] (clojure.string/split tf-id #":")
+        by-slash (clojure.string/split scoped-id #"/")
+        scope (vec (drop-last by-slash))
+        id (last by-slash)]
+    {:scoped-id scoped-id
+     :scope (mapv keyword scope)
+     :id (keyword id)
+     :output-idx (or (->int idx-str) 0)}))
 
 (defn- visit-plan**
   [cache-fn pre-fn merge-fn post-fn top-fn plan]
@@ -107,3 +126,4 @@
 (defn build-eagerly?
   [v]
   (-> v meta ::build-eagerly?))
+

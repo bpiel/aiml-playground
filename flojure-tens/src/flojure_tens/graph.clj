@@ -1,6 +1,7 @@
 (ns flojure-tens.graph
   (:require [flojure-tens.common]
-            [flojure-tens.tensor :as tsr])
+            [flojure-tens.tensor :as tsr]
+            [flojure-tens.util :as util])
   (:import [flojure_tens.common GraphRef Graph Op]))
 
 (defn id->node [^Graph {:keys [handle-lock state]}] (:id->node @state))
@@ -18,6 +19,7 @@
    :hash->id {}
    :handle->id {}
    :macro-hash->outputs {}
+   :id->outputs {}
    :collections {}})
 
 ;; don't overwrite!
@@ -33,6 +35,17 @@
   [m {:keys [id handle] :as op}]
   (merge {handle id} m))
 
+(defn add-to-id->outputs
+  [m {:keys [id inputs]}]
+  (->> (interleave inputs (range))
+       (partition 2)
+       (reduce (fn [agg [input-id input-idx]]
+                 (let [{:keys [scoped-id output-idx]} (util/parse-tf-id input-id)]
+                   (->> [{:id id :input-idx input-idx}]
+                        (partial into)
+                        (update-in agg
+                                   [scoped-id  output-idx]))))
+               m)))
 
 (defn- add-to-collections
   [m ^Op op colls]
@@ -51,6 +64,7 @@
       (update :id->node add-to-id->node op)
       (update :hash->id add-to-hash->id op)
       (update :handle->id add-to-handle->id op)
+      (update :id->outputs add-to-id->outputs op)
       (update :collections add-to-collections op collections)))
 
 (defn add-op-to-state!

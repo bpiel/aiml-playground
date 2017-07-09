@@ -88,6 +88,9 @@
   [op [x1 :as x] [grad]]
   [(o/relu-grad grad op)])
 
+(defn identity-tf
+  [op x grads]
+  grads)
 
 (defmethod mcro/build-macro :grad
   [^Graph g plan]
@@ -103,4 +106,5 @@
         :Mean (mean y-op y-inputs dx-ops)
         :SoftmaxCrossEntropyWithLogits (softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
         :Add (add y-op y-inputs dx-ops)
-        :Relu (relu y-op y-inputs dx-ops)))))
+        :Relu (relu y-op y-inputs dx-ops)
+        :Identity (identity-tf y-op y-inputs dx-ops)))))

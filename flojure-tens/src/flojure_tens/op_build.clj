@@ -57,6 +57,13 @@
                                           (:output-idx i 0)))) 
   builder-handle)
 
+(defn- inputs->tf-ids
+  [inputs]
+  (vec (for [i inputs]
+         (if (vector? i)
+           (mapv util/mk-tf-id i)
+           (util/mk-tf-id i)))))
+
 (defn- add-ctrl-inputs
   [builder-handle inputs]
   (doseq [input-handle inputs]
@@ -96,7 +103,6 @@
           {tf-op :name def-attr :attr} op-def
           attrs' (or attrs {})
           id' (mk-id scope id op (:counter g))
-;          input-handles (get-handles inputs)
           ctrl-input-handles (mapv :handle ctrl-inputs)
           handle (-> g
                      :handle
@@ -109,8 +115,8 @@
           node (Op. id'
                     [] ;; TODO add :0, when appropriate
                     op
-                    (mapv util/mk-tf-id inputs) ;; TODO include scope and output-idx
-                    (mapv util/mk-tf-id ctrl-inputs) ;; TODO include scope and output-idx
+                    (flatten (inputs->tf-ids inputs)) 
+                    (mapv util/mk-tf-id ctrl-inputs)
                     hsh
                     attrs'
                     handle

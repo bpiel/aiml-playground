@@ -163,16 +163,167 @@
                                           %2)
                vs))))
 
+
+(declare decorate-outputs)
+
+(defn- outputs->grad*
+  [{:keys [state]} {:keys [id input-idx]}]
+  (when-let [grad (::grad ((:id->node state) id))]
+    (assoc grad
+           :output-idx input-idx)))
+
+(defn- outputs->grad
+  [x consumers output-idx node]
+  (cond (= (::target-idx node) output-idx)
+        (o/ones-like node)
+        :else
+        (let [grads (keep (partial outputs->grad*
+                                   x)
+                          consumers)]
+          (cond (= (count grads) 1)
+                (first grads)
+
+                (= (count grads) 0)
+                (o/zeros-like node)
+
+                :else
+                (o/add-n (vec grads))))))
+
+(defn- outputs->grads
+  [x outputs node]
+  (mapv #(outputs->grad x
+                        ((or outputs {}) %)
+                        %
+                        node)
+        (range (:n-outputs node))))
+
+(defn- mk-node-grad
+  [x node]
+  (let [{:keys [id->outputs]} (:state x)
+        outputs (id->outputs (:id node))
+        x' (if outputs
+             (decorate-outputs x (dissoc outputs
+                                         (::target-idx node)))
+             x)]
+    [x' (gradient nil
+                  node
+                  (outputs->grads x' outputs node)
+                  0)]))
+
+(defn- decorate-w-grad
+  [x node]
+  (cond (::grad node) x
+        
+        (::tagged? node)
+        (let [[x' grad] (mk-node-grad x node)]
+          (assoc-in x'  [:state :id->node (:id node)]
+                 (assoc node
+                        ::grad
+                        grad)))
+
+        :else x))
+
+(defn- decorate-w-grads
+  [x nodes]
+  (reduce decorate-w-grad
+          x
+          nodes))
+
+(defn- decorate-outputs
+  [x outputs]
+  (let [{:keys [id->node]} (:state x)]
+    (->> (for [[k v] outputs
+               {:keys [id]} v]
+           (id->node id))
+         (decorate-w-grads x))))
+
+(defn- mk-applicators*
+  [{:keys [node state] :as x}]
+  (let [{:keys [n-outputs]} node
+        {:keys [id->node id->outputs]} state
+        outputs (id->outputs (:id node))
+        x' (decorate-outputs x outputs)]
+    (update x' :collector conj 
+            (o/apply-gradient-descent node
+                                      0.5
+                                      (first (outputs->grads x' outputs node))))))
+
+(defn- mk-applicators
+  [{:keys [collector] :as x}]
+  (let [x' (assoc x :collector [])]
+    (loop [[head & tail] collector
+           x-iter x']
+      (if head
+        (let [x-iter' (assoc x-iter
+                             :node
+                             head)]
+          (recur tail (mk-applicators* x-iter')))
+        (:collector x-iter)))))
+
+(defn input-depth-traveller
+  [visit-fn x]
+  (let [{:keys [node] :as x'} (visit-fn x)
+        {:keys [state] :as x''} (assoc-in x'
+                                          [:state :id->node (:id node)]
+                                          node)
+        {:keys [id->node]} state]
+    (loop [[head & tail] (map id->node
+                              (:inputs node))
+           x-iter x'']
+      (if head
+        (recur tail
+               (->> head
+                    (assoc x-iter :node)
+                    (input-depth-traveller visit-fn)))
+        x-iter))))
+
+(defn get-traveller
+  [state start-id init]
+  (let [{:keys [id->node]} state]
+    (merge init
+           {:state state
+            :node (id->node start-id)})))
+
+(defn find-vari-paths*
+  [{:keys [node] :as x}]
+  (let [x' (update x
+                   :node
+                   assoc
+                   ::tagged?
+                   true)]
+    (if (= (:op node) :VariableV2)
+      (update x' :collector conj node)
+      x')))
+
+(defn find-vari-paths
+  [state target]
+  (input-depth-traveller find-vari-paths*
+                         (-> (get-traveller state
+                                            (:id target)
+                                            {:collector #{}})
+                             (update :node assoc
+                                     ::target-idx (:output-idx target 0)
+                                     ::tagged? true))))
+
+
+
+(def g1 $s/*)
+
+(clojure.pprint/pprint 
+ (find-vari-paths (-> g1 :state deref)
+                  {:id "Mean_3"}))
+
 (defmethod mcro/build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
         [input] inputs
         [v-a v-b] (:inputs input)]
     [(sc/with-id-scopes scope
-        (o/no-op id
-                 {:ctrl-inputs
-                  (mk-grad-graph-plan (mk-plan->consumers plan)
-                                      0.5)}))]))
+       (o/no-op id
+                {:ctrl-inputs
+                 (mk-applicators 
+                  (find-vari-paths (-> g :state deref)
+                                   (-> plan :inputs first)))}))]))
 
 
 
