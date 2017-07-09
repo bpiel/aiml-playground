@@ -361,7 +361,7 @@
            util/build-eagerly)
        vari])))
 
-
+;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
 (defn zeros
   [shape dtype]
   (let [z (case dtype
