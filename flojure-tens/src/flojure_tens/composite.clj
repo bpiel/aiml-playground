@@ -306,13 +306,6 @@
                                      ::tagged? true))))
 
 
-
-(def g1 $s/*)
-
-(clojure.pprint/pprint 
- (find-vari-paths (-> g1 :state deref)
-                  {:id "Mean_3"}))
-
 (defmethod mcro/build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
