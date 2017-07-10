@@ -94,6 +94,12 @@
                             (map vector a b)))
              (count a))))
 
+(defn spit-bytes
+  "Slurp the bytes from a slurpable thing"
+  [f ba]
+  (let [bais (java.io.ByteArrayInputStream. ba)]
+    (with-open [out (clojure.java.io/output-stream f)]
+      (clojure.java.io/copy bais out))))
 
 (let [[train-ds test-ds] (split-dataset (load-data 100))
       train (mapv first train-ds)
@@ -116,6 +122,7 @@
       te-pred (o/softmax (f test))
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))  
   (println "===================")
   (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
                           (take 10 (mapv one-hot->idx test-ls))
