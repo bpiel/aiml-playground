@@ -105,7 +105,7 @@
 
 (def d2k (split-dataset (load-data 2000)))
 
-(let [[train-ds test-ds] d2k
+#_(let [[train-ds test-ds] d2k
       train (mapv first train-ds)
       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
       test (mapv first test-ds)
@@ -125,24 +125,36 @@
       _ (println "building")
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
-  #_(spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))  
-  (println "===================")
-#_  (clojure.pprint/pprint train-ds)
-  #_(clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
-                          (take 10 (mapv one-hot->idx test-ls))
-                          (take 2 (mapv (partial take 10) (ft/fetch s weights)))
-                          (take 2 (ft/fetch s biases))
-                          ])
   (ft/run-all s (repeat 1000 opt))
-  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-                     (mapv one-hot->idx test-ls)))
-  (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
-                          (take 10 (mapv one-hot->idx test-ls))
-#_                          (take 2 (mapv (partial take 10) (ft/fetch s weights)))
-#_                          (take 2 (ft/fetch s biases))
-                          ])
-#_  (ft/run-all s (repeat 1 opt))
-#_  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-                     (mapv one-hot->idx test-ls)))
-#_  (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
-                          (take 10 (mapv one-hot->idx test-ls))]))
+  (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+            (mapv one-hot->idx test-ls)))
+
+
+(let [n-hidden-nodes 1024
+      [train-ds test-ds] d2k      
+      size (-> d2k first first first count)
+      train (o/placeholder :train dt/double-kw [2000 size])
+      tr-ls (o/placeholder :train-labels dt/double-kw [2000 10])
+      test (mapv first test-ds)
+      test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
+      weights01 (c/v :weights01 (c/truncated-normal [size n-hidden-nodes]))
+      weights12 (c/v :weights12 (c/truncated-normal [n-hidden-nodes 10]))
+      biases01 (c/v :biases01 (c/zeros [n-hidden-nodes] dt/double-kw))
+      biases12 (c/v :biases12 (c/zeros [10] dt/double-kw))
+      f (fn [d w b]
+          (o/add (o/mat-mul d w)
+                 b))
+      h1 (o/relu (f train weights01 biases01))
+      z12 (f h1 weights12 biases12)
+      loss (o/mean (o/softmax-cross-entropy-with-logits z12 tr-ls)
+                   [(int 0)])
+      opt (c/grad-desc-opt :opt loss :gradients)
+      tr-pred (o/softmax z12)
+      te-pred (o/softmax (f (o/relu test weights01 biases01)
+                            weights12
+                            biases12))
+      s (ft/build->session [opt tr-pred te-pred])]
+  (ft/run-global-vars-init s)
+  (ft/run-all s (repeat 1000 opt))
+  (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+            (mapv one-hot->idx test-ls)))

@@ -128,7 +128,7 @@
       (gr/add-op-to-state! g node collections)
       node)
     (catch Exception e
-      (clojure.pprint/pprint plan)
+;      (clojure.pprint/pprint plan)
       (throw e))))
 
 
