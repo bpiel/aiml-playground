@@ -95,7 +95,7 @@
              (count a))))
 
 
-(let [[train-ds test-ds] (split-dataset (load-data 10))
+(let [[train-ds test-ds] (split-dataset (load-data 100))
       train (mapv first train-ds)
       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
       test (mapv first test-ds)
@@ -106,15 +106,27 @@
       f #(o/add (o/mat-mul % weights)
                 biases)
       logits (f train)
-      loss (o/mean (o/softmax-cross-entropy-with-logits logits
-                                                        tr-ls)
-                   [(int 0)])
+      loss (o/softmax-cross-entropy-with-logits logits
+                                                tr-ls)
+      #_ (o/mean (o/softmax-cross-entropy-with-logits logits
+                                                      tr-ls)
+                 [(int 0)])
       opt (c/grad-desc-opt :opt loss :gradients)
       tr-pred (o/softmax logits)
       te-pred (o/softmax (f test))
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 400 opt))
+  (println "===================")
+  (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
+                          (take 10 (mapv one-hot->idx test-ls))
+                          (take 10 (ft/fetch s weights))
+                          (take 10 (ft/fetch s biases))])
+  (ft/run-all s (repeat 1 opt))
+  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                     (mapv one-hot->idx test-ls)))
+  (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
+                          (take 10 (mapv one-hot->idx test-ls))])
+  (ft/run-all s (repeat 1 opt))
   (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                      (mapv one-hot->idx test-ls)))
   (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
