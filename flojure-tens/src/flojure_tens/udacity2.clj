@@ -1,5 +1,6 @@
 (ns flojure-tens.udacity2
   (:require [flojure-tens.core :as ft]
+            [flojure-tens.data-type :as dt]
             [flojure-tens.ops :as o]
             [flojure-tens.composite :as c]
             [clojure.java.io :as io]
@@ -65,3 +66,42 @@
          (mapcat (partial load-random-labeled-pngs nn))
          shuffle)))
 
+(defn split-dataset
+  [d]
+  ;; TODO
+  [d d])
+
+(defn mk-one-hot
+  [size idx]
+  (-> size
+      (repeat 0.0)
+      vec
+      (assoc idx 1.0)
+      vec))
+
+(defn one-hot->idx
+  [oh]
+  (.indexOf oh (reduce max oh)))
+
+(let [[train-ds test-ds] (split-dataset (load-data 10))
+      train (mapv first train-ds)
+      tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
+      test (mapv first test-ds)
+      test-ls (mapv second test-ds)
+      size (-> train first count)
+      weights (c/v :weights (c/truncated-normal [size 10]))
+      biases  (c/v :biases (c/zeros [10] dt/double-kw))
+      f #(o/add (o/mat-mul % weights) biases)
+      logits (f train)
+      loss (o/mean (o/softmax-cross-entropy-with-logits logits
+                                                        tr-ls)
+                   [(int 0)])
+      opt (c/grad-desc-opt :opt loss :gradients)
+      tr-pred (o/softmax logits)
+      te-pred (o/softmax (f test))
+      s (ft/build->session [opt tr-pred te-pred])]
+  (ft/run-global-vars-init s)
+  (ft/run-all s (repeat 200 opt))
+  (clojure.pprint/pprint 
+   (mapv one-hot->idx (ft/fetch s te-pred)))
+  (clojure.pprint/pprint (mapv second train-ds)))
