@@ -66,9 +66,14 @@
          (mapcat (partial load-random-labeled-pngs nn))
          shuffle)))
 
+#_(defn split-dataset
+  [d]
+  (let [half (quot (count d) 2)]
+    [(take half d)
+     (drop half d)]))
+
 (defn split-dataset
   [d]
-  ;; TODO
   [d d])
 
 (defn mk-one-hot
@@ -83,15 +88,23 @@
   [oh]
   (.indexOf oh (reduce max oh)))
 
+(defn accuracy
+  [a b]
+  (double (/ (count (filter (partial apply =)
+                            (map vector a b)))
+             (count a))))
+
+
 (let [[train-ds test-ds] (split-dataset (load-data 10))
       train (mapv first train-ds)
       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
       test (mapv first test-ds)
-      test-ls (mapv second test-ds)
+      test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
       size (-> train first count)
       weights (c/v :weights (c/truncated-normal [size 10]))
       biases  (c/v :biases (c/zeros [10] dt/double-kw))
-      f #(o/add (o/mat-mul % weights) biases)
+      f #(o/add (o/mat-mul % weights)
+                biases)
       logits (f train)
       loss (o/mean (o/softmax-cross-entropy-with-logits logits
                                                         tr-ls)
@@ -101,7 +114,8 @@
       te-pred (o/softmax (f test))
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 200 opt))
-  (clojure.pprint/pprint 
-   (mapv one-hot->idx (ft/fetch s te-pred)))
-  (clojure.pprint/pprint (mapv second train-ds)))
+  (ft/run-all s (repeat 400 opt))
+  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                     (mapv one-hot->idx test-ls)))
+  (clojure.pprint/pprint [(take 10 (mapv one-hot->idx (ft/fetch s te-pred)))
+                          (take 10 (mapv one-hot->idx test-ls))]))
