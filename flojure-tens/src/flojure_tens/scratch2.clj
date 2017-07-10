@@ -121,10 +121,10 @@
   (def g1 g)
   (def s1 s)
   (def gdo1 gdo)
-  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
+;;  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   (println "===================")
-  (ft/run-init-variable-assignments s1)
-(Thread/sleep 200)
+  (ft/run-global-vars-init s1)
+
   (clojure.pprint/pprint (ft/fetch s1 a))
   (clojure.pprint/pprint (ft/fetch s1 b))
 #_  (clojure.pprint/pprint (ft/fetch s1 y)) ;; RACE CONDITION!!! ...this doesn't fix it
@@ -287,14 +287,17 @@
   (ft/run-all s (repeat 10 opt))
   (ft/fetch s weights))
 
+
 (let [tr-ds (o/c [[0.1 0.2] [0.3 0.4]])
       tr-ls (o/c [[0. 1.] [1. 0.]])
       va-ds (o/c [[0.1 0.2] [0.3 0.4]])
       te-ds (o/c [[0.1 0.2] [0.3 0.4]])
-      weights01 (c/v :weights01 [[1. 1.] [1. 1.]])
-      weights12 (c/v :weights12 [[1. 1.] [1. 1.]])
-      biases01 (c/v :biases01 [0. 0.])
-      biases12 (c/v :biases12 [0. 0.])
+      ;;weights01 (c/v :weights01 [[0.5 0.5][0.5 0.5]])
+      weights01 (c/v :weights01 (c/truncated-normal [2 2]))
+      ;;      weights12 (c/v :weights12 [[0.5 0.5][0.5 0.5]])
+      weights12 (c/v :weights12 (c/truncated-normal [2 2]))
+      biases01 (c/v :biases01 (c/zeros [1 2] dt/double-kw))
+      biases12 (c/v :biases12 (c/zeros [1 2] dt/double-kw))
       z01 (o/add (o/mat-mul tr-ds weights01)
                  biases01)
       h1 (o/relu z01)
@@ -307,9 +310,14 @@
       tr-pred (o/softmax z12)
       g (ft/build-all->graph [opt tr-pred])
       s (ft/graph->session g)]
+  (println "\n")
   (ft/run-global-vars-init s)
-  (clojure.pprint/pprint (ft/fetch s tr-pred))
+    (clojure.pprint/pprint (ft/fetch s tr-pred))
   (ft/run-all s (repeat 100 opt))
-  (clojure.pprint/pprint (ft/fetch s tr-pred)))
+  (clojure.pprint/pprint (ft/fetch s tr-pred))
+  (clojure.pprint/pprint (ft/fetch s weights01)))
 
-(ft/produce (c/zeros [2 1] dt/long-kw))
+(let [v (c/v :v (c/truncated-normal [2 2]))
+      s (ft/build->session v)]
+  (ft/run-global-vars-init s)
+  (ft/fetch s v))

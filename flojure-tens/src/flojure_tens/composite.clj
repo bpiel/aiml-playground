@@ -368,5 +368,17 @@
             dt/bool-kw false
             dt/string-kw ""
             0)]
-    (o/fill (o/c shape dt/int-kw)
-            (o/c z dtype))))
+    (o/fill (o/c shape dt/int-kw) ;; TODO what if `shape` isn't a constant? 
+            (o/c z dtype)))) ;; TODO infer type?
+
+;; TODO auto-cast-inputs-fn ???
+
+
+;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/random_ops.py#L138
+(defn truncated-normal
+  [shape]
+  (o/truncated-normal nil
+                      {:seed1 (rand-int Integer/MAX_VALUE)
+                       :seed2 (rand-int Integer/MAX_VALUE)
+                       :dtype dt/double-kw}
+                      (o/c shape dt/int-kw)))
