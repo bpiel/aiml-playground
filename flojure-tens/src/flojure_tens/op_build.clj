@@ -128,9 +128,10 @@
       (gr/add-op-to-state! g node collections)
       node)
     (catch Exception e
-;      (clojure.pprint/pprint plan)
+      ;;      (clojure.pprint/pprint plan)
+      (def p1 plan)
+      
       (throw e))))
-
 
 (defmulti build (fn [g op-plan] (:op op-plan)))
 

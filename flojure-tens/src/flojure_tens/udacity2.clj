@@ -70,9 +70,9 @@
 
 (defn split-dataset
   [d]
-  (let [half (quot (count d) 2)]
-    [(take half d)
-     (drop half d)]))
+  (let [portion (quot (* 7 (count d)) 10)]
+    [(take portion d)
+     (drop portion d)]))
 
 #_(defn split-dataset
   [d]
@@ -104,6 +104,7 @@
       (clojure.java.io/copy bais out))))
 
 (def d2k (split-dataset (load-data 2000)))
+(def d200 (split-dataset (load-data 200)))
 
 #_(let [[train-ds test-ds] d2k
       train (mapv first train-ds)
@@ -131,10 +132,11 @@
 
 
 (let [n-hidden-nodes 1024
-      [train-ds test-ds] d2k      
-      size (-> d2k first first first count)
-      train (o/placeholder :train dt/double-kw [2000 size])
-      tr-ls (o/placeholder :train-labels dt/double-kw [2000 10])
+      [train-ds test-ds] d200
+      n-batches (-> train-ds count)
+      size (-> train-ds first first count)
+      train (o/placeholder :train dt/double-kw [n-batches size])
+      tr-ls (o/placeholder :train-labels dt/double-kw [n-batches 10])
       test (mapv first test-ds)
       test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
       weights01 (c/v :weights01 (c/truncated-normal [size n-hidden-nodes]))
@@ -150,11 +152,12 @@
                    [(int 0)])
       opt (c/grad-desc-opt :opt loss :gradients)
       tr-pred (o/softmax z12)
-      te-pred (o/softmax (f (o/relu test weights01 biases01)
+      te-pred (o/softmax (f (o/relu (f test weights01 biases01))
                             weights12
                             biases12))
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 1000 opt))
+  (ft/run-all s (repeat 32 opt) {:train (map first train-ds)
+                                 :train-labels (mapv (comp (partial mk-one-hot 10) second) train-ds)})
   (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
             (mapv one-hot->idx test-ls)))
