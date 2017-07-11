@@ -40,7 +40,7 @@ def import_to_tensorboard(model_dir, log_dir):
     View your imported `.pb` model as a graph.
   """
   with session.Session(graph=ops.Graph()) as sess:
-#    new_saver = tf.train.import_meta_graph('in.pb')
+#  new_saver = tf.train.import_meta_graph('in.pb')
     with gfile.FastGFile(model_dir, "rb") as f:
        graph_def = graph_pb2.GraphDef()
        graph_def.ParseFromString(f.read())

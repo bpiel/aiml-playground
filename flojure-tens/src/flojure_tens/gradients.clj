@@ -60,7 +60,7 @@
         output-shape (o/shape op)
         factor (c/safe-shape-div (c/reduce-prod input-shape)
                                   (c/reduce-prod output-shape))]
-    [(o/div sum-grad (o/cast-tf nil {:DstT (-> op :dtypes first)} factor))
+    [(o/real-div sum-grad (o/cast-tf nil {:DstT (-> op :dtypes first)} factor))
      nil]))
 
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L393

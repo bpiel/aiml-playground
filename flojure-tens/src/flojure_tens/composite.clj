@@ -371,7 +371,7 @@
 (defn truncated-normal
   [shape]
   (o/truncated-normal nil
-                      {:seed1 (rand-int Integer/MAX_VALUE)
+                      {:seed (rand-int Integer/MAX_VALUE)
                        :seed2 (rand-int Integer/MAX_VALUE)
                        :dtype dt/double-kw}
                       (o/c shape dt/int-kw)))

@@ -41,13 +41,20 @@
                 r)
             d))))
 
+(defn safe-load-image
+  [filepath]
+  (try
+    (img/load-image filepath)
+    (catch Exception e
+      nil)))
+
 (defn load-random-pngs
   [letter n]
   (->> (random-png-file-paths letter n)
-       (map img/load-image)
+       (keep safe-load-image)
        (map img/get-pixels)
        (map normalize)
-       (map vec)))
+       (mapv vec)))
 
 (defn append-label
   [label x]
@@ -92,6 +99,8 @@
 
 (defn accuracy
   [a b]
+  (clojure.pprint/pprint (take 30 a))
+  (clojure.pprint/pprint (take 30 b))
   (double (/ (count (filter (partial apply =)
                             (map vector a b)))
              (count a))))
@@ -103,36 +112,38 @@
     (with-open [out (clojure.java.io/output-stream f)]
       (clojure.java.io/copy bais out))))
 
-(def d2k (split-dataset (load-data 2000)))
+(def d18k (split-dataset (load-data 18000)))
 (def d200 (split-dataset (load-data 200)))
 
-#_(let [[train-ds test-ds] d2k
-      train (mapv first train-ds)
-      tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
-      test (mapv first test-ds)
-      test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
-      size (-> train first count)
-      weights (c/v :weights (c/truncated-normal [size 10]))
-      biases  (c/v :biases (c/zeros [10] dt/double-kw))
-      f #(o/add (o/mat-mul % weights)
-                biases)
-      logits (f train)
-      loss  (o/mean (o/softmax-cross-entropy-with-logits logits
-                                                         tr-ls)
-                    [(int 0)])
-      opt (c/grad-desc-opt :opt loss :gradients)
-      tr-pred (o/softmax logits)
-      te-pred (o/softmax (f test))
-      _ (println "building")
-      s (ft/build->session [opt tr-pred te-pred])]
-  (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 1000 opt))
-  (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-            (mapv one-hot->idx test-ls)))
+#_(let [[train-ds test-ds] d18k
+        train (mapv first train-ds)
+        tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds) 
+        test (mapv first test-ds)
+        test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
+        size (-> train first count)
+        weights (c/v :weights (c/truncated-normal [size 10]))
+        biases  (c/v :biases (c/zeros [10] dt/double-kw))
+        f #(o/add (o/mat-mul % weights)
+                  biases)
+        logits (f train)
+        loss  (o/mean (o/softmax-cross-entropy-with-logits logits
+                                                           tr-ls)
+                      [(int 0)])
+        opt (c/grad-desc-opt :opt loss :gradients)
+        tr-pred (o/softmax logits)
+        te-pred (o/softmax (f test))
+        _ (println "building")
+        s (ft/build->session [opt tr-pred te-pred])]
+    (println "done building")
+    (ft/run-global-vars-init s)
+    (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
+    (ft/run-all s (repeat 640 opt))
+    (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                       (mapv one-hot->idx test-ls))))
 
 
 (let [n-hidden-nodes 1024
-      [train-ds test-ds] d200
+      [train-ds test-ds] d200 #_d18k
       n-batches (-> train-ds count)
       size (-> train-ds first first count)
       train (o/placeholder :train dt/double-kw [n-batches size])
@@ -157,7 +168,8 @@
                             biases12))
       s (ft/build->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
+  #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
   (ft/run-all s (repeat 32 opt) {:train (map first train-ds)
                                  :train-labels (mapv (comp (partial mk-one-hot 10) second) train-ds)})
-  (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-            (mapv one-hot->idx test-ls)))
+  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                     (mapv one-hot->idx test-ls))))
