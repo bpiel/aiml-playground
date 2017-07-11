@@ -19,6 +19,7 @@ x clean up graph state
 x cache macros by hash
 x id scopes for gdo 
 x :output-idx
+x random init fns
 
 x gradient descent optimizer macro
  x 1s shape
@@ -27,9 +28,9 @@ x gradient descent optimizer macro
  x AddN
  
 x more grad fns
+x variable macro
+x reorg nses
 
-- reorg nses
-- variable macro
 
 
 - udacity 2
@@ -38,13 +39,32 @@ x more grad fns
 - next udacity!?!?
 
 
+=== DEBUGGING NN
+
+- compare py/clj accuracy results for simple inputs & constant var inits
+ - if same, increase complexity until they vary
+ - print values from py/clj nodes, compare
+
+- try simpler graphs (ex no hidden?)
+
+- export from python, run in clj
+
+- investigate debug tools
+
+
+
+================
+
+- option to rebuild op fns w/ debugging
+  -- attaches stacktrace to meta 
+  
 
 ---- WHAT ARE THE GOALS??
  - implement all udacity assignments
  - OJ uses
  - ready for prod/public
 
-- random init fns
+
 
 - with-let ??
 - Session.run delete things / clean up
