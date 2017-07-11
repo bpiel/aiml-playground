@@ -142,7 +142,7 @@
                        (mapv one-hot->idx test-ls))))
 
 
-(let [n-hidden-nodes 1024
+#_(let [n-hidden-nodes 1024
       [train-ds test-ds] d200 #_d18k
       n-batches (-> train-ds count)
       size (-> train-ds first first count)
@@ -173,3 +173,59 @@
                                  :train-labels (mapv (comp (partial mk-one-hot 10) second) train-ds)})
   (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                      (mapv one-hot->idx test-ls))))
+
+;; DEBUG ======================
+
+(do
+  (def dbg-ds'
+    [[[0. 0. 0. 0.] 0]
+     [[0. 0. 0. 1.] 1]
+     [[0. 0. 1. 0.] 2]
+     [[0. 0. 1. 1.] 0]
+     [[0. 1. 0. 0.] 1]
+     [[0. 1. 0. 1.] 2]
+     [[0. 1. 1. 0.] 0]
+     [[0. 1. 1. 1.] 1]
+     [[1. 0. 0. 0.] 2]
+     [[1. 0. 0. 1.] 0]
+     [[1. 0. 1. 0.] 1]
+     [[1. 0. 1. 1.] 2]
+     [[1. 1. 0. 0.] 0]
+     [[1. 1. 0. 1.] 1]
+     [[1. 1. 1. 0.] 2]
+     [[1. 1. 1. 1.] 0]])
+
+  (def dbg-ds [dbg-ds' dbg-ds'])
+
+  (let [n-hidden-nodes 1024
+        [train-ds test-ds] dbg-ds
+        n-batches (-> train-ds count)
+        size (-> train-ds first first count)
+        train (o/placeholder :train dt/double-kw [n-batches size])
+        tr-ls (o/placeholder :train-labels dt/double-kw [n-batches 10])
+        test (mapv first test-ds)
+        test-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
+        weights01 (c/v :weights01 (c/truncated-normal [size n-hidden-nodes]))
+        weights12 (c/v :weights12 (c/truncated-normal [n-hidden-nodes 10]))
+        biases01 (c/v :biases01 (c/zeros [n-hidden-nodes] dt/double-kw))
+        biases12 (c/v :biases12 (c/zeros [10] dt/double-kw))
+        f (fn [d w b]
+            (o/add (o/mat-mul d w)
+                   b))
+        h1 (o/relu (f train weights01 biases01))
+        z12 (f h1 weights12 biases12)
+        loss (o/mean (o/softmax-cross-entropy-with-logits z12 tr-ls)
+                     [(int 0)])
+        opt (c/grad-desc-opt :opt loss :gradients)
+        tr-pred (o/softmax z12)
+        te-pred (o/softmax (f (o/relu (f test weights01 biases01))
+                              weights12
+                              biases12))
+        s (ft/build->session [opt tr-pred te-pred])]
+    (ft/run-global-vars-init s)
+    #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
+    (ft/run-all s (repeat 10 opt) {:train (map first train-ds)
+                                   :train-labels (mapv (comp (partial mk-one-hot 10) second) train-ds)})
+    (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                       (mapv one-hot->idx test-ls)))))
+
