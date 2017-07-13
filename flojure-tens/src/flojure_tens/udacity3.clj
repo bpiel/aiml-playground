@@ -132,17 +132,18 @@
           biases (c/v :biases (c/zeros [depth] dt/double-kw))
           z (o/add (o/mat-mul input weights)
                    biases)]
-      [(o/relu z)
+      [z
        (o/l2-loss weights)])))
 
 (defn forward
   [x]
-  (let [[h1 l2-reg1] (layer :hidden1
+  (let [[z01 l2-reg1] (layer :hidden1
                             (* image-size image-size)
-                            1024
+                            n-hidden
                             x)
+        h1 (o/relu z01)
         [z12 l2-reg2] (layer :z12
-                             1024
+                             n-hidden
                              n-labels
                              h1)]
     [z12 (o/add l2-reg1 l2-reg2)]))
@@ -157,71 +158,19 @@
 (let [[train-ds test-ds] d200
       train (map first train-ds)
       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
+      test (map first test-ds)
+      te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
       [z12 l2-loss] (forward train)
       total-loss (get-loss z12 l2-loss tr-ls)
       opt (c/grad-desc-opt :opt total-loss :gradients)
-      tr-pred (o/relu z12)
-      s (ft/build-all->session [opt tr-pred])]
+      tr-pred (o/softmax z12)
+      te-pred (-> test
+                  forward
+                  first
+                  o/softmax)
+      s (ft/build-all->session [opt tr-pred te-pred])]
   (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 32 opt))
-  (println (accuracy (mapv one-hot->idx (ft/fetch s tr-pred))
-                     (mapv one-hot->idx tr-ls))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
+  (ft/run-all s (repeat 10 opt))
+  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                     (mapv one-hot->idx te-ls))))

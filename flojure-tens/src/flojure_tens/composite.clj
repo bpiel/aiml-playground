@@ -251,7 +251,7 @@
 (defn- mk-applicators
   [{:keys [collector] :as x}]
   (let [x' (assoc x :collector [])]
-    (loop [[head & tail] collector
+    (loop [[head & tail] (vals collector)
            x-iter x']
       (if head
         (let [x-iter' (assoc x-iter
@@ -292,7 +292,7 @@
                    ::tagged?
                    true)]
     (if (= (:op node) :VariableV2)
-      (update x' :collector conj node)
+      (update x' :collector assoc (:id node) node)
       x')))
 
 (defn find-vari-paths
@@ -300,7 +300,7 @@
   (input-depth-traveller find-vari-paths*
                          (-> (get-traveller state
                                             (:id target)
-                                            {:collector #{}})
+                                            {:collector {}})
                              (update :node assoc
                                      ::target-idx (:output-idx target 0)
                                      ::tagged? true))))
