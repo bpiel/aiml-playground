@@ -33,23 +33,11 @@ x reorg nses
 
 
 
-- udacity 2
- - actually do notMNIST
+x udacity 2
+ x actually do notMNIST
  
 - next udacity!?!?
 
-
-=== DEBUGGING NN
-
-- compare py/clj accuracy results for simple inputs & constant var inits
- - if same, increase complexity until they vary
- - print values from py/clj nodes, compare
-
-- try simpler graphs (ex no hidden?)
-
-- export from python, run in clj
-
-- investigate debug tools
 
 
 
