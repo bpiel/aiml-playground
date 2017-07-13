@@ -174,3 +174,4 @@
   (ft/run-all s (repeat 10 opt))
   (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                      (mapv one-hot->idx te-ls))))
+

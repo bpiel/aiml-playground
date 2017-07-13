@@ -144,7 +144,7 @@
 
 
 (let [n-hidden-nodes 1024
-      [train-ds test-ds] d18k
+      [train-ds test-ds] d200 #_d18k
       n-batches (-> train-ds count)
       size (-> train-ds first first count)
       train (o/placeholder :train dt/double-kw [n-batches size])

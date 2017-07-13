@@ -101,7 +101,7 @@ with graph.as_default():
     
 # train the model
 num_steps = 10
-batch_size = 200
+batch_size = 140
 with tf.Session(graph=graph) as session:
     tf.initialize_all_variables().run()
     print("Initialized, using batch size: %s" % batch_size)
