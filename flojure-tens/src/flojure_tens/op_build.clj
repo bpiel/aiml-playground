@@ -130,6 +130,7 @@
     (catch Exception e
       ;;      (clojure.pprint/pprint plan)
       (def p1 plan)
+      #_(clojure.pprint/pprint p1)
       
       (throw e))))
 

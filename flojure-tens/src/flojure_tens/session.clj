@@ -48,6 +48,7 @@
 
 (defn- feed->
   [^Graph g feed]
+  (def g1 g)
   (let [{:keys [id->node]} (-> g :state deref)]
     (if (not-empty feed)
       (apply map vector

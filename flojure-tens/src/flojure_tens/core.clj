@@ -44,8 +44,14 @@
         graph->session)))
 
 (defn build-all->session
-  ([plans])
-  ([^Graph graph plans]))
+  ([plans]
+   (-> plans
+       build-all->graph
+       graph->session))
+  ([^Graph graph plans]
+   (->> plans
+        (build-all->graph graph)
+        graph->session)))
 
 (defn run [^Session session plan & [feed]]
   (sess/run session plan feed))

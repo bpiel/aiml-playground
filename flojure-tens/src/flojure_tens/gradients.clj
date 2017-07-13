@@ -91,6 +91,24 @@
   [op x grads]
   grads)
 
+(defn mul
+  [op [x1 x2] [grad]]
+  (let [s1 (o/shape x1)
+        s2 (o/shape x2)
+        r1 (o/broadcast-gradient-args s1 s2)
+        r2 (assoc r1 :output-idx 1)]
+    [(o/reshape (c/reduce-sum (o/mul grad x2)
+                              :axis r1)
+                s1)
+     (o/reshape (c/reduce-sum (o/mul x1 grad)
+                              :axis r2)
+                s2)]))
+
+(defn l2-loss
+  [op [x1] [grad]]
+  [(o/mul x1 grad)])
+
+
 (defmethod mcro/build-macro :grad
   [^Graph g plan]
   (let [[y-op dx-ops] (:inputs plan)
@@ -106,4 +124,6 @@
         :SoftmaxCrossEntropyWithLogits (softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
         :Add (add y-op y-inputs dx-ops)
         :Relu (relu y-op y-inputs dx-ops)
-        :Identity (identity-tf y-op y-inputs dx-ops)))))
+        :Identity (identity-tf y-op y-inputs dx-ops)
+        :Mul (mul y-op y-inputs dx-ops)
+        :L2Loss (l2-loss y-op y-inputs dx-ops)))))

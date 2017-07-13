@@ -33,8 +33,13 @@
 
 (defn hook-pre-build-op-default
   [args]
-  (-> args
-      (update-in [:plan :attrs] ogu/convert-attrs (-> args :op-def :attr))))
+  (try
+    (-> args
+        (update-in [:plan :attrs] ogu/convert-attrs (-> args :op-def :attr)))
+    (catch Exception e
+      (def a1 args)
+      #_ (clojure.pprint/pprint a1)
+      (throw e))))
 
 (defn get-op-fn-body-default
   [fn-name-sym op-def]

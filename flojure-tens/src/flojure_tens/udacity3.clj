@@ -160,5 +160,68 @@
       [z12 l2-loss] (forward train)
       total-loss (get-loss z12 l2-loss tr-ls)
       opt (c/grad-desc-opt :opt total-loss :gradients)
-      s (ft/build->session opt)]
-  )
+      tr-pred (o/relu z12)
+      s (ft/build-all->session [opt tr-pred])]
+  (ft/run-global-vars-init s)
+  (ft/run-all s (repeat 32 opt))
+  (println (accuracy (mapv one-hot->idx (ft/fetch s tr-pred))
+                     (mapv one-hot->idx tr-ls))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
