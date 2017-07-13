@@ -16,7 +16,7 @@ def accuracy(predictions, labels):
 num_labels = 3
 image_size = 2
 batch_size = 16
-n_hidden_nodes = 3
+n_hidden_nodes = 1024
 
 batch_data = [
     [0.0, 0.0, 0.0, 0.0],
@@ -75,17 +75,18 @@ with graph.as_default():
 
   # Input data. For the training data, we use a placeholder that will be fed
   # at run time with a training minibatch.
-  tf_train_dataset = tf.placeholder(tf.float32,
-                                    shape=(batch_size, image_size * image_size))
-  tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
+  tf_train_dataset = tf.constant(test_dataset)
+  #tf.placeholder(tf.float32, shape=(batch_size, image_size * image_size))
+  tf_train_labels = tf.constant(test_labels)
+  #tf.placeholder(tf.float32, shape=(batch_size, num_labels))
   tf_valid_dataset = tf.constant(valid_dataset)
   tf_test_dataset = tf.constant(test_dataset)
   
   # Variables.
-  weights_01 = tf.Variable(w01)
-  # weights_01 = tf.Variable(tf.truncated_normal([image_size * image_size, n_hidden_nodes]))
-  weights_12 = tf.Variable(w12)
-  # weights_12 = tf.Variable(tf.truncated_normal([n_hidden_nodes, num_labels]))
+  #weights_01 = tf.Variable(w01)
+  weights_01 = tf.Variable(tf.truncated_normal([image_size * image_size, n_hidden_nodes]))
+  #weights_12 = tf.Variable(w12)
+  weights_12 = tf.Variable(tf.truncated_normal([n_hidden_nodes, num_labels]))
   biases_01 = tf.Variable(tf.zeros([n_hidden_nodes]))
   biases_12 = tf.Variable(tf.zeros([num_labels]))
   
@@ -109,7 +110,7 @@ with graph.as_default():
 
 
 
-num_steps = 10
+num_steps = 2
 
 # with tf.Session(graph=graph) as session:
 #   tf.initialize_all_variables().run()
@@ -133,8 +134,7 @@ def doit():
     for step in range(num_steps):
       
       feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
-      _, l, predictions = session.run(
-        [optimizer, loss, train_prediction], feed_dict=feed_dict)
+      _, l, predictions = session.run([optimizer, loss, train_prediction])
     return accuracy(test_prediction.eval(), test_labels)
 
 print( sum( doit() for n in range(100)))

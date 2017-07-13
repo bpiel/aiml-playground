@@ -37,8 +37,9 @@
         r (double (- mx mn))]
     (if (zero? r)
       (vec (repeat (count d) 0.0))
-      (mapv #(/ (- % mn)
-                r)
+      (mapv #(- (/ (- % mn)
+                   r)
+                0.5)
             d))))
 
 (defn safe-load-image
@@ -142,8 +143,8 @@
                        (mapv one-hot->idx test-ls))))
 
 
-#_(let [n-hidden-nodes 1024
-      [train-ds test-ds] d200 #_d18k
+(let [n-hidden-nodes 1024
+      [train-ds test-ds] d18k
       n-batches (-> train-ds count)
       size (-> train-ds first first count)
       train (o/placeholder :train dt/double-kw [n-batches size])
@@ -173,113 +174,3 @@
                                  :train-labels (mapv (comp (partial mk-one-hot 10) second) train-ds)})
   (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                      (mapv one-hot->idx test-ls))))
-
-;; DEBUG ======================
-
-(do
-  (def dbg-ds'
-    [[[0. 0. 0. 0.] 0]
-     [[0. 0. 0. 1.] 1]
-     [[0. 0. 1. 0.] 2]
-     [[0. 0. 1. 1.] 0]
-     [[0. 1. 0. 0.] 1]
-     [[0. 1. 0. 1.] 2]
-     [[0. 1. 1. 0.] 0]
-     [[0. 1. 1. 1.] 1]
-     [[1. 0. 0. 0.] 2]
-     [[1. 0. 0. 1.] 0]
-     [[1. 0. 1. 0.] 1]
-     [[1. 0. 1. 1.] 2]
-     [[1. 1. 0. 0.] 0]
-     [[1. 1. 0. 1.] 1]
-     [[1. 1. 1. 0.] 2]
-     [[1. 1. 1. 1.] 0]])
-
-  (def dbg-ds [dbg-ds' dbg-ds'])
-
-#_  (let [n-hidden-nodes 3
-        n-labels 3
-        [train-ds test-ds] dbg-ds
-        n-batches (-> train-ds count)
-        size (-> train-ds first first count)
-        train (o/placeholder :train dt/double-kw [n-batches size])
-        tr-ls (o/placeholder :train-labels dt/double-kw [n-batches n-labels])
-        test (mapv first test-ds)
-        test-ls (mapv (comp (partial mk-one-hot n-labels) second) test-ds)
-        weights01 #_(c/v :weights01
-                         (c/truncated-normal [size n-hidden-nodes]))
-        (c/v :weights01
-             [[1.1 0.2 0.3]
-              [1.4 0.5 0.6]
-              [1.7 0.8 0.9]
-              [1.1 0.4 0.7]])
-        weights12 #_(c/v :weights12
-                         (c/truncated-normal [n-hidden-nodes n-labels]))
-        (c/v :weights12
-             [[0.1 0.2 0.3]
-              [0.4 0.5 0.6]
-              [0.7 0.8 0.9]])
-        biases01 (c/v :biases01 (c/zeros [n-hidden-nodes] dt/double-kw))
-        biases12 (c/v :biases12 (c/zeros [n-labels] dt/double-kw))
-        f (fn
-            [d w b]
-            (o/add (o/mat-mul d w)
-                   b))
-        h1 (o/relu (f train weights01 biases01))
-        z12 (f h1 weights12 biases12)
-        loss (o/mean (o/softmax-cross-entropy-with-logits z12 tr-ls)
-                     [(int 0)])
-        opt (c/grad-desc-opt :opt loss :gradients)
-        tr-pred (o/softmax z12)
-        te-pred (o/softmax (f (o/relu (f test weights01 biases01))
-                              weights12
-                              biases12))
-        s (ft/build->session [opt tr-pred te-pred])]
-    #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
-    (clojure.pprint/pprint
-     (reduce +
-             (for [_ (range 100)]
-               (do
-                 (ft/run-global-vars-init s)
-                 (ft/run-all s (repeat 10 opt) {:train (map first train-ds)
-                                               :train-labels (mapv (comp (partial mk-one-hot n-labels) second) train-ds)})
-                 (let [a (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-                                   (mapv one-hot->idx test-ls))]
-                   (println a)
-                   a)))))))
-
-
-  (let [n-labels 3
-        [train-ds _] dbg-ds
-        n-batches (-> train-ds count)
-        size (-> train-ds first first count)
-        train (o/c (map first train-ds))
-        tr-ls (o/c (mapv (comp (partial mk-one-hot n-labels) second) train-ds))
-        weights01 #_(c/v :weights01
-                       (c/truncated-normal [size n-hidden-nodes]))
-        (c/v :weights01
-               [[1.1 0.2 0.3]
-                [1.4 0.5 0.6]
-                [1.7 0.8 0.9]
-                [1.1 0.4 0.7]])
-        f (fn
-            [d w b]
-            (o/add (o/mat-mul d w)
-                   b))
-        z01 (o/mat-mul train weights01)
-        loss (o/mean (o/softmax-cross-entropy-with-logits z01 tr-ls)
-                     [(int 0)])
-        opt (c/grad-desc-opt :opt loss :gradients)
-        tr-pred (o/softmax z01)
-        s (ft/build->session [opt tr-pred ])]
-    (ft/run-global-vars-init s)
-    #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
-    (clojure.pprint/pprint
-     (reduce +
-             (for [_ (range 1)]
-               (do
-                 (ft/run-all s (repeat 1 opt))
-                 (let [a (accuracy (mapv one-hot->idx (ft/fetch s tr-pred))
-                                   (mapv second train-ds))]
-                   (println a)
-                   a))))))
