@@ -3,8 +3,11 @@
             [flojure-tens.builder :as bdr]
             [flojure-tens.session :as sess]
             [flojure-tens.tensor :as tsr]
+            flojure-tens.macros
             flojure-tens.gradients
-            flojure-tens.composite
+            flojure-tens.grad-desc-opt
+            flojure-tens.plan-time-comps
+            flojure-tens.build-time-comps
             flojure-tens.ops
             flojure-tens.common)
   (:import [flojure_tens.common Graph]

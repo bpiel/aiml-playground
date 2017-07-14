@@ -1,4 +1,5 @@
-(ns flojure-tens.util)
+(ns flojure-tens.util
+  (:require [clojure.walk :as walk]))
 
 (defn ->int
   [v]
@@ -127,3 +128,16 @@
   [v]
   (-> v meta ::build-eagerly?))
 
+
+(defn replace$
+  [form]
+  (let [$sym `$#
+        form' (walk/prewalk-replace {'$ $sym}
+                                    form)]
+    (if (= form form')
+      form
+      `((fn [~$sym] ~form')))))
+
+(defmacro $-
+  [m & body]
+  `(~m ~@(map replace$ body)))

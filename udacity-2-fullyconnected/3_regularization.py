@@ -127,3 +127,75 @@ with tf.Session(graph=graph) as session:
 
 
 print(train_dataset.shape)
+
+
+## PROBLEM 3
+
+print("PROBLEM 3")
+
+batch_size = 128
+n_hidden = 1024
+L2_weight = 0.5e-3
+
+def forward(tf_X, dropout_p):
+    with tf.name_scope('hidden1'):
+        weights = tf.Variable(tf.truncated_normal([image_size*image_size, n_hidden]), name="weights")
+        biases = tf.Variable(tf.zeros([n_hidden]), name="biases")
+        z01 = tf.matmul(tf_X, weights) + biases
+        hidden1 = tf.nn.dropout(tf.nn.relu(z01), dropout_p) # Added dropout
+        l2_reg_01 = tf.nn.l2_loss(weights)
+    with tf.name_scope('z12'):
+        weights = tf.Variable(tf.truncated_normal([n_hidden, num_labels]), name="weights")
+        biases = tf.Variable(tf.zeros([num_labels]), name="biases")
+        z12 = tf.matmul(hidden1, weights) + biases
+        l2_reg_12 = tf.nn.l2_loss(weights)
+    return z12, l2_reg_01+l2_reg_12
+    #return z12, 0
+
+# Define loss
+def get_loss(z12, l2_loss, tf_Y):
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=z12, labels=tf_training_labels))
+    total_loss = loss + L2_weight*l2_loss
+    return total_loss
+
+# Define the network graph
+tf.reset_default_graph()
+graph = tf.Graph()
+with graph.as_default():
+    #tf_training_dataset = tf.placeholder(tf.float32, shape=(batch_size, image_size*image_size))
+    #tf_training_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
+    tf_training_dataset = tf.placeholder(tf.float32) # Should have shape (batch_size, image_size*image_size)
+    tf_training_labels = tf.placeholder(tf.float32) # Should have shape (batch_size, num_labels)
+    dropout_p = tf.placeholder(tf.float32)
+    
+    z12, l2_loss = forward(tf_training_dataset, dropout_p)
+    total_loss = get_loss(z12, l2_loss, tf_training_labels)
+    optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(total_loss)
+
+# train the model
+num_steps = 3001
+batch_size = 128
+with tf.Session(graph=graph) as session:
+    tf.initialize_all_variables().run()
+    print("Initialized, using batch size: %s" % batch_size)
+    for step in range(num_steps):
+        idx = np.random.randint(train_dataset.shape[0], size=batch_size)
+        #offset = (step * batch_size) % (train_labels.shape[0] - batch_size)
+        # Generate a minibatch.
+        batch_data = train_dataset[idx]
+        batch_labels = train_labels[idx]
+        #batch_data = train_dataset[offset:(offset + batch_size), :]
+        #batch_labels = train_labels[offset:(offset + batch_size), :]
+        feed_dict = {tf_training_dataset : batch_data, tf_training_labels : batch_labels, dropout_p: 0.5}
+        _, l = session.run([optimizer, total_loss], feed_dict=feed_dict)
+        predictions = session.run(z12, feed_dict={tf_training_dataset: batch_data, dropout_p: 1})
+        if (step % 500 == 0):
+            #batch_size += 100
+            print("Updated batch size: %s" % batch_size)
+            print("Minibatch loss at step", step, ":", l)
+            print("Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels))
+            predictions = session.run(z12, feed_dict={tf_training_dataset: valid_dataset, dropout_p: 1})
+            print("Validation accuracy: %.1f%%" % accuracy(predictions, valid_labels))
+    predictions = session.run(z12, feed_dict={tf_training_dataset: test_dataset, dropout_p: 1})
+    print("Test accuracy: %.1f%%" % accuracy(predictions, test_labels))
+    

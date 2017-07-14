@@ -2,7 +2,7 @@
   (:require [flojure-tens.core :as ft]
             [flojure-tens.data-type :as dt]
             [flojure-tens.ops :as o]
-            [flojure-tens.composite :as c]
+            [flojure-tens.plan-time-comps :as p]
             [flojure-tens.scope :as sc]
             [clojure.java.io :as io]
             [mikera.image.core :as img])
@@ -127,11 +127,11 @@
 (defn layer
   [scope width depth input]
   (sc/with-id-scopes [scope]
-    (let [weights (c/v :weights (o/truncated-normal nil
+    (let [weights (p/v :weights (o/truncated-normal nil
                                                     {:dtype dt/double-kw}
                                                     [width
                                                      depth]))
-          biases (c/v :biases (c/zeros [depth] dt/double-kw))
+          biases (p/v :biases (p/zeros [depth] dt/double-kw))
           z (o/add (o/mat-mul input weights)
                    biases)]
       [z
@@ -164,7 +164,7 @@
       te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
       [z12 l2-loss] (forward train)
       total-loss (get-loss z12 l2-loss tr-ls)
-      opt (c/grad-desc-opt :opt total-loss :gradients)
+      opt (p/grad-desc-opt :opt total-loss :gradients)
       tr-pred (o/softmax z12)
       te-pred (-> test
                   forward

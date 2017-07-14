@@ -6,12 +6,12 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.util :as util]
             [flojure-tens.data-type :as dt])
-  (:import [flojure_tens.common Graph]))
+  (:import [flojure_tens.common Graph Op]))
 
 
 
 (defn- mk-variable-attrs
-  [value-op]
+  [^Op value-op]
   (let [{:keys [output-idx shapes dtypes]} value-op]
     {:dtype (-> (nth dtypes (or output-idx 0))
                 dt/kw->dt
@@ -33,9 +33,84 @@
 
 (defn dropout
   ([keep-prob x {:keys [noise-shape seed] :as opts}]
-   (drop nil keep-prob opts))
-  ([id keep_prob x & {:keys [noise-shape seed]}]
+   (dropout nil keep-prob opts))
+  ([id keep-prob x & {:keys [noise-shape seed]}]
    (sc/with-id-scopes [id]
-     
-     ))
-  )
+     (let [noise-shape' (or noise-shape
+                            (o/shape x))
+           
+           rnd-bin (-> keep-prob
+                       (o/add (o/random-uniform nil
+                                                {:seed
+                                                 :seed2
+                                                 :dtype}
+                                                noise-shape'))
+                       o/floor
+                       )
+           (o/floor
+            (o/add keep-prob
+                   (o/random-uniform nil
+                                     {:seed
+                                      :seed2
+                                      :dtype}
+                                     noise-shape')))
+           rnd-bin (-> noise-shape
+                       (or (o/shape x))
+                       )
+           ]
+       (util/$- -> keep-prob
+                (o/add rnd)
+                o/floor
+                (o/mat-mul (o/div x keep-prob) $))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
