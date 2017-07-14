@@ -117,6 +117,8 @@
 (defonce d18k (split-dataset (load-data 18000)))
 (def d200 (split-dataset (load-data 200)))
 
+;; PROBLEM 1
+
 (def image-size 28)
 (def n-labels 10)
 (def n-hidden 1024)
@@ -174,4 +176,9 @@
   (ft/run-all s (repeat 10 opt))
   (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                      (mapv one-hot->idx te-ls))))
+
+
+
+;; PROBLEM 3
+
 

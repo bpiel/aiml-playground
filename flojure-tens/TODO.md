@@ -39,7 +39,7 @@ x udacity 2
 - next udacity!?!?
 
 
-
+- auto-cast-inputs-fn ???
 
 ================
 
