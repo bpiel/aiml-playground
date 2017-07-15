@@ -130,3 +130,24 @@
   ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
+
+(defmulti do-step
+  (fn [agg [cmd args]] cmd))
+
+(defmethod do-step :build
+  [{:keys [g] :as agg} [_ args]]
+  (assoc agg :g
+         (if g
+           (build-all->graph g args)
+           (build-all->graph args))))
+
+(defmethod do-step :init
+  [{:keys [g s] :as agg} [_ args]]
+  (let [s' (or s
+               (graph->session g))
+        ])
+)
+(defn do-steps
+  [steps]
+
+  )

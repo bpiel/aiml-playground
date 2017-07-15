@@ -1,6 +1,6 @@
 (ns flojure-tens.build-time-comps
   (:require [flojure-tens.ops :as o]
-            [flojure-tens.macros :as mcro]
+            [flojure-tens.macros :as mc]
             [flojure-tens.ops :as ops]
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.scope :as sc]
@@ -18,7 +18,7 @@
                 :native)
      :shape (nth shapes (or output-idx 0))}))
 
-(defmethod mcro/build-macro :variable
+(defmethod mc/build-macro :variable
   [^Graph g {:keys [id scope attrs inputs]}]
   (sc/with-id-scopes (conj scope id)
     (let [[init] inputs
@@ -32,85 +32,27 @@
 
 
 (defn dropout
-  ([keep-prob x {:keys [noise-shape seed] :as opts}]
-   (dropout nil keep-prob opts))
-  ([id keep-prob x & {:keys [noise-shape seed]}]
+  ([keep-prob x]
+   (dropout nil keep-prob x {}))
+  ([id keep-prob x & [{:keys [noise-shape seed seed2]}]]
    (sc/with-id-scopes [id]
-     (let [noise-shape' (or noise-shape
-                            (o/shape x))
-           
-           rnd-bin (-> keep-prob
-                       (o/add (o/random-uniform nil
-                                                {:seed
-                                                 :seed2
-                                                 :dtype}
-                                                noise-shape'))
-                       o/floor
-                       )
-           (o/floor
-            (o/add keep-prob
-                   (o/random-uniform nil
-                                     {:seed
-                                      :seed2
-                                      :dtype}
-                                     noise-shape')))
-           rnd-bin (-> noise-shape
-                       (or (o/shape x))
-                       )
-           ]
-       (util/$- -> keep-prob
-                (o/add rnd)
-                o/floor
-                (o/mat-mul (o/div x keep-prob) $))))))
+     (let [dtype (-> x mk-variable-attrs :dtype)
+           rnd-bin (util/$- -> noise-shape
+                            (or (o/shape x))
+                            (o/random-uniform
+                             nil
+                             {:seed (or seed
+                                        (rand-int Integer/MAX_VALUE))
+                              :seed2 (or seed2
+                                         (rand-int Integer/MAX_VALUE))
+                              :dtype dtype}
+                             $)
+                            (o/add keep-prob $)
+                            o/floor)]
+       (util/$- -> x
+                (o/div keep-prob)
+                (o/mat-mul rnd-bin))))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(defmethod mc/build-macro :dropout
+  [^Graph g {:keys [id keep-prob x noise-shape seed seed2] :as args}]
+  [(dropout id keep-prob x args)])
