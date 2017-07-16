@@ -61,7 +61,7 @@
         output-shape (o/shape op)
         factor (p/safe-shape-div (p/reduce-prod input-shape)
                                   (p/reduce-prod output-shape))]
-    [(o/real-div sum-grad (o/cast-tf nil {:DstT (-> op :dtypes first)} factor))
+    [(o/real-div sum-grad (o/cast-tf {:DstT (-> op :dtypes first)} factor))
      nil]))
 
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L393
@@ -128,9 +128,14 @@
   [op [x1] [grad]]
   [(o/mul x1 grad)])
 
-(defn floor [_ _ _] [nil])
-(defn random-uniform [_ _ _] [nil])
-(defn shape [_ _ _] [nil])
+(defn -no-gradient-
+  [_ _ grads]
+  (mapv o/zeros-like
+        grads))
+
+(def floor -no-gradient-)
+(def random-uniform -no-gradient-)
+(def shape -no-gradient-)
 
 (defmethod mcro/build-macro :grad
   [^Graph g plan]

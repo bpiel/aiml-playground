@@ -10,7 +10,10 @@
 
 (defn safe-shape-div
   [x y]
-  (o/floor-div x (o/maximum y 1)))
+  (->> y
+       o/ones-like
+       (o/maximum y)
+       (o/floor-div x)))
 
 (defn to-int32
   [x & [name]]
@@ -21,7 +24,9 @@
 (defn reduction-dims
   [x axis]
   (or axis
-      (o/range-tf 0 (o/rank x) 1)))
+      (o/range-tf (int 0)
+                  (o/rank x)
+                  (int 1))))
 
 (defn reduced-shape
   [input-shape axes]

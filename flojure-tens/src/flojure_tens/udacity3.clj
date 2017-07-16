@@ -239,13 +239,13 @@
         opt (p/grad-desc-opt :opt total-loss :gradients)
         tr-pred (o/softmax z12)
         te-pred (-> test
-                    (forward 0.5)
+                    (forward 1.0)
                     first
                     o/softmax)
         s (ft/build-all->session [opt tr-pred te-pred])]
     (ft/run-global-vars-init s)
     #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
-    (ft/run-all s (repeat 10 opt))
+    (ft/run-all s (repeat 32 opt))
     (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                        (mapv one-hot->idx te-ls))))
   
