@@ -44,8 +44,10 @@
 
 (defn finalize-plan
   [plan]
+  #_  (sc/assoc-id-scope plan)
+  ;; TODO only if debugging is on
   (with-meta (sc/assoc-id-scope plan)
-    {:trace (Exception. (str plan))} ))
+        {:trace (Exception. "--debug--")}))
 
 (defn inject-finalizer
   [bodies]

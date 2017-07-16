@@ -238,7 +238,7 @@
 
 
   
-  (let [[train-ds test-ds] d200
+  (let [[train-ds test-ds] d18k #_d200
 ;        train (map first train-ds)
  ;       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
         [train tr-ls] (split-features-hot-labels train-ds 10)
@@ -256,7 +256,7 @@
         s (ft/build-all->session [opt tr-pred te-pred])]
     (ft/run-global-vars-init s)
     #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
-    (ft/run-all s (repeat 10 opt))
+    (ft/run-all s (repeat 32 opt))
     (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
                        (mapv one-hot->idx te-ls))))
   

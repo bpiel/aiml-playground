@@ -37,7 +37,7 @@ x udacity 2
 
 x id-attr as first arg for ops
 
-- udacity 3
+~ udacity 3
 
 - do-steps
 
