@@ -103,8 +103,7 @@
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/random_ops.py#L138
 (defn truncated-normal
   [shape & [dtype]]
-  (o/truncated-normal nil
-                      {:seed (rand-int Integer/MAX_VALUE)
+  (o/truncated-normal {:seed (rand-int Integer/MAX_VALUE)
                        :seed2 (rand-int Integer/MAX_VALUE)
                        :dtype (or dtype dt/double-kw)} ;; TODO bad idea?
                       (o/c shape dt/int-kw)))
@@ -113,7 +112,7 @@
 (defn dropout
   ([keep-prob x]
    (dropout nil keep-prob x {}))
-  ([id keep-prob x & [{:keys [noise-shape seed seed2]}]]
+  ([id keep-prob x & [{:keys [noise-shape seed seed2]}]] ;; TODO make signature consistent?
    {:id id
     :keep-prob keep-prob
     :x x

@@ -45,16 +45,19 @@
   [fn-name-sym op-def]
   (let [input-syms (mapv #(-> % :name symbol)
                          (:input-arg op-def))
-        args-id (into ['id] input-syms)
-        args-id-attrs (into ['id 'attrs] input-syms)]
-    (list (list args-id-attrs
+        args+1 (into ['id-attrs] input-syms)
+        args+2 (into ['id 'attrs] input-syms)]
+    (list (list args+2
                 {:op (ogu/get-op-kw op-def)
                  :inputs input-syms
                  :ctrl-inputs '(:ctrl-inputs attrs)
                  :id 'id
                  :attrs '(dissoc attrs :ctrl-inputs)})
-          (list args-id
-                `(~fn-name-sym ~'id {} ~@input-syms))
+          (list args+1
+                `(~fn-name-sym
+                  (ogu/id-attrs->id ~'id-attrs)
+                  (ogu/id-attrs->attrs ~'id-attrs)
+                  ~@input-syms))
           (list input-syms
                 `(~fn-name-sym nil {} ~@input-syms)))))
 

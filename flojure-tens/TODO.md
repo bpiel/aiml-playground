@@ -38,14 +38,19 @@ x udacity 2
  
 - next udacity!?!?
 
+- do-steps
+- id-attr as first arg for ops
+
+- variable scope
+
+- layers
 
 - auto-cast-inputs-fn ???
 
-================
-
 - option to rebuild op fns w/ debugging
   -- attaches stacktrace to meta 
-  
+
+- insane debugging web app
 
 ---- WHAT ARE THE GOALS??
  - implement all udacity assignments
@@ -62,7 +67,7 @@ x udacity 2
 - use `intern` to create op fn vars
 
 
-- variable scope
+
 
 
 - "init" NoOp takes init assignments as ctrl inputs

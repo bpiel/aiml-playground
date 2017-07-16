@@ -140,3 +140,21 @@
        (clojure.string/join "-")
        symbol))
 
+
+(defn id-attrs->id
+  [id-attrs]
+  (if (keyword? id-attrs)
+    id-attrs
+    (:id id-attrs)))
+
+(defn id-attrs->attrs
+  [id-attrs]
+  (if (map? id-attrs)
+    (dissoc id-attrs :id)
+    {}))
+
+(defn id-attrs->ctrl-inputs
+  [id-attrs]
+  (if (map? id-attrs)
+    (:ctrl-inputs id-attrs [])
+    []))

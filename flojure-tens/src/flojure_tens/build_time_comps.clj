@@ -10,7 +10,7 @@
 
 
 
-(defn- mk-variable-attrs
+(defn- get-shapes-attrs
   [^Op value-op]
   (let [{:keys [output-idx shapes dtypes]} value-op]
     {:dtype (-> (nth dtypes (or output-idx 0))
@@ -22,7 +22,7 @@
   [^Graph g {:keys [id scope attrs inputs]}]
   (sc/with-id-scopes (conj scope id)
     (let [[init] inputs
-          vari (o/v :variable (merge (mk-variable-attrs init)
+          vari (o/v :variable (merge (get-shapes-attrs init)
                                      attrs))]
       [(o/identity-tf :read {} vari)
        (-> (o/assign :init {} vari init)
@@ -35,12 +35,11 @@
   ([keep-prob x]
    (dropout nil keep-prob x {}))
   ([id keep-prob x & [{:keys [noise-shape seed seed2]}]]
-   (sc/with-id-scopes [id]
-     (let [dtype (-> x mk-variable-attrs :dtype)
+   (sc/with-id-scopes [(or id :dropout)]
+     (let [dtype (-> x get-shapes-attrs :dtype)
            rnd-bin (util/$- -> noise-shape
                             (or (o/shape x))
                             (o/random-uniform
-                             nil
                              {:seed (or seed
                                         (rand-int Integer/MAX_VALUE))
                               :seed2 (or seed2
@@ -49,10 +48,11 @@
                              $)
                             (o/add keep-prob $)
                             o/floor)]
-       (util/$- -> x
-                (o/div keep-prob)
-                (o/mat-mul rnd-bin))))))
+       (-> x
+           (o/div keep-prob)
+           (o/mat-mul rnd-bin))))))
 
 (defmethod mc/build-macro :dropout
   [^Graph g {:keys [id keep-prob x noise-shape seed seed2] :as args}]
   [(dropout id keep-prob x args)])
+
