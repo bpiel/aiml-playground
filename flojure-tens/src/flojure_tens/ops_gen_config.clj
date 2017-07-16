@@ -137,8 +137,11 @@
  {:fn-name 'c
   :plan-fn-bodies (constantly
                    '[([value] {:op :Const
-                               :attrs {:value value}})
-                     ([value data-type] {:op :Const
+                               :attrs {:value value
+                                       :dtype (-> value
+                                                  flojure-tens.data-type/data-type-of-whatever ;; TODO (= (hash 0) (hash 0.0)) !!!!!!
+                                                  :kw)}})
+                     ([value data-type] {:op :Const ;; TODO change arg order?
                                          :id nil
                                          :attrs {:value value
                                                  :dtype data-type}})

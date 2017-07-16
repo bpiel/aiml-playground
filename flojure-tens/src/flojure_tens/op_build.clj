@@ -129,6 +129,7 @@
       (gr/add-op-to-state! g node collections)
       node)
     (catch Exception e
+      (def g1 g)
       (def p1 plan)
       #_(clojure.pprint/pprint p1)
       #_(clojure.pprint/pprint (meta p1))

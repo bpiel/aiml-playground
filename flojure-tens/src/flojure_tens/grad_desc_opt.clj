@@ -118,7 +118,9 @@
                 (o/zeros-like node)
 
                 :else
-                (o/add-n (vec grads))))))
+                (with-meta
+                  (o/add-n (vec grads))
+                  {:node node})))))
 
 (defn- outputs->grads
   [x outputs node]
@@ -137,9 +139,9 @@
                                          (::target-idx node)))
              x)]
     [x' (pt/gradient nil
-                  node
-                  (outputs->grads x' outputs node)
-                  0)]))
+                     node
+                     (outputs->grads x' outputs node)
+                     0)]))
 
 (defn- decorate-w-grad
   [x node]
