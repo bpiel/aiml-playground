@@ -32,14 +32,15 @@ x variable macro
 x reorg nses
 
 
-
 x udacity 2
  x actually do notMNIST
- 
-- next udacity!?!?
+
+x id-attr as first arg for ops
+
+- udacity 3
 
 - do-steps
-- id-attr as first arg for ops
+
 
 - variable scope
 

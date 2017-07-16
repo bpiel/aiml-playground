@@ -3,7 +3,8 @@
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.macros :as mcro]
             [flojure-tens.graph :as gr]
-            [flojure-tens.scope :as sc])
+            [flojure-tens.scope :as sc]
+            [flojure-tens.util :as ut])
   (:import [flojure_tens.common Graph]))
 
 
@@ -96,18 +97,40 @@
   (let [s1 (o/shape x1)
         s2 (o/shape x2)
         r1 (o/broadcast-gradient-args s1 s2)
+        r2 (assoc r1 :output-idx 1)
+        f (fn [a b r s]
+            (-> a
+                (o/mul b)
+                (p/reduce-sum :axis r)
+                (o/reshape s)))]
+    [(f grad x2 r1 s1)
+     (f x1 grad r2 s2)]))
+
+(defn div
+  [op [x1 x2] [grad]]
+  (let [s1 (o/shape x1)
+        s2 (o/shape x2)
+        r1 (o/broadcast-gradient-args s1 s2)
         r2 (assoc r1 :output-idx 1)]
-    [(o/reshape (p/reduce-sum (o/mul grad x2)
-                              :axis r1)
-                s1)
-     (o/reshape (p/reduce-sum (o/mul x1 grad)
-                              :axis r2)
-                s2)]))
+    [(-> grad
+         (o/div x2)
+         (p/reduce-sum :axis r1)
+         (o/reshape s1))
+     (ut/$- -> x1
+            o/neg
+            (o/div x2)
+            (o/div x2)
+            (o/mat-mul grad $)
+            (p/reduce-sum :axis r2)
+            (o/reshape s2))]))
 
 (defn l2-loss
   [op [x1] [grad]]
   [(o/mul x1 grad)])
 
+(defn floor [_ _ _] [nil])
+(defn random-uniform [_ _ _] [nil])
+(defn shape [_ _ _] [nil])
 
 (defmethod mcro/build-macro :grad
   [^Graph g plan]
@@ -126,4 +149,37 @@
         :Relu (relu y-op y-inputs dx-ops)
         :Identity (identity-tf y-op y-inputs dx-ops)
         :Mul (mul y-op y-inputs dx-ops)
-        :L2Loss (l2-loss y-op y-inputs dx-ops)))))
+        :L2Loss (l2-loss y-op y-inputs dx-ops)
+        :Floor (floor y-op y-inputs dx-ops)
+        :RandomUniform (random-uniform y-op y-inputs dx-ops)
+        :Shape (shape y-op y-inputs dx-ops)
+        :Div (div y-op y-inputs dx-ops)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

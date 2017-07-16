@@ -44,7 +44,8 @@
 
 (defn finalize-plan
   [plan]
-  (sc/assoc-id-scope plan))
+  (with-meta (sc/assoc-id-scope plan)
+    {:trace (Exception. (str plan))} ))
 
 (defn inject-finalizer
   [bodies]

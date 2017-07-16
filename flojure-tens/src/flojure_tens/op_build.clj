@@ -112,24 +112,26 @@
                      (add-ctrl-inputs ctrl-input-handles)
                      tfnative.OperationBuilder/finish)
           {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
-          node (Op. id'
-                    [] ;; TODO add :0, when appropriate
-                    op
-                    (flatten (inputs->tf-ids inputs)) 
-                    (mapv util/mk-tf-id ctrl-inputs)
-                    hsh
-                    attrs'
-                    handle
-                    (or output-idx 0)
-                    num-outputs
-                    shapes
-                    dtypes
-                    (gr/mk-graph-ref g))]
+          node (with-meta (Op. id'
+                               [] ;; TODO add :0, when appropriate
+                               op
+                               (flatten (inputs->tf-ids inputs)) 
+                               (mapv util/mk-tf-id ctrl-inputs)
+                               hsh
+                               attrs'
+                               handle
+                               (or output-idx 0)
+                               num-outputs
+                               shapes
+                               dtypes
+                               (gr/mk-graph-ref g))
+                 (meta plan))]
       (gr/add-op-to-state! g node collections)
       node)
     (catch Exception e
       (def p1 plan)
       #_(clojure.pprint/pprint p1)
+      #_(clojure.pprint/pprint (meta p1))
       
       (throw e))))
 

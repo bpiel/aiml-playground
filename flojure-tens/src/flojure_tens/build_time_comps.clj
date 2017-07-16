@@ -50,9 +50,10 @@
                             o/floor)]
        (-> x
            (o/div keep-prob)
-           (o/mat-mul rnd-bin))))))
+           (o/mul rnd-bin))))))
 
 (defmethod mc/build-macro :dropout
-  [^Graph g {:keys [id keep-prob x noise-shape seed seed2] :as args}]
-  [(dropout id keep-prob x args)])
+  [^Graph g {:keys [id inputs noise-shape seed seed2] :as args}]
+  (let [[keep-prob x] inputs]
+    [(dropout id keep-prob x args)]))
 

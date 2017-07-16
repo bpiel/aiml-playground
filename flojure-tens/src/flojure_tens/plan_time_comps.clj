@@ -93,11 +93,9 @@
             dt/bool-kw false
             dt/string-kw ""
             0)]
-    (o/fill (o/c shape dt/int-kw) ;; TODO what if `shape` isn't a constant? 
-            (o/c z dtype)))) ;; TODO infer type?
-
-
-
+    (sc/with-id-scopes [:zeros]
+      (o/fill (o/c shape dt/int-kw) ;; TODO what if `shape` isn't a constant? 
+              (o/c z dtype))))) ;; TODO infer type?
 
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/random_ops.py#L138
@@ -113,9 +111,9 @@
   ([keep-prob x]
    (dropout nil keep-prob x {}))
   ([id keep-prob x & [{:keys [noise-shape seed seed2]}]] ;; TODO make signature consistent?
-   {:id id
-    :keep-prob keep-prob
-    :x x
+   {:macro :dropout
+    :id id
+    :inputs [keep-prob x]
     :noise-shape noise-shape
     :seed seed
     :seed2 seed2}))

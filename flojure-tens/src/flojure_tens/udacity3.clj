@@ -119,66 +119,135 @@
 
 ;; PROBLEM 1
 
-(def image-size 28)
-(def n-labels 10)
-(def n-hidden 1024)
-(def l2-weight 5.0e-4)
+(do
+  (def image-size 28)
+  (def n-labels 10)
+  (def n-hidden 1024)
+  (def l2-weight 5.0e-4)
 
-(defn layer
-  [scope width depth input]
-  (sc/with-id-scopes [scope]
-    (let [weights (p/v :weights (o/truncated-normal nil
-                                                    {:dtype dt/double-kw}
-                                                    [width
-                                                     depth]))
-          biases (p/v :biases (p/zeros [depth] dt/double-kw))
-          z (o/add (o/mat-mul input weights)
-                   biases)]
-      [z
-       (o/l2-loss weights)])))
+  (defn layer
+    [scope width depth input]
+    (sc/with-id-scopes [scope]
+      (let [weights (p/v :weights
+                         (o/truncated-normal {:dtype dt/double-kw}
+                                             [width
+                                              depth]))
+            biases (p/v :biases
+                        (p/zeros [depth] dt/double-kw))
+            z (-> input
+                  (o/mat-mul weights)
+                  (o/add biases))]
+        [z (o/l2-loss weights)])))
 
-(defn forward
-  [x]
-  (let [[z01 l2-reg1] (layer :hidden1
-                            (* image-size image-size)
-                            n-hidden
-                            x)
-        h1 (o/relu z01)
-        [z12 l2-reg2] (layer :z12
-                             n-hidden
-                             n-labels
-                             h1)]
-    [z12 (o/add l2-reg1 l2-reg2)]))
+  (defn forward
+    [x]
+    (let [[z01 l2-reg1] (layer :hidden1
+                               (* image-size image-size)
+                               n-hidden
+                               x)
+          h1 (o/relu z01)
+          [z12 l2-reg2] (layer :z12
+                               n-hidden
+                               n-labels
+                               h1)]
+      [z12 (o/add l2-reg1 l2-reg2)]))
 
-(defn get-loss
-  [z12 l2-loss y]
-  (let [loss (o/mean (o/softmax-cross-entropy-with-logits z12 y)
-                     [(int 0)])
-        total-loss (o/add loss (o/mul l2-weight l2-loss))]
-    total-loss))
+  (defn get-loss
+    [z12 l2-loss y]
+    (let [loss (-> z12
+                   (o/softmax-cross-entropy-with-logits  y)
+                   (o/mean [(int 0)]))]
+      (-> l2-weight
+          (o/mul l2-loss)   
+          (o/add loss))))
 
-(let [[train-ds test-ds] d200
-      train (map first train-ds)
-      tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
-      test (map first test-ds)
-      te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
-      [z12 l2-loss] (forward train)
-      total-loss (get-loss z12 l2-loss tr-ls)
-      opt (p/grad-desc-opt :opt total-loss :gradients)
-      tr-pred (o/softmax z12)
-      te-pred (-> test
-                  forward
-                  first
-                  o/softmax)
-      s (ft/build-all->session [opt tr-pred te-pred])]
-  (ft/run-global-vars-init s)
-#_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
-  (ft/run-all s (repeat 10 opt))
-  (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
-                     (mapv one-hot->idx te-ls))))
+  (let [[train-ds test-ds] d200
+        train (map first train-ds)
+        tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
+        test (map first test-ds)
+        te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
+        [z12 l2-loss] (forward train)
+        total-loss (get-loss z12 l2-loss tr-ls)
+        opt (p/grad-desc-opt :opt total-loss :gradients)
+        tr-pred (o/softmax z12)
+        te-pred (-> test
+                    forward
+                    first
+                    o/softmax)
+        s (ft/build-all->session [opt tr-pred te-pred])]
+    (ft/run-global-vars-init s)
+    #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
+    (ft/run-all s (repeat 10 opt))
+    (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                       (mapv one-hot->idx te-ls))))
 
-
+  (comment))
 
 ;; PROBLEM 3
 
+(do
 
+  (def image-size 28)
+  (def n-labels 10)
+  (def n-hidden 1024)
+  (def l2-weight 5.0e-4)
+
+  (defn layer
+    [scope width depth input]
+    (sc/with-id-scopes [scope]
+      (let [weights (p/v :weights
+                         (o/truncated-normal {:dtype dt/double-kw}
+                                             [width
+                                              depth]))
+            biases (p/v :biases
+                        (p/zeros [depth] dt/double-kw))
+            z (-> input
+                  (o/mat-mul weights)
+                  (o/add biases))]
+        [z (o/l2-loss weights)])))
+
+  (defn forward
+    [x drop-p]
+    (let [[z01 l2-reg1] (layer :hidden1
+                               (* image-size image-size)
+                               n-hidden
+                               x)
+          h1 (p/dropout drop-p
+                        (o/relu z01))
+          [z12 l2-reg2] (layer :z12
+                               n-hidden
+                               n-labels
+                               h1)]
+      [z12 (o/add l2-reg1 l2-reg2)]))
+
+  (defn get-loss
+    [z12 l2-loss y]
+    (let [loss (-> z12
+                   (o/softmax-cross-entropy-with-logits  y)
+                   (o/mean [(int 0)]))]
+      (-> l2-weight
+          (o/mul l2-loss)   
+          (o/add loss))))
+
+  (let [[train-ds test-ds] d200
+        train (map first train-ds)
+        tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
+        test (map first test-ds)
+        te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
+        [z12 l2-loss] (forward train 0.5)
+        total-loss (get-loss z12 l2-loss tr-ls)
+        opt (p/grad-desc-opt :opt total-loss :gradients)
+        tr-pred (o/softmax z12)
+        te-pred (-> test
+                    (forward 0.5)
+                    first
+                    o/softmax)
+        s (ft/build-all->session [opt tr-pred te-pred])]
+    (ft/run-global-vars-init s)
+    #_  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (-> s :graph :handle)))
+    (ft/run-all s (repeat 10 opt))
+    (println (accuracy (mapv one-hot->idx (ft/fetch s te-pred))
+                       (mapv one-hot->idx te-ls))))
+  
+
+  (comment))
