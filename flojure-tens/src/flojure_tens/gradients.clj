@@ -7,6 +7,10 @@
             [flojure-tens.util :as ut])
   (:import [flojure_tens.common Graph]))
 
+(defn -no-gradient-
+  [_ _ grads]
+  (mapv o/zeros-like
+        grads))
 
 ;; TODO add ctrl and conj
 (defn sin
@@ -128,10 +132,18 @@
   [op [x1] [grad]]
   [(o/mul x1 grad)])
 
-(defn -no-gradient-
-  [_ _ grads]
-  (mapv o/zeros-like
-        grads))
+(defn conv2-d
+  [op [x1 x2 :as x] [grad]]
+  (let [attrs (op->attrs-map op)
+        [s1 s2] (map o/shape x)]
+    [(o/conv2-d-backprop-input attrs
+                               s1
+                               x2
+                               grad)
+     (o/conv2-d-backprop-filter attrs
+                                x1
+                                s2
+                                grad)]))
 
 (def floor -no-gradient-)
 (def random-uniform -no-gradient-)
@@ -158,4 +170,37 @@
         :Floor (floor y-op y-inputs dx-ops)
         :RandomUniform (random-uniform y-op y-inputs dx-ops)
         :Shape (shape y-op y-inputs dx-ops)
-        :Div (div y-op y-inputs dx-ops)))))
+        :Div (div y-op y-inputs dx-ops)
+        :Conv2D (conv2-d y-op y-inputs dx-ops)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

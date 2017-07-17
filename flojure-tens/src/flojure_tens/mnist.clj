@@ -110,4 +110,19 @@
              [[[[(float 1.) (float 2.) (float 3.)]]]])))
 
 
+(def plan1
+  (l/conv2d {:filters 32
+             :kernel-size [5 5]
+             :padding "SAME" ;; TODO
+             :activation :relu}
+            (p/v :a [[[[(float 1.) (float 2.) (float 3.)]]]])))
+
+(let [opt (p/grad-desc-opt :opt
+                           plan1
+                           :gradients)
+      s (ft/build->session opt)]
+  (ft/run-global-vars-init s)
+  (ft/run s opt)
+  (ft/fetch s plan1))
+
 (clojure.pprint/pprint c1)

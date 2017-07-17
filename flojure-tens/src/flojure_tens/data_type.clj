@@ -249,12 +249,17 @@
     v))
 
 (defn ->tf-attr-val [ty v & [dims]]
-  (let [dims' (or dims (sh/num-dimensions-seq v))]
-    (case dims'
-      0 ((-> ty kw->dt :scalar-fn) v)
-      1 ((-> ty kw->dt :array-fn) v)
-      (to-array (map #(->tf-attr-val ty % (dec dims'))
-                     v)))))
+  (if-not (array? v)
+    (let [dims' (or dims (sh/num-dimensions-seq v))]
+      (case dims'
+        0 ((-> ty kw->dt :scalar-fn) v)
+        1 ((-> ty kw->dt :array-fn) v)
+        (to-array (map #(->tf-attr-val ty % (dec dims'))
+                       v))))
+    (do (println
+         (format "!!! ASSUMING THIS IS ALREADY COOL %s %s"
+                 ty v))
+        v)))
 
 (defn convert-vecs
   [v f]

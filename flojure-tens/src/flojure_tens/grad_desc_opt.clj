@@ -1,5 +1,6 @@
 (ns flojure-tens.grad-desc-opt
   (:require [flojure-tens.ops :as o]
+            [flojure-tens.op-node :as opn]
             [flojure-tens.macros :as mc]
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.scope :as sc]
@@ -178,7 +179,9 @@
         x' (decorate-outputs x outputs)]
     (update x' :collector conj 
             (o/apply-gradient-descent node
-                                      0.5
+                                      ((:scalar-fn (dt/kw->dt (opn/get-desc-of-output
+                                                               node)))
+                                       0.5)
                                       (first (outputs->grads x' outputs node))))))
 
 (defn- mk-applicators

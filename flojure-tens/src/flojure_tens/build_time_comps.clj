@@ -8,7 +8,7 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
-
+;; TODO set dtypes???
 (defmethod mc/build-macro :variable
   [^Graph g {:keys [id scope attrs inputs]}]
   (sc/with-id-scopes (conj scope id)
