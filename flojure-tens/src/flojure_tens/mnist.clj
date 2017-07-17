@@ -30,7 +30,7 @@
 
 (def ub-to-double-factor (double (/ 1.0 255.0)))
 
-
+#_
 (defonce train-data (future
                   (with-open [^DataInputStream data-input-stream (get-data-stream "/train-images-idx3-ubyte")]
                     (let [datavector (atom [])]
@@ -53,6 +53,7 @@
                           (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                       @datavector))))
 
+#_
 (defonce train-labels (future
                    (with-open [^DataInputStream data-input-stream (get-data-stream "/train-labels-idx1-ubyte")]
                      (let [labelvector (atom [])]
@@ -65,6 +66,7 @@
                            (swap! labelvector conj (long (.readUnsignedByte data-input-stream)))))
                        @labelvector))))
 
+#_
 (defonce test-data (future
                        (with-open [^DataInputStream data-input-stream (get-data-stream "/t10k-images-idx3-ubyte") ]
                          (let [datavector (atom [])]
@@ -87,6 +89,7 @@
                                (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                            @datavector))))
 
+#_
 (defonce test-labels (future
                        (with-open [^DataInputStream data-input-stream (get-data-stream "/t10k-labels-idx1-ubyte")]
                          (let [labelvector (atom [])]
@@ -122,7 +125,7 @@
                            :gradients)
       s (ft/build->session opt)]
   (ft/run-global-vars-init s)
-  (ft/run s opt)
+  (ft/run-all s (repeat 3 opt))
   (ft/fetch s plan1))
 
-(clojure.pprint/pprint c1)
+#_(clojure.pprint/pprint c1)

@@ -38,63 +38,6 @@
                                {:target? true})
                       (:inputs plan))))
 
-(declare mk-grad-graph-plan*)
-
-(defn- mk-grad-graph-plan***
-  [{:keys [op] :as consumer} p->c cache]
-  (let [out-count (-> op ogc/op-list-by-kw :output-arg count)]
-    (->> (range out-count)
-         (map #(assoc consumer :output-idx %))
-         (reduce (partial mk-grad-graph-plan*
-                          p->c)
-                 {:cache cache :graph []})
-         :graph)))
-
-(defn- mk-grad-graph-plan**
-  [plan pairs p->c cache]
-  (if (>= 1 (count pairs))
-    (let [[[consumer input-idx]] pairs]
-      (cond
-        (:target? consumer) (o/ones-like plan)
-        (nil? consumer) (o/zeros-like plan)
-        :else (pt/gradient nil
-                        consumer
-                        (mk-grad-graph-plan*** consumer
-                                               p->c
-                                               cache)
-                        input-idx)))
-    (o/add-n (mapv (fn [p]
-                       (mk-grad-graph-plan** plan [p] p->c cache))
-                     pairs))))
-
-(defn- mk-grad-graph-plan*
-  [p->c {:keys [cache graph] :as agg} {:keys [output-idx] :as plan}]
-  (if-let [cached (cache plan)]
-    (update agg :graph conj cached)
-    (let [output-idx' (or output-idx 0)
-          output-idx->consumer (-> plan
-                                   (dissoc :output-idx)
-                                   p->c)
-          g (mk-grad-graph-plan** plan
-                                  (output-idx->consumer output-idx')
-                                  p->c
-                                  cache)] 
-      {:cache (assoc cache plan g)
-       :graph (conj graph g)})))
-
-(defn- mk-grad-graph-plan
-  [plan->consumers alpha]
-  (let [vs (:vars plan->consumers)]
-    (->> vs
-         (reduce (partial mk-grad-graph-plan*
-                          (:plan->consumers plan->consumers))
-                 {:cache {} :graph []})
-         :graph
-         (mapv #(o/apply-gradient-descent %
-                                          alpha
-                                          %2)
-               vs))))
-
 
 (declare decorate-outputs)
 
@@ -179,10 +122,15 @@
         x' (decorate-outputs x outputs)]
     (update x' :collector conj 
             (o/apply-gradient-descent node
-                                      ((:scalar-fn (dt/kw->dt (opn/get-desc-of-output
-                                                               node)))
+                                      ((-> node
+                                           opn/get-desc-of-output
+                                           :dtype
+                                           dt/kw->dt
+                                           :scalar-fn)
                                        0.5)
                                       (first (outputs->grads x' outputs node))))))
+
+
 
 (defn- mk-applicators
   [{:keys [collector] :as x}]

@@ -60,7 +60,8 @@
     {:num-outputs n-outs
      :shapes (mapv #(vec (tfnative.Operation/shape graph-handle op-handle %))
                    idxs)
-     :dtypes (mapv #(:kw (dt/native->dt (tfnative.Operation/dtype graph-handle op-handle %)))
+     :dtypes (mapv #(:kw (dt/native->dt (mod (tfnative.Operation/dtype graph-handle op-handle %)
+                                           100))) ;; > 100 => ref
                    idxs)}))
 
 (defn get-desc-of-output
