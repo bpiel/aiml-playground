@@ -53,7 +53,7 @@
        :name
        keyword))
 
-(defn get-output-info
+(defn get-output-desc-by-handle
   [graph-handle op-handle]
   (let [n-outs (tfnative.Operation/numOutputs op-handle)
         idxs (range n-outs)]
@@ -62,6 +62,16 @@
                    idxs)
      :dtypes (mapv #(:kw (dt/native->dt (tfnative.Operation/dtype graph-handle op-handle %)))
                    idxs)}))
+
+(defn get-desc-of-output
+  [^Op op]
+  (let [{:keys [output-idx shapes dtypes]} op
+        o-idx (or output-idx 0)]
+    {:dtype (nth dtypes o-idx)
+     #_(-> (nth dtypes (or output-idx 0))
+           dt/kw->dt
+           :native)
+     :shape (nth shapes o-idx)}))
 
 (defn create-from-handle
   ([op-handle output-idx ^GraphRef graph-ref]
@@ -79,49 +89,3 @@
           graph-ref)))
   ([op-handle ^GraphRef graph-ref]
    (create-from-handle op-handle 0 graph-ref)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

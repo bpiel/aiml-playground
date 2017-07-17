@@ -1,7 +1,7 @@
 (ns flojure-tens.builder
   (:require [flojure-tens.common :as com]
             [flojure-tens.ops :as ops]
-            [flojure-tens.op-node :as op-node]
+            [flojure-tens.op-node :as opn]
             [flojure-tens.op-build :as obld]
             [flojure-tens.graph :as gr]
             [flojure-tens.util :as util]
@@ -17,7 +17,7 @@
                      :inputs input-ops
                      :ctrl-inputs ctrl-input-ops
                      :output-idx (or output-idx 0)
-                     :hsh (op-node/compute-hash plan))))
+                     :hsh (opn/compute-hash plan))))
 
 (defn- build-eagers
   [plans ^Graph g]
@@ -49,7 +49,7 @@
     (cond (com/Op? plan) plan
           (:op plan')
           (let [{:keys [id->node hash->id]} (-> g :state deref)
-                hsh (op-node/compute-hash plan')]
+                hsh (opn/compute-hash plan')]
             (when-let [node (some-> hsh hash->id id->node)]
               (assoc node :output-idx (or output-idx 0))))
           (:macro plan)
@@ -81,19 +81,3 @@
   [^Graph g plan]
   (apply-plan-to-graph g plan)
   g)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

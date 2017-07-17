@@ -1,7 +1,7 @@
 (ns flojure-tens.build-time-comps
   (:require [flojure-tens.ops :as o]
+            [flojure-tens.op-node :as opn]
             [flojure-tens.macros :as mc]
-            [flojure-tens.ops :as ops]
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.scope :as sc]
             [flojure-tens.util :as util]
@@ -9,20 +9,11 @@
   (:import [flojure_tens.common Graph Op]))
 
 
-
-(defn- get-shapes-attrs
-  [^Op value-op]
-  (let [{:keys [output-idx shapes dtypes]} value-op]
-    {:dtype (-> (nth dtypes (or output-idx 0))
-                dt/kw->dt
-                :native)
-     :shape (nth shapes (or output-idx 0))}))
-
 (defmethod mc/build-macro :variable
   [^Graph g {:keys [id scope attrs inputs]}]
   (sc/with-id-scopes (conj scope id)
     (let [[init] inputs
-          vari (o/v :variable (merge (get-shapes-attrs init)
+          vari (o/v :variable (merge (opn/get-desc-of-output init)
                                      attrs))]
       [(o/identity-tf :read {} vari)
        (-> (o/assign :init {} vari init)
@@ -36,7 +27,7 @@
    (dropout nil keep-prob x {}))
   ([id keep-prob x & [{:keys [noise-shape seed seed2]}]]
    (sc/with-id-scopes [(or id :dropout)]
-     (let [dtype (-> x get-shapes-attrs :dtype)
+     (let [dtype (-> x opn/get-desc-of-output :dtype)
            rnd-bin (util/$- -> noise-shape
                             (or (o/shape x))
                             (o/random-uniform

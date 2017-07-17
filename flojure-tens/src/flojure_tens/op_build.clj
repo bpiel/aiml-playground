@@ -1,5 +1,5 @@
 (ns flojure-tens.op-build
-  (:require [flojure-tens.op-node :as op-node]
+  (:require [flojure-tens.op-node :as opn]
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.data-type :as dt]
             [flojure-tens.graph :as gr]
@@ -111,7 +111,7 @@
                      (add-inputs inputs)
                      (add-ctrl-inputs ctrl-input-handles)
                      tfnative.OperationBuilder/finish)
-          {:keys [num-outputs shapes dtypes]} (op-node/get-output-info (:handle g) handle)
+          {:keys [num-outputs shapes dtypes]} (opn/get-output-desc-by-handle (:handle g) handle)
           node (with-meta (Op. id'
                                [] ;; TODO add :0, when appropriate
                                op

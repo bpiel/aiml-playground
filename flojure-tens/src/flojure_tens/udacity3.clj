@@ -239,11 +239,7 @@
 
   
   (let [[train-ds test-ds] d200
-;        train (map first train-ds)
- ;       tr-ls (mapv (comp (partial mk-one-hot 10) second) train-ds)
         [train tr-ls] (split-features-hot-labels train-ds 10)
-        ;;      test (map first test-ds)
-        ;;     te-ls (mapv (comp (partial mk-one-hot 10) second) test-ds)
         [test te-ls] (split-features-hot-labels test-ds 10)
         [z12 l2-loss] (forward train 0.5)
         total-loss (get-loss z12 l2-loss tr-ls)
