@@ -31,26 +31,27 @@ x more grad fns
 x variable macro
 x reorg nses
 
-
 x udacity 2
  x actually do notMNIST
-
 x id-attr as first arg for ops
 
-~ udacity 3
-
-- do-steps
-
+x? udacity 3
 
 - variable scope
+  - variable regularizer
+- layers (so many!)
 
-- layers
+- work through lots of examples
+
 
 - auto-cast-inputs-fn ???
 
 - option to rebuild op fns w/ debugging
   -- attaches stacktrace to meta 
 
+- do-steps???
+
+- awesome repl debugger?
 - insane debugging web app
 
 ---- WHAT ARE THE GOALS??

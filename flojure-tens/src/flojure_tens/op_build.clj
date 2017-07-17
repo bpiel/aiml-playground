@@ -19,23 +19,31 @@
 
 (defn- set-attr
   [builder-handle k v ty]
-  (case ty ;; wtf
-    :tensor (tfnative.OperationBuilder/setAttrTensor builder-handle
-                                                     k v)
-    :type (if (keyword? v)
-            (tfnative.OperationBuilder/setAttrType builder-handle
-                                                   k
-                                                   (-> v dt/protobuf->dt :native))
-            (tfnative.OperationBuilder/setAttrType builder-handle
-                                                   k v))
-    :shape (tfnative.OperationBuilder/setAttrShape builder-handle
-                                                   k v (count v))
-    :string (tfnative.OperationBuilder/setAttrString builder-handle
-                                                     k (get-attr-bytes v))
-    :int (tfnative.OperationBuilder/setAttrInt builder-handle
+  (try
+    (condp = ty ;; wtf
+      :tensor (tfnative.OperationBuilder/setAttrTensor builder-handle
+                                                       k v)
+      :type (if (keyword? v)
+              (tfnative.OperationBuilder/setAttrType builder-handle
+                                                     k
+                                                     (-> v dt/protobuf->dt :native))
+              (tfnative.OperationBuilder/setAttrType builder-handle
+                                                     k v))
+      :shape (tfnative.OperationBuilder/setAttrShape builder-handle
+                                                     k v (count v))
+      :string (tfnative.OperationBuilder/setAttrString builder-handle
+                                                       k (get-attr-bytes v))
+      :int (tfnative.OperationBuilder/setAttrInt builder-handle
                                                  k v)
-    (tfnative.OperationBuilder/setAttr builder-handle
-                                       k v)))
+      (keyword "list(int)") (tfnative.OperationBuilder/setAttrIntList builder-handle
+                                                                      k v)
+      (tfnative.OperationBuilder/setAttr builder-handle
+                                         k v))
+    (catch Exception e
+      (def e1 e)
+      #_ (clojure.pprint/pprint e1)
+      (throw (Exception. (format "Failed to set attribute. type=%s, key=%s, value=%s"
+                                 ty k v))))))
 
 
 (defn- set-attrs

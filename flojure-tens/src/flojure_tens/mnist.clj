@@ -2,6 +2,7 @@
   (:require [flojure-tens.core :as ft]
             [flojure-tens.data-type :as dt]
             [flojure-tens.ops :as o]
+            [flojure-tens.layers :as l]
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.scope :as sc]
             [clojure.java.io :as io]
@@ -98,5 +99,15 @@
                                (swap! labelvector conj (long (.readUnsignedByte data-input-stream)))))
                            @labelvector))))
 
-(ft/produce (o/reshape [1 2 3 4] [(int 1)  (int 2)]))
+(ft/produce (o/reshape [1 2 3 4] [(int 2)  (int 2)]))
 
+(def c1
+  (ft/produce
+   (l/conv2d {:filters 32
+              :kernel-size [5 5]
+              :padding "SAME" ;; TODO
+              :activation :relu}
+             [[[[(float 1.) (float 2.) (float 3.)]]]])))
+
+
+(clojure.pprint/pprint c1)

@@ -14,87 +14,30 @@
   (let [kernel-shape (conj kernel-size (last input-shape) filters)]
     (p/v :kernel
          {:dtype dtype
-          :shape }
-         
-     ))
-  )
+          :shape kernel-shape}
+         (o/truncated-normal {:dtype dtype}
+                             kernel-shape))))
 
-(defn build-conv2d
+;; TODO  o/bias-add
+(defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
-
   (let [[input] inputs
-        {:keys [shape dtype]} (opn/get-desc-of-output inputs)
+        {:keys [shape dtype]} (opn/get-desc-of-output input)
         kernel (mk-kernel {:input-shape shape
                            :dtype dtype
                            :filters filters
-                           :kernel-size kernel-size})])
-  
-  o/conv2-d
-  o/bias-add
-  )
+                           :kernel-size kernel-size})]
+    [(-> (o/conv2-d id
+                    {:strides [1 1 1 1]
+                     :padding (or padding "valid")}
+                    input
+                    kernel)
+         ;; TODO don't hardcode activation
+         o/relu)])) 
 
 (defn conv2d
   [{:keys [id filters kernel-size padding activation] :as opts} input]
   (merge opts
          {:macro :conv2d
           :inputs [input]}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
