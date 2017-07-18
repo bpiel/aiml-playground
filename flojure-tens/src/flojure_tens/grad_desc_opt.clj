@@ -127,7 +127,7 @@
                                            :dtype
                                            dt/kw->dt
                                            :scalar-fn)
-                                       0.005)
+                                       0.001)
                                       (first (outputs->grads x' outputs node))))))
 
 

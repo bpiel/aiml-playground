@@ -35,6 +35,7 @@
                      :data_format "NHWC"} ;; TODO
                     input
                     kernel)
+         ;; TODO bias
          ;; TODO don't hardcode activation
          o/relu)])) 
 
@@ -54,7 +55,7 @@
                (first inputs))])
 
 (defn max-pooling2d
-  [{:keys [pool-size strides] :as opts} input]
+  [{:keys [id pool-size strides] :as opts} input]
   (merge opts
          {:macro :max-pooling2d
           :inputs [input]}))

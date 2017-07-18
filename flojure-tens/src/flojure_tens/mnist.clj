@@ -204,26 +204,26 @@
 
 (let [logits (ut/$- ->> @test-data
                     (take 6)
-                                        (o/reshape $ (o/c [-1 28 28 1]
-                                                            dt/int-kw))
-                                        (l/conv2d {:id :conv-1
-                                                     :filters 32
-                                                     :kernel-size [5 5]
-                                                     :padding "SAME" ;; TODO
-                                                     :activation :relu})
-                                        (l/max-pooling2d {:id :max-1
-                                                            :pool-size [2 2]
-                                                            :strides [2 2]})
-                    #_                    (l/conv2d {:id :conv-2
-                                                     :filters 64
-                                                     :kernel-size [5 5]
-                                                     :padding "SAME" ;; TODO
-                                                     :activation :relu})
-                    #_                    (l/max-pooling2d {:id :max-2
-                                                            :pool-size [2 2]
-                                                            :strides [2 2]})
-                                        (o/reshape $ (o/c [-1 784 ] #_[-1 (* 7 7 64)]
-                                                            dt/int-kw))
+                    (o/reshape $ (o/c [-1 28 28 1]
+                                      dt/int-kw))
+                    (l/conv2d {:id :conv-1
+                               :filters 32
+                               :kernel-size [5 5]
+                               :padding "SAME" ;; TODO
+                               :activation :relu})
+                    (l/max-pooling2d {:id :max-1
+                                      :pool-size [2 2]
+                                      :strides [2 2]})
+                    (l/conv2d {:id :conv-2
+                               :filters 64
+                               :kernel-size [5 5]
+                               :padding "SAME" ;; TODO
+                               :activation :relu})
+                    (l/max-pooling2d {:id :max-2
+                                      :pool-size [2 2]
+                                      :strides [2 2]})
+                    (o/reshape $ (o/c [-1 (* 7 7 64)] 
+                                      dt/int-kw))
                     (l/dense :dense-1 true 1024)
                     #_                    (p/dropout (float 0.4))
                     (l/dense :dense-2 false 10))
@@ -236,8 +236,8 @@
       classes (o/arg-max logits 1) 
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
-#_  (spit-gd (:graph s))
-(clojure.pprint/pprint (ft/fetch s mean1))
+  #_  (spit-gd (:graph s))
+  (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
   (ft/run-all s (repeat 1 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))

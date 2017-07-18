@@ -146,10 +146,10 @@
                                 grad)]))
 
 (defn max-pool
-  [op [x1] [grad]]
+  [op [x0] [grad]]
   (let [attrs (op->attrs-map op)]
     [(o/max-pool-grad attrs
-                      x1
+                      x0
                       (assoc op :output-idx 0)
                       grad)]))
 
