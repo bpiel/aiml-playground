@@ -123,7 +123,8 @@
 
 (def c1
   (ft/produce
-   (l/conv2d {:filters 32
+   (l/conv2d {:id :conv1
+              :filters 32
               :kernel-size [5 5]
               :padding "SAME" ;; TODO
               :activation :relu}
@@ -202,15 +203,15 @@
     (clojure.pprint/pprint (take 10 @test-labels))))
 
 (let [logits (ut/$- ->> @test-data
-                    (take 5)
-                    #_                    (o/reshape $ (o/c [-1 28 28 1]
+                    (take 6)
+                                        (o/reshape $ (o/c [-1 28 28 1]
                                                             dt/int-kw))
-                    #_                    (l/conv2d {:id :conv-1
+                                        (l/conv2d {:id :conv-1
                                                      :filters 32
                                                      :kernel-size [5 5]
                                                      :padding "SAME" ;; TODO
                                                      :activation :relu})
-                    #_                    (l/max-pooling2d {:id :max-1
+                                        (l/max-pooling2d {:id :max-1
                                                             :pool-size [2 2]
                                                             :strides [2 2]})
                     #_                    (l/conv2d {:id :conv-2
@@ -221,13 +222,13 @@
                     #_                    (l/max-pooling2d {:id :max-2
                                                             :pool-size [2 2]
                                                             :strides [2 2]})
-                    #_                    (o/reshape $ (o/c [-1 (* 7 7 64)]
+                                        (o/reshape $ (o/c [-1 784 ] #_[-1 (* 7 7 64)]
                                                             dt/int-kw))
                     (l/dense :dense-1 true 1024)
                     #_                    (p/dropout (float 0.4))
                     (l/dense :dense-2 false 10))
       mean1  (ut/$- ->> @test-labels
-                    (take 5)
+                    (take 6)
                     (o/one-hot $ (int 10) (float 1) (float 0))
                     (o/softmax-cross-entropy-with-logits logits)
                     (o/mean $ [(int 0)]))
@@ -238,10 +239,10 @@
 #_  (spit-gd (:graph s))
 (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
-  (ft/run-all s (repeat 10 opt))
+  (ft/run-all s (repeat 1 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
-  (ft/run-all s (repeat 60 opt))
+  (ft/run-all s (repeat 10 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
   (clojure.pprint/pprint (take 5 @test-labels))
@@ -255,12 +256,26 @@
                    (o/one-hot $ (int 10) (float 1) (float 0))
                    (o/arg-max $ 1)))
 
+(ft/produce (l/conv2d {:id :conv-1
+                       :filters 1
+                       :kernel-size [ 1 1]
+                       :padding "SAME" ;; TODO
+                       :activation :relu}
+                      ))
+
+
+
+
+(def c1
+  (ft/produce
+   (l/conv2d {:id :conv1
+              :filters 32
+              :kernel-size [5 5]
+              :padding "SAME" ;; TODO
+              :activation :relu}
+             [[[[(float 1.) (float 2.) (float 3.)]]]])))
 
 #_(clojure.pprint/pprint c1)
-
-
-
-
 
 
 

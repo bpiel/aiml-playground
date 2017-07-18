@@ -31,7 +31,7 @@
                            :kernel-size kernel-size})]
     [(-> (o/conv2-d id
                     {:strides [1 1 1 1]
-                     :padding (or padding "valid")
+                     :padding (or padding "VALID")
                      :data_format "NHWC"} ;; TODO
                     input
                     kernel)

@@ -133,16 +133,16 @@
   [(o/mul x1 grad)])
 
 (defn conv2-d
-  [op [x1 x2 :as x] [grad]]
+  [op [x0 x1 :as x] [grad]]
   (let [attrs (op->attrs-map op)
-        [s1 s2] (map o/shape x)]
+        [s0 s1] (map o/shape x)]
     [(o/conv2-d-backprop-input attrs
-                               s1
-                               x2
+                               s0
+                               x1
                                grad)
      (o/conv2-d-backprop-filter attrs
-                                x1
-                                s2
+                                x0
+                                s1
                                 grad)]))
 
 (defn max-pool
@@ -195,3 +195,11 @@
         :MaxPool (max-pool y-op y-inputs dx-ops)
         :BiasAdd (bias-add y-op y-inputs dx-ops)
         :Reshape (reshape y-op y-inputs dx-ops)))))
+
+
+
+
+
+
+
+
