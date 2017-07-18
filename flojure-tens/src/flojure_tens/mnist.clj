@@ -29,7 +29,10 @@
 
 (def TEST-CASE-COUNT 10000)
 
-(def ub-to-double-factor (double (/ 1.0 255.0)))
+#_(def ub-to-double-factor (double (/ 1.0 255.0)))
+
+(defn normalize [x]
+  (float (- (/ x 255.0) 0.5)))
 
 #_
 (defonce train-data (future
@@ -50,7 +53,7 @@
                               (aset-double 
                                darray 
                                (+ x (* y SIZE)) 
-                               (* ub-to-double-factor (.readUnsignedByte data-input-stream)))))
+                               (normalize (.readUnsignedByte data-input-stream)))))
                           (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                       @datavector))))
 
@@ -86,7 +89,7 @@
                                    (aset-float 
                                     darray 
                                     (+ x (* y SIZE)) 
-                                    (float (* ub-to-double-factor (.readUnsignedByte data-input-stream))))))
+                                    (float (normalize (.readUnsignedByte data-input-stream))))))
                                (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                            @datavector))))
 
@@ -171,14 +174,14 @@
                     (o/reshape $ (o/c [-1 (* 7 7 64)]
                                       dt/int-kw))
                     (l/dense 1024)
-                    (p/dropout (float 1))
+                    (p/dropout (float 0.4))
                     (l/dense 10))
       opt (ut/$- ->> @test-labels
                  (take 5)
                  (o/one-hot $ (int 10) (float 1) (float 0))
                  (o/softmax-cross-entropy-with-logits logits)
-                 (p/grad-desc-opt :opt))
-      classes (o/arg-max logits 1)
+                 (p/grad-desc-opt :opt $ :gradients))
+      classes (o/arg-max logits 1) ;; 0 or 1?
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
   (ft/run-all s (repeat 1 opt))
@@ -189,6 +192,48 @@
     (clojure.pprint/pprint out1)
     (clojure.pprint/pprint (take 10 @test-labels))))
 
+(let [logits (ut/$- ->> @test-data
+                    (take 5)
+#_                    (o/reshape $ (o/c [-1 28 28 1]
+                                      dt/int-kw))
+#_                    (l/conv2d {:id :conv-1
+                               :filters 32
+                               :kernel-size [5 5]
+                               :padding "SAME" ;; TODO
+                               :activation :relu})
+#_                    (l/max-pooling2d {:id :max-1
+                                      :pool-size [2 2]
+                                      :strides [2 2]})
+#_                    (l/conv2d {:id :conv-2
+                               :filters 64
+                               :kernel-size [5 5]
+                               :padding "SAME" ;; TODO
+                               :activation :relu})
+#_                    (l/max-pooling2d {:id :max-2
+                                      :pool-size [2 2]
+                                      :strides [2 2]})
+#_                    (o/reshape $ (o/c [-1 (* 7 7 64)]
+                                      dt/int-kw))
+#_                    (l/dense true 1024)
+#_                    (p/dropout (float 0.4))
+                    (l/dense true 10))
+      opt (ut/$- ->> @test-labels
+                 (take 5)
+                 (o/one-hot $ (int 10) (float 1) (float 0))
+                 (o/softmax-cross-entropy-with-logits logits)
+                 (p/grad-desc-opt :opt $ :gradients))
+      classes (o/arg-max logits 0) 
+      s (ft/build-all->session [opt classes])]
+  (ft/run-global-vars-init s)
+  (ft/run-all s (repeat 100 opt))
+  (def out1 (ft/fetch s logits))
+
+  (do
+    (println "==========")
+    (clojure.pprint/pprint out1)
+    (clojure.pprint/pprint (take 10 @test-labels))))
+
+
 
 
 (ft/produce (l/dense 2 [[1. 2. 3]]))
@@ -196,51 +241,3 @@
 
 
 #_(clojure.pprint/pprint c1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

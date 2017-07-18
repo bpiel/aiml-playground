@@ -61,7 +61,7 @@
 
 
 (defmethod mc/build-macro :dense
-  [^Graph g {:keys [id inputs units]}]
+  [^Graph g {:keys [id inputs relu? units]}]
   (let [id' (or id (-> "dense" gensym name keyword))
         [input] inputs
         {:keys [dtype shape]} (opn/get-desc-of-output input)
@@ -78,11 +78,12 @@
     [(-> input
          (o/mat-mul kernel)
          (o/bias-add bias)
-         o/relu)]))
+         ((if relu? o/relu identity)))]))
 
 (defn dense
-  [units input]
+  [relu? units input]
   {:macro :dense
    :inputs [input]
-   :units units})
+   :units units
+   :relu? relu?})
 
