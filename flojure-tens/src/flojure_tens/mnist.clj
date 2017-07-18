@@ -12,7 +12,16 @@
            [flojure_tens.common Graph Op GraphRef]
            [java.io DataInputStream File FileInputStream BufferedInputStream]))
 
+(defn spit-bytes
+  "Slurp the bytes from a slurpable thing"
+  [f ba]
+  (let [bais (java.io.ByteArrayInputStream. ba)]
+    (with-open [out (clojure.java.io/output-stream f)]
+      (clojure.java.io/copy bais out))))
 
+(defn spit-gd
+  [^Graph g]
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g))))
 
 #_(set! *unchecked-math* true) 
 #_(set! *warn-on-reflection* true)
@@ -194,51 +203,62 @@
 
 (let [logits (ut/$- ->> @test-data
                     (take 5)
-#_                    (o/reshape $ (o/c [-1 28 28 1]
-                                      dt/int-kw))
-#_                    (l/conv2d {:id :conv-1
-                               :filters 32
-                               :kernel-size [5 5]
-                               :padding "SAME" ;; TODO
-                               :activation :relu})
-#_                    (l/max-pooling2d {:id :max-1
-                                      :pool-size [2 2]
-                                      :strides [2 2]})
-#_                    (l/conv2d {:id :conv-2
-                               :filters 64
-                               :kernel-size [5 5]
-                               :padding "SAME" ;; TODO
-                               :activation :relu})
-#_                    (l/max-pooling2d {:id :max-2
-                                      :pool-size [2 2]
-                                      :strides [2 2]})
-#_                    (o/reshape $ (o/c [-1 (* 7 7 64)]
-                                      dt/int-kw))
-                    (l/dense :dense-1 false 1024)
-#_                    (p/dropout (float 0.4))
+                    #_                    (o/reshape $ (o/c [-1 28 28 1]
+                                                            dt/int-kw))
+                    #_                    (l/conv2d {:id :conv-1
+                                                     :filters 32
+                                                     :kernel-size [5 5]
+                                                     :padding "SAME" ;; TODO
+                                                     :activation :relu})
+                    #_                    (l/max-pooling2d {:id :max-1
+                                                            :pool-size [2 2]
+                                                            :strides [2 2]})
+                    #_                    (l/conv2d {:id :conv-2
+                                                     :filters 64
+                                                     :kernel-size [5 5]
+                                                     :padding "SAME" ;; TODO
+                                                     :activation :relu})
+                    #_                    (l/max-pooling2d {:id :max-2
+                                                            :pool-size [2 2]
+                                                            :strides [2 2]})
+                    #_                    (o/reshape $ (o/c [-1 (* 7 7 64)]
+                                                            dt/int-kw))
+                    (l/dense :dense-1 true 1024)
+                    #_                    (p/dropout (float 0.4))
                     (l/dense :dense-2 false 10))
-      opt (ut/$- ->> @test-labels
-                 (take 5)
-                 (o/one-hot $ (int 10) (float 1) (float 0))
-                 (o/softmax-cross-entropy-with-logits logits)
-                 (p/grad-desc-opt :opt $ :gradients))
-      classes (o/arg-max logits 0) 
+      mean1  (ut/$- ->> @test-labels
+                    (take 5)
+                    (o/one-hot $ (int 10) (float 1) (float 0))
+                    (o/softmax-cross-entropy-with-logits logits)
+                    (o/mean $ [(int 0)]))
+      opt (p/grad-desc-opt :opt mean1 :gradients)
+      classes (o/arg-max logits 1) 
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
-;  (ft/run-all s (repeat 1 opt))
-  (def out1 (ft/fetch s :dense-1))
+#_  (spit-gd (:graph s))
+(clojure.pprint/pprint (ft/fetch s mean1))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (ft/run-all s (repeat 10 opt))
+  (clojure.pprint/pprint (ft/fetch s mean1))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (ft/run-all s (repeat 60 opt))
+  (clojure.pprint/pprint (ft/fetch s mean1))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (clojure.pprint/pprint (take 5 @test-labels))
+  (println "=========="))
 
-  (do
-    (println "==========")
-    (clojure.pprint/pprint out1)
-    (clojure.pprint/pprint (take 10 @test-labels))))
 
+(ft/produce (o/mean [1. 2. 5.] [(int 0)]))
 
-(ft/produce (l/dense 2 [[1. 2. 3]]))
-
+(ft/produce (ut/$- ->> @test-labels
+                   (take 5)
+                   (o/one-hot $ (int 10) (float 1) (float 0))
+                   (o/arg-max $ 1)))
 
 
 #_(clojure.pprint/pprint c1)
+
+
 
 
 

@@ -37,14 +37,23 @@ x id-attr as first arg for ops
 
 x? udacity 3
 
+- mnist/conv2d/maxpool2d/dense/dropout example
+
 - variable scope
   - variable regularizer
 - layers (so many!)
 
 - work through lots of examples
 
+- fetch macro output by keyword 
+- auto-apply scope when building macros??
+  - nil ids??
 
 - auto-cast-inputs-fn ???
+  - TShape
+  - that other type attr?
+
+- default to float/int??
 
 - option to rebuild op fns w/ debugging
   -- attaches stacktrace to meta 
