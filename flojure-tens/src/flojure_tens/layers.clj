@@ -62,17 +62,16 @@
 
 (defmethod mc/build-macro :dense
   [^Graph g {:keys [id inputs relu? units]}]
-  (let [id' (or id (-> "dense" gensym name keyword))
-        [input] inputs
+  (let [[input] inputs
         {:keys [dtype shape]} (opn/get-desc-of-output input)
         out-sh (-> shape
                    last
                    (vector units))
-        kernel (sc/with-id-scopes [id']
+        kernel (sc/with-id-scopes [id]
                  (p/v :kernel
                       (o/truncated-normal {:dtype dtype}
                                           out-sh)))
-        bias (sc/with-id-scopes [id']
+        bias (sc/with-id-scopes [id]
                (p/v :bias
                     (p/zeros [units] dtype)))]
     [(-> input
@@ -81,8 +80,9 @@
          ((if relu? o/relu identity)))]))
 
 (defn dense
-  [relu? units input]
+  [id relu? units input]
   {:macro :dense
+   :id id
    :inputs [input]
    :units units
    :relu? relu?})

@@ -1,5 +1,6 @@
 (ns flojure-tens.session
   (:require [flojure-tens.common :as com]
+            [flojure-tens.graph :as gr]
             [flojure-tens.op-node :as op-node]
             [flojure-tens.macros :as mcro]
             [flojure-tens.util :as util]
@@ -33,6 +34,7 @@
 (defn- ->op-node
   [^Graph g x]
   (cond (com/Op? x) x
+        (keyword? x) ((gr/id->node g) (name x))
         (:op x) (op-node/get-op-by-plan g x)
         (:macro x) (->> x
                         (mcro/macro-plan->op-plan g)

@@ -214,9 +214,9 @@
                                       :strides [2 2]})
 #_                    (o/reshape $ (o/c [-1 (* 7 7 64)]
                                       dt/int-kw))
-#_                    (l/dense true 1024)
+                    (l/dense :dense-1 false 1024)
 #_                    (p/dropout (float 0.4))
-                    (l/dense true 10))
+                    (l/dense :dense-2 false 10))
       opt (ut/$- ->> @test-labels
                  (take 5)
                  (o/one-hot $ (int 10) (float 1) (float 0))
@@ -225,8 +225,8 @@
       classes (o/arg-max logits 0) 
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 100 opt))
-  (def out1 (ft/fetch s logits))
+;  (ft/run-all s (repeat 1 opt))
+  (def out1 (ft/fetch s :dense-1))
 
   (do
     (println "==========")
@@ -234,10 +234,56 @@
     (clojure.pprint/pprint (take 10 @test-labels))))
 
 
-
-
 (ft/produce (l/dense 2 [[1. 2. 3]]))
 
 
 
 #_(clojure.pprint/pprint c1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
