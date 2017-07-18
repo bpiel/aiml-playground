@@ -145,6 +145,26 @@
                                 s2
                                 grad)]))
 
+(defn max-pool
+  [op [x1] [grad]]
+  (let [attrs (op->attrs-map op)]
+    [(o/max-pool-grad attrs
+                      x1
+                      (assoc op :output-idx 0)
+                      grad)]))
+
+(defn bias-add
+  [op _ [grad]]
+  [grad
+   (o/bias-add-grad {:data_format "NHWC"}
+                    grad)])
+
+(defn reshape
+  [op [x1] [grad1 grad2]]
+  [(o/reshape grad1
+              (p/to-int32 (o/shape x1)))
+   (o/zeros-like grad2)])
+
 (def floor -no-gradient-)
 (def random-uniform -no-gradient-)
 (def shape -no-gradient-)
@@ -171,36 +191,7 @@
         :RandomUniform (random-uniform y-op y-inputs dx-ops)
         :Shape (shape y-op y-inputs dx-ops)
         :Div (div y-op y-inputs dx-ops)
-        :Conv2D (conv2-d y-op y-inputs dx-ops)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        :Conv2D (conv2-d y-op y-inputs dx-ops)
+        :MaxPool (max-pool y-op y-inputs dx-ops)
+        :BiasAdd (bias-add y-op y-inputs dx-ops)
+        :Reshape (reshape y-op y-inputs dx-ops)))))

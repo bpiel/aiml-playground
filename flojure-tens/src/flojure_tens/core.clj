@@ -131,6 +131,8 @@
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
 
+
+
 (defmulti do-step
   (fn [agg [cmd args]] cmd))
 
@@ -147,6 +149,7 @@
                (graph->session g))
         ])
 )
+
 (defn do-steps
   [steps]
 
