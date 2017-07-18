@@ -42,3 +42,12 @@
          {:macro :conv2d
           :inputs [input]}))
 
+(defmethod mc/build-macro :max-pooling2d
+  [^Graph g {:keys [id inputs]}]
+)
+
+(defn max-pooling2d
+  [{:keys [pool-size strides] :as opts} input]
+  (merge opts
+         {:macro :max-pooling2d
+          :inputs [input]}))

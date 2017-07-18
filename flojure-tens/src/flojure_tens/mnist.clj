@@ -120,6 +120,11 @@
              :activation :relu}
             (p/v :a [[[[(float 1.) (float 2.) (float 3.)]]]])))
 
+(def plan2
+  (l/max-pooling2d {:pool-size [2 2]
+                    :strides 2}
+                   (p/v :a [[[[(float 1.) (float 2.) (float 3.)]]]])))
+
 (let [opt (p/grad-desc-opt :opt
                            plan1
                            :gradients)
