@@ -9,6 +9,11 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
+(defn ru [shape]
+  (o/sub (o/random-uniform {:dtype dt/float-kw}
+                           shape)
+         (float 0.5)))
+
 (defn- mk-kernel
   [{:keys [scope input-shape filters kernel-size dtype]}]
   (let [kernel-shape (conj kernel-size (last input-shape) filters)]
@@ -16,8 +21,7 @@
       (p/v :kernel
            {:dtype dtype
             :shape kernel-shape}
-           (o/truncated-normal {:dtype dtype}
-                               kernel-shape)))))
+           (ru kernel-shape)))))
 
 ;; TODO  o/bias-add
 (defmethod mc/build-macro :conv2d
@@ -28,14 +32,19 @@
                            :input-shape shape
                            :dtype dtype
                            :filters filters
-                           :kernel-size kernel-size})]
+                           :kernel-size kernel-size})
+        bias (sc/with-id-scopes [id]
+               (p/v :bias
+                    {:dtype dtype
+                     :shape [filters]}
+                    (p/zeros [filters] dtype)))]
     [(-> (o/conv2-d id
                     {:strides [1 1 1 1]
                      :padding (or padding "VALID")
                      :data_format "NHWC"} ;; TODO
                     input
                     kernel)
-         ;; TODO bias
+         (o/bias-add bias)
          ;; TODO don't hardcode activation
          o/relu)])) 
 
@@ -70,8 +79,8 @@
                    (vector units))
         kernel (sc/with-id-scopes [id]
                  (p/v :kernel
-                      (o/truncated-normal {:dtype dtype}
-                                          out-sh)))
+                      ;; trunc-normal vs rand-uni makes big diff for mnist!?!?! -- although results are bad for both (currently)
+                      (ru out-sh)))
         bias (sc/with-id-scopes [id]
                (p/v :bias
                     (p/zeros [units] dtype)))]
@@ -87,4 +96,6 @@
    :inputs [input]
    :units units
    :relu? relu?})
+
+
 

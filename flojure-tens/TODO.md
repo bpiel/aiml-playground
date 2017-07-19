@@ -55,6 +55,8 @@ x? udacity 3
 
 - default to float/int??
 
+- cache const tensors (optionally), across graph builds
+
 - option to rebuild op fns w/ debugging
   -- attaches stacktrace to meta 
 

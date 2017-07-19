@@ -222,10 +222,12 @@
                     (l/max-pooling2d {:id :max-2
                                       :pool-size [2 2]
                                       :strides [2 2]})
-                    (o/reshape $ (o/c [-1 (* 7 7 64)] 
+                    (o/reshape $ (o/c [-1
+                                       (* 4 784)
+                                       #_(* 7 7 64)] 
                                       dt/int-kw))
                     (l/dense :dense-1 true 1024)
-                    #_                    (p/dropout (float 0.4))
+                    (p/dropout (float 0.4))
                     (l/dense :dense-2 false 10))
       mean1  (ut/$- ->> @test-labels
                     (take 6)
@@ -236,17 +238,19 @@
       classes (o/arg-max logits 1) 
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
-  #_  (spit-gd (:graph s))
+  (spit-gd (:graph s))
   (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
   (ft/run-all s (repeat 1 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
-  (ft/run-all s (repeat 10 opt))
+  (ft/run-all s (repeat 20 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))
   (clojure.pprint/pprint (ft/fetch s classes))
-  (clojure.pprint/pprint (take 5 @test-labels))
+  (clojure.pprint/pprint (take 6 @test-labels))
   (println "=========="))
+
+
 
 
 (ft/produce (o/mean [1. 2. 5.] [(int 0)]))
@@ -276,49 +280,3 @@
              [[[[(float 1.) (float 2.) (float 3.)]]]])))
 
 #_(clojure.pprint/pprint c1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
