@@ -38,10 +38,14 @@ x id-attr as first arg for ops
 x? udacity 3
 
 - mnist/conv2d/maxpool2d/dense/dropout example
+ - compare accuracy
+ - where's py logic to set max/min of rand-uni var inits?????????
 
 - variable scope
   - variable regularizer
 - layers (so many!)
+
+- templates: activation, regularization, other?
 
 - work through lots of examples
 
@@ -55,6 +59,8 @@ x? udacity 3
 
 - default to float/int??
 
+- magic macro id$-
+
 - cache const tensors (optionally), across graph builds
 
 - option to rebuild op fns w/ debugging
@@ -64,6 +70,10 @@ x? udacity 3
 
 - awesome repl debugger?
 - insane debugging web app
+
+- macro plans have n-outputs key?
+
+- helper fn to get outputs from plan/op
 
 ---- WHAT ARE THE GOALS??
  - implement all udacity assignments
@@ -76,7 +86,7 @@ x? udacity 3
 - Session.run delete things / clean up
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 
-- reorg-plan
+- reorg-plan ???
 - use `intern` to create op fn vars
 
 
