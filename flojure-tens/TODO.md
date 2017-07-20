@@ -35,15 +35,21 @@ x udacity 2
  x actually do notMNIST
 x id-attr as first arg for ops
 
+x id$->>
+
 x? udacity 3
 
-- mnist/conv2d/maxpool2d/dense/dropout example
+- more udacity?
+
+~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy
  - where's py logic to set max/min of rand-uni var inits?????????
 
 - variable scope
   - variable regularizer
+
 - layers (so many!)
+  - rnn/lstm!!!
 
 - templates: activation, regularization, other?
 
@@ -59,7 +65,7 @@ x? udacity 3
 
 - default to float/int??
 
-- magic macro id$-
+
 
 - cache const tensors (optionally), across graph builds
 
@@ -67,6 +73,7 @@ x? udacity 3
   -- attaches stacktrace to meta 
 
 - do-steps???
+- with-closables / with-closables-let
 
 - awesome repl debugger?
 - insane debugging web app
@@ -82,7 +89,6 @@ x? udacity 3
 
 
 
-- with-let ??
 - Session.run delete things / clean up
 - memory leaks stuff -- call delete on graph, tensors? other stuff?
 

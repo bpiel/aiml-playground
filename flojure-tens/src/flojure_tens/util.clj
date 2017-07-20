@@ -141,3 +141,41 @@
 (defmacro $-
   [m & body]
   `(~m ~@(map replace$ body)))
+
+(defn map-by-id
+  [v]
+  (->> v
+       (filter :id)
+       (map #(vector (:id %) %))
+       (into {})
+       (merge {:$ (last v)})))
+
+(defn- id$->>**
+  [prev-sym sym form]
+  [sym (if prev-sym
+         (let [form' (walk/prewalk-replace {'$ prev-sym}
+                                           form)]
+           (if (= form form')
+             (if (sequential? form)
+               (concat form [prev-sym])
+               (list form prev-sym))
+             form'))
+         form)])
+
+(defn- id$->>*
+  [body]
+  (let [sym-vec (-> body
+                    count
+                    (repeatedly gensym)
+                    vec)
+        let-vec (vec (mapcat id$->>**
+                             (into [nil] sym-vec)
+                             sym-vec
+                             body))]
+    `(let ~let-vec (map-by-id ~sym-vec))))
+
+(defmacro id$->>
+  [& body]
+  (id$->>* body))
+
+

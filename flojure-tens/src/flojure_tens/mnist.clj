@@ -159,49 +159,6 @@
 (def data (o/c [[[[(float 1.)] [(float 2.)] [(float 3.)]]
                  [[(float 4.)] [(float 5.)] [(float 6.)]]]]))
 
-
-
-(let [logits (ut/$- ->> @test-data
-                    (take 5)
-                    (o/reshape $ (o/c [-1 28 28 1]
-                                      dt/int-kw))
-                    (l/conv2d {:id :conv-1
-                               :filters 32
-                               :kernel-size [5 5]
-                               :padding "SAME" ;; TODO
-                               :activation :relu})
-                    (l/max-pooling2d {:id :max-1
-                                      :pool-size [2 2]
-                                      :strides [2 2]})
-                    (l/conv2d {:id :conv-2
-                               :filters 64
-                               :kernel-size [5 5]
-                               :padding "SAME" ;; TODO
-                               :activation :relu})
-                    (l/max-pooling2d {:id :max-2
-                                      :pool-size [2 2]
-                                      :strides [2 2]})
-                    (o/reshape $ (o/c [-1 (* 7 7 64)]
-                                      dt/int-kw))
-                    (l/dense 1024)
-                    (p/dropout (float 0.4))
-                    (l/dense 10))
-      opt (ut/$- ->> @test-labels
-                 (take 5)
-                 (o/one-hot $ (int 10) (float 1) (float 0))
-                 (o/softmax-cross-entropy-with-logits logits)
-                 (p/grad-desc-opt :opt $ :gradients))
-      classes (o/arg-max logits 1) ;; 0 or 1?
-      s (ft/build-all->session [opt classes])]
-  (ft/run-global-vars-init s)
-  (ft/run-all s (repeat 1 opt))
-  (def out1 (ft/fetch s logits))
-
-  (do
-    (println "==========")
-    (clojure.pprint/pprint out1)
-    (clojure.pprint/pprint (take 10 @test-labels))))
-
 (let [logits (ut/$- ->> @test-data
                     (take 6)
                     (o/reshape $ (o/c [-1 28 28 1]
@@ -246,6 +203,57 @@
   (clojure.pprint/pprint (ft/fetch s classes))
   (ft/run-all s (repeat 20 opt))
   (clojure.pprint/pprint (ft/fetch s mean1))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (clojure.pprint/pprint (take 6 @test-labels))
+  (println "=========="))
+
+
+(let [{:keys [logits classes]}
+      (ut/id$->> @test-data
+                 (take 6)
+                 (o/reshape $ (o/c [-1 28 28 1]
+                                   dt/int-kw))
+                 (l/conv2d {:id :conv-1
+                            :filters 32
+                            :kernel-size [5 5]
+                            :padding "SAME" ;; TODO
+                            :activation :relu})
+                 (l/max-pooling2d {:id :max-1
+                                   :pool-size [2 2]
+                                   :strides [2 2]})
+                 (l/conv2d {:id :conv-2
+                            :filters 64
+                            :kernel-size [5 5]
+                            :padding "SAME" ;; TODO
+                            :activation :relu})
+                 (l/max-pooling2d {:id :max-2
+                                   :pool-size [2 2]
+                                   :strides [2 2]})
+                 (o/reshape $ (o/c [-1
+                                    (* 4 784)
+                                    #_(* 7 7 64)] 
+                                   dt/int-kw))
+                 (l/dense :dense-1 true 1024)
+                 (p/dropout (float 0.4))
+                 (l/dense :logits false 10)
+                 (o/arg-max :classes $ 1))
+      {:keys [loss opt]}
+      (ut/id$->> @test-labels
+                 (take 6)
+                 (o/one-hot $ (int 10) (float 1) (float 0))
+                 (o/softmax-cross-entropy-with-logits logits)
+                 (o/mean :loss $ [(int 0)])
+                 (p/grad-desc-opt :opt $ :gradients))
+      s (ft/build-all->session [opt classes])]
+  (ft/run-global-vars-init s)
+  #_(spit-gd (:graph s))
+  (clojure.pprint/pprint (ft/fetch s loss))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (ft/run-all s (repeat 1 opt))
+  (clojure.pprint/pprint (ft/fetch s loss))
+  (clojure.pprint/pprint (ft/fetch s classes))
+  (ft/run-all s (repeat 20 opt))
+  (clojure.pprint/pprint (ft/fetch s loss))
   (clojure.pprint/pprint (ft/fetch s classes))
   (clojure.pprint/pprint (take 6 @test-labels))
   (println "=========="))
