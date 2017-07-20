@@ -34,10 +34,11 @@ x reorg nses
 x udacity 2
  x actually do notMNIST
 x id-attr as first arg for ops
-
 x id$->>
 
 x? udacity 3
+
+x (shitty though) default to float/int??
 
 - more udacity?
 
@@ -50,8 +51,6 @@ x? udacity 3
 
 - op attrs as map instead of vecs?
 
-- default to float/int??
-
 - fix "ASSUME THIS IS COOL"
 
 - layers (so many!)
@@ -62,6 +61,7 @@ x? udacity 3
 - work through lots of examples
 
 - fetch macro output by keyword 
+  - aliases?
 - auto-apply scope when building macros??
   - nil ids??
 

@@ -232,7 +232,7 @@
                                (* 4 784)
                                #_(* 7 7 64)])
                  (l/dense :dense-1 true 1024)
-                 (p/dropout (float 0.4))
+                 (p/dropout 0.4)
                  (l/dense :logits false 10)
                  (o/arg-max :classes $ 1))
       {:keys [loss opt]}
