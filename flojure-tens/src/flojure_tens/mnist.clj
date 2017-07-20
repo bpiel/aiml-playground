@@ -184,13 +184,13 @@
                                        #_(* 7 7 64)] 
                                       dt/int-kw))
                     (l/dense :dense-1 true 1024)
-                    (p/dropout (float 0.4))
+                    (p/dropout 0.4)
                     (l/dense :dense-2 false 10))
       mean1  (ut/$- ->> @test-labels
                     (take 6)
-                    (o/one-hot $ (int 10) (float 1) (float 0))
+                    (o/one-hot $ 10 1. 0.)
                     (o/softmax-cross-entropy-with-logits logits)
-                    (o/mean $ [(int 0)]))
+                    (o/mean $ [0]))
       opt (p/grad-desc-opt :opt mean1 :gradients)
       classes (o/arg-max logits 1) 
       s (ft/build-all->session [opt classes])]
@@ -211,8 +211,7 @@
 (let [{:keys [logits classes]}
       (ut/id$->> @test-data
                  (take 6)
-                 (o/reshape $ (o/c [-1 28 28 1]
-                                   dt/int-kw))
+                 (o/reshape $ [-1 28 28 1])
                  (l/conv2d {:id :conv-1
                             :filters 32
                             :kernel-size [5 5]
@@ -229,10 +228,9 @@
                  (l/max-pooling2d {:id :max-2
                                    :pool-size [2 2]
                                    :strides [2 2]})
-                 (o/reshape $ (o/c [-1
-                                    (* 4 784)
-                                    #_(* 7 7 64)] 
-                                   dt/int-kw))
+                 (o/reshape $ [-1
+                               (* 4 784)
+                               #_(* 7 7 64)])
                  (l/dense :dense-1 true 1024)
                  (p/dropout (float 0.4))
                  (l/dense :logits false 10)
@@ -240,9 +238,9 @@
       {:keys [loss opt]}
       (ut/id$->> @test-labels
                  (take 6)
-                 (o/one-hot $ (int 10) (float 1) (float 0))
+                 (o/one-hot $ 10 1. 0.)
                  (o/softmax-cross-entropy-with-logits logits)
-                 (o/mean :loss $ [(int 0)])
+                 (o/mean :loss $ [0])
                  (p/grad-desc-opt :opt $ :gradients))
       s (ft/build-all->session [opt classes])]
   (ft/run-global-vars-init s)
@@ -258,6 +256,9 @@
   (clojure.pprint/pprint (take 6 @test-labels))
   (println "=========="))
 
+
+(ft/produce (o/reshape [1. 2. 3. 4.]
+                       [2 2]))
 
 
 

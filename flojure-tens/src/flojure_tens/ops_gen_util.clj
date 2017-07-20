@@ -5,8 +5,19 @@
             [flatland.protobuf.core :as pr])
   (:import [org.tensorflow.framework OpDef OpList]))
 
+(def auto-cast true)
+
 (def OpDefP (pr/protodef OpDef))
 (def OpListP (pr/protodef OpList))
+
+(defn maybe-auto-cast
+  [v]
+  (if auto-cast
+    (condp = (-> v dt/data-type-of-whatever :kw)
+      dt/long-kw (dt/convert-whatever v dt/int-kw)
+      dt/double-kw (dt/convert-whatever v dt/float-kw)
+      v)
+    v))
 
 (defn get-op-kw
   [op-def]
@@ -14,22 +25,23 @@
 
 (defn convert-attr
   [value def-type]
-  (try
-    (condp = def-type ;; wtf
-      :tensor (:handle (tsr/create-from-value value))
-      :type (if (keyword? value)
-              (dt/->tf-attr-val :int64 (-> value dt/kw->dt :native))
-              (dt/->tf-attr-val :int64 value))
-      :shape (dt/->tf-attr-val :int64 value)
-      :int (dt/->tf-attr-val :int32 value)
-      (keyword "list(int)") (dt/->tf-attr-val :int64 value) ;; :int64 seems weird
-      (dt/->tf-attr-val def-type value))
-    (catch Exception e
-      (def e1 e)
-      #_ (clojure.pprint/pprint e1)
-      (throw (Exception. (format "Could not convert `%s` to %s"
-                                 (str value)
-                                 (str def-type)))))))
+  (let [value' (maybe-auto-cast value)]
+    (try
+      (condp = def-type ;; wtf
+        :tensor (:handle (tsr/create-from-value value'))
+        :type (if (keyword? value')
+                (dt/->tf-attr-val :int64 (-> value' dt/kw->dt :native))
+                (dt/->tf-attr-val :int64 value'))
+        :shape (dt/->tf-attr-val :int64 value')
+        :int (dt/->tf-attr-val :int32 value')
+        (keyword "list(int)") (dt/->tf-attr-val :int64 value') ;; :int64 seems weird
+        (dt/->tf-attr-val def-type value'))
+      (catch Exception e
+        (def e1 e)
+        #_ (clojure.pprint/pprint e1)
+        (throw (Exception. (format "Could not convert `%s` to %s"
+                                   (str value)
+                                   (str def-type))))))))
 
 (defn convert-attrs*
   [plan-attrs

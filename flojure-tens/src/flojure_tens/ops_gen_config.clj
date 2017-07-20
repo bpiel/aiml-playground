@@ -132,6 +132,14 @@
   (let [{:keys [id attrs]} plan]
     `(~fn-name ~id ~(:value attrs))))
 
+;;TODO make less shitty
+(defn auto-cast
+  [dt-kw]
+  (dt-kw {dt/long-kw dt/int-kw
+          dt/double-kw dt/float-kw}
+         dt-kw))
+
+;; (= (hash 0) (hash 0.0)) !!!!!!
 (register-op-gen-cfg!
  "Const"
  {:fn-name 'c
@@ -139,8 +147,9 @@
                    '[([value] {:op :Const
                                :attrs {:value value
                                        :dtype (-> value
-                                                  flojure-tens.data-type/data-type-of-whatever ;; TODO (= (hash 0) (hash 0.0)) !!!!!!
-                                                  :kw)}})
+                                                  flojure-tens.data-type/data-type-of-whatever 
+                                                  :kw
+                                                  flojure-tens.ops-gen-config/auto-cast)}})
                      ([value data-type] {:op :Const ;; TODO change arg order?
                                          :id nil
                                          :attrs {:value value

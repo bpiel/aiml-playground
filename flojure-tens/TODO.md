@@ -48,6 +48,12 @@ x? udacity 3
 - variable scope
   - variable regularizer
 
+- op attrs as map instead of vecs?
+
+- default to float/int??
+
+- fix "ASSUME THIS IS COOL"
+
 - layers (so many!)
   - rnn/lstm!!!
 
@@ -63,7 +69,7 @@ x? udacity 3
   - TShape
   - that other type attr?
 
-- default to float/int??
+
 
 
 
