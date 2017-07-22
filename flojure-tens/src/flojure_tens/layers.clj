@@ -17,7 +17,7 @@
 (defn- mk-kernel
   [{:keys [scope input-shape filters kernel-size dtype]}]
   (let [kernel-shape (conj kernel-size (last input-shape) filters)]
-    (sc/with-id-scopes [scope]
+    (sc/with-variable-scope scope
       (p/v :kernel
            {:dtype dtype
             :shape kernel-shape}
@@ -33,7 +33,7 @@
                            :dtype dtype
                            :filters filters
                            :kernel-size kernel-size})
-        bias (sc/with-id-scopes [id]
+        bias (sc/with-variable-scope id
                (p/v :bias
                     {:dtype dtype
                      :shape [filters]}
@@ -77,11 +77,11 @@
         out-sh (-> shape
                    last
                    (vector units))
-        kernel (sc/with-id-scopes [id]
+        kernel (sc/with-variable-scope id
                  (p/v :kernel
                       ;; trunc-normal vs rand-uni makes big diff for mnist!?!?! -- although results are bad for both (currently)
                       (ru out-sh)))
-        bias (sc/with-id-scopes [id]
+        bias (sc/with-variable-scope id
                (p/v :bias
                     (p/zeros [units] dtype)))]
     [(-> input

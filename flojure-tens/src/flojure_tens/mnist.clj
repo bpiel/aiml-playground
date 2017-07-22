@@ -242,7 +242,7 @@
                  (o/softmax-cross-entropy-with-logits logits)
                  (o/mean :loss $ [0])
                  (p/grad-desc-opt :opt $ :gradients))
-      s (ft/build-all->session [opt classes])]
+      s (ft/build-all->session [opt  classes])]
   (ft/run-global-vars-init s)
   #_(spit-gd (:graph s))
   (clojure.pprint/pprint (ft/fetch s loss))

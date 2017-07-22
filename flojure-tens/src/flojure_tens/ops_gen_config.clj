@@ -202,7 +202,7 @@
 
 (register-op-gen-cfg!
  "VariableV2"
- {:fn-name 'v
+ {:fn-name 'variable
 ;  :plan-fn-bodies plan-fn-bodies-variable
 ;  :hook-pre-build  `hook-pre-build-op-override-variable-v2
 ;  :plan->expr plan->expr-variable-v2

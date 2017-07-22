@@ -10,10 +10,6 @@
 (defn handle->id [^Graph {:keys [handle-lock state]}] (:handle->id @state))
 (defn id->outputs [^Graph {:keys [handle-lock state]}] (:id->outputs @state))
 
-{:id [[{:id "hello:1" :input-idx 0}
-       {:id "hello:0" :input-idx 0}]]}
-
-
 (defn init-graph-state []
   {:id->node {}
    :hash->id {}

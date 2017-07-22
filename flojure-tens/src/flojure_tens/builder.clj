@@ -71,6 +71,7 @@
 
 (defn- apply-plan-to-graph
   [^Graph g plan]
+  (def p1 plan)
   (util/visit-plan (partial built? g)
                    nil
                    (partial apply-plan-to-graph* g)

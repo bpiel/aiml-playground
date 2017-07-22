@@ -7,5 +7,10 @@ from six.moves import cPickle as pickle
 from six.moves import range
 from tensorflow.python.platform import gfile
 
+with tf.name_scope("name1"):
+    with tf.variable_scope("scope1"):
+        v1 = tf.get_variable('v1',shape=[1])
+        o1 = tf.reshape([1],[1])
 
-v1 = tf.get_variable('v1',shape=[1])
+print(v1.name)
+print(o1.name)

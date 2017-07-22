@@ -16,9 +16,8 @@
        (o/floor-div x)))
 
 (defn to-int32
-  [x & [name]]
-  (o/cast-tf (or name "ToInt32")
-             {:DstT :int32}
+  [x]
+  (o/cast-tf {:DstT :int32}
              x))
 
 (defn reduction-dims
@@ -65,8 +64,9 @@
 (defn grad-desc-opt
   "MACRO"
   [id target & [scope]]
-  (sc/with-id-scopes (if scope [scope] [])
-    (sc/assoc-id-scope
+  (sc/with-variable-scope (or scope
+                              :gradients)
+    (sc/assoc-scopes-to-plan
      {:macro :grad-desc-opt
       :id id
       :inputs [target]})))
@@ -74,21 +74,29 @@
 (defn gradient
   "MACRO"
   [id y dxs output-idx]
-  (sc/assoc-id-scope
+  (sc/assoc-scopes-to-plan
    {:macro :grad
     :id id
     :output-idx output-idx
     :inputs [y dxs]}))
 
+(defn- mk-initilizer
+  [init shape]
+  (cond (nil? shape) init
+         ;; TODO replace :$/shape
+        (map? init) init
+        ;; TODO reshape
+        :else init))
+
 (defn v
   "MACRO Variable"
   ([id init] (v id {} init))
-  ([id attr init]
-   (sc/assoc-id-scope
+  ([id {:keys [shape regularizer] :as attrs} init]
+   (sc/assoc-scopes-to-plan
     {:macro :variable
      :id id
-     :inputs [init]
-     :attrs (or attr {})})))
+     :inputs [(mk-initilizer init shape)]
+     :attrs (or attrs {})})))
 
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
@@ -98,8 +106,8 @@
             dt/bool-kw false
             dt/string-kw ""
             0)]
-    (sc/with-id-scopes [:zeros]
-      (o/fill (o/c shape dt/int-kw) ;; TODO what if `shape` isn't a constant? 
+    (sc/with-id-scope :zeros
+      (o/fill shape
               (o/c z dtype))))) ;; TODO infer type?
 
 
@@ -108,8 +116,8 @@
   [shape & [dtype]]
   (o/truncated-normal {:seed (rand-int Integer/MAX_VALUE)
                        :seed2 (rand-int Integer/MAX_VALUE)
-                       :dtype (or dtype dt/double-kw)} ;; TODO bad idea?
-                      (o/c shape dt/int-kw)))
+                       :dtype (or dtype dt/float-kw)} ;; TODO bad idea?
+                      shape))
 
 
 (defn dropout

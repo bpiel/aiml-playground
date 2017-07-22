@@ -49,6 +49,37 @@ x (shitty though) default to float/int??
 - variable scope
   - variable regularizer
 
+===============================
+VAR SCOPE
+
+with-variable-scope
+ - 2 arities
+   - 1 arg takes captured scope
+     - doesn't append to id scope
+   - more args (named args?)
+     - defines new scope
+     - appends to id scope 
+     - appends to var scope
+     - uses mk-variable-scope
+
+mk-variable-scope
+ - same signature as 2nd arity of with-variable-scope?
+
+v macro 
+- needs to take initzr, regulzr etc
+- init value can be const or initzr?
+
+initzr should take shape? dtype?
+
+
+
+regulzrs take??????
+
+variable will reshape initzr only if shape provided??
+
+
+===============================
+
 - op attrs as map instead of vecs?
 
 - fix "ASSUME THIS IS COOL"

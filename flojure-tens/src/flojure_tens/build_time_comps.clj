@@ -8,12 +8,20 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
+(defn- mk-id
+  [^Graph g base-kw]
+  (-> base-kw
+      name
+      (str "_" (swap! (:counter g)
+                      inc))
+      keyword))
 
+;; TODO should this be in plan-time?
 (defmethod mc/build-macro :variable
-  [^Graph g {:keys [id scope attrs inputs]}]
-  (sc/with-id-scopes (conj scope id)
+  [^Graph g {:keys [id var-scope attrs inputs]}]
+  (sc/with-scopes-syncd (update var-scope :scope conj id)
     (let [[init] inputs
-          vari (o/v :variable (merge (opn/get-desc-of-output init)
+          vari (o/variable :variable (merge (opn/get-desc-of-output init)
                                      attrs))]
       [(o/identity-tf :read {} vari)
        (-> (o/assign :init {} vari init)
@@ -23,10 +31,11 @@
 
 
 (defn dropout
-  ([keep-prob x]
-   (dropout nil keep-prob x {}))
-  ([id keep-prob x & [{:keys [noise-shape seed seed2]}]]
-   (sc/with-id-scopes [(or id :dropout)]
+  ([^Graph g keep-prob x]
+   (dropout g nil keep-prob x {}))
+  ([^Graph g id keep-prob x & [{:keys [noise-shape seed seed2]}]]
+   (sc/with-id-scope (or id
+                         (mk-id g :dropout))
      (let [dtype (-> x opn/get-desc-of-output :dtype)
            rnd-bin (util/$- -> noise-shape
                             (or (o/shape x))
@@ -46,5 +55,5 @@
 (defmethod mc/build-macro :dropout
   [^Graph g {:keys [id inputs noise-shape seed seed2] :as args}]
   (let [[keep-prob x] inputs]
-    [(dropout id keep-prob x args)]))
+    [(dropout g id keep-prob x args)]))
 

@@ -176,7 +176,7 @@
                       :inputs
                       (map (gr/id->node g)))
         local-scope (str (:id y-op) "_grad")]
-    (sc/with-id-scopes (conj (:scope plan) local-scope)
+    (sc/with-variable-scope (conj (:scope plan) local-scope)
       (case (:op y-op)
         :Sin (sin y-op y-inputs dx-ops)
         :MatMul (mat-mul y-op y-inputs dx-ops)
