@@ -145,14 +145,14 @@
                              [[(float 1.)] [(float 2.)] [(float 3.)]]]])))
 
 (def plan3
-  (l/dense 2 [[1. 2. 3]]))
+  (l/dense :d3 false 2 [[1. 2. 3]]))
 
 
 (let [opt (p/grad-desc-opt :opt
-                           plan3
-                           :gradients)
+                           plan3)
       s (ft/build->session opt)]
   (ft/run-global-vars-init s)
+  (spit-gd (:graph s))
   (ft/run-all s (repeat 1 opt))
   (ft/fetch s plan3))
 
@@ -241,10 +241,10 @@
                  (o/one-hot $ 10 1. 0.)
                  (o/softmax-cross-entropy-with-logits logits)
                  (o/mean :loss $ [0])
-                 (p/grad-desc-opt :opt $ :gradients))
+                 (p/grad-desc-opt :opt $))
       s (ft/build-all->session [opt  classes])]
   (ft/run-global-vars-init s)
-  #_(spit-gd (:graph s))
+  (spit-gd (:graph s))
   (clojure.pprint/pprint (ft/fetch s loss))
   (clojure.pprint/pprint (ft/fetch s classes))
   (ft/run-all s (repeat 1 opt))

@@ -21,29 +21,53 @@
                            empty-var-scope)]
     (cond (map? new-scope) new-scope
           
-          (keyword? new-scope)
+          (or (keyword? new-scope)
+              (string? new-scope))
           (update old-var-scope'
                   :scope
                   conj
                   new-scope)
           
           (sequential? new-scope)
-          (let [[scope-kw {:keys [initializer regularizer]}] new-scope]
+          (update old-var-scope'
+                  :scope
+                  into
+                  new-scope))))
+
+(defn mk-nested-var-scope
+  [new-scope old-var-scope]
+  (let [old-var-scope' (or old-var-scope
+                           empty-var-scope)]
+    (cond (map? new-scope)
+          (let [{:keys [scope initializer regularizer]} new-scope]
             (-> old-var-scope'
                 (update :scope
-                        conj
-                        scope-kw)
+                        into
+                        scope)
                 (update :initializer
                         #(or initializer %))
                 (update :regularizer
-                        #(or regularizer %)))))))
+                        #(or regularizer %))))
+          
+          (or (keyword? new-scope)
+              (string? new-scope))
+          (update old-var-scope'
+                  :scope
+                  conj
+                  new-scope)
+          
+          (sequential? new-scope)
+          (update old-var-scope'
+                  :scope
+                  into
+                  new-scope))))
 
 (defn mk-id-scope
   [new-scope old-id-scope]
-  (conj old-id-scope
-        (cond (map? new-scope) (:scope new-scope)
-              (keyword? new-scope) new-scope
-              (sequential? new-scope) (first new-scope))))
+  (cond (map? new-scope) (conj old-id-scope (:scope new-scope))
+        (keyword? new-scope) (conj old-id-scope new-scope)
+        (string? new-scope) (conj old-id-scope new-scope)
+        (sequential? new-scope) (into old-id-scope new-scope)))
 
 (defmacro with-variable-scope
   [scope & body]

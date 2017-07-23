@@ -176,30 +176,25 @@
                       :inputs
                       (map (gr/id->node g)))
         local-scope (str (:id y-op) "_grad")]
-    (sc/with-variable-scope (conj (:scope plan) local-scope)
-      (case (:op y-op)
-        :Sin (sin y-op y-inputs dx-ops)
-        :MatMul (mat-mul y-op y-inputs dx-ops)
-        :Mean (mean y-op y-inputs dx-ops)
-        :SoftmaxCrossEntropyWithLogits (softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
-        :Add (add y-op y-inputs dx-ops)
-        :Relu (relu y-op y-inputs dx-ops)
-        :Identity (identity-tf y-op y-inputs dx-ops)
-        :Mul (mul y-op y-inputs dx-ops)
-        :L2Loss (l2-loss y-op y-inputs dx-ops)
-        :Floor (floor y-op y-inputs dx-ops)
-        :RandomUniform (random-uniform y-op y-inputs dx-ops)
-        :Shape (shape y-op y-inputs dx-ops)
-        :Div (div y-op y-inputs dx-ops)
-        :Conv2D (conv2-d y-op y-inputs dx-ops)
-        :MaxPool (max-pool y-op y-inputs dx-ops)
-        :BiasAdd (bias-add y-op y-inputs dx-ops)
-        :Reshape (reshape y-op y-inputs dx-ops)))))
-
-
-
-
-
-
-
-
+    (def p1 plan)
+    (def l1 local-scope)
+    (->> (case (:op y-op)
+           :Sin (sin y-op y-inputs dx-ops)
+           :MatMul (mat-mul y-op y-inputs dx-ops)
+           :Mean (mean y-op y-inputs dx-ops)
+           :SoftmaxCrossEntropyWithLogits (softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
+           :Add (add y-op y-inputs dx-ops)
+           :Relu (relu y-op y-inputs dx-ops)
+           :Identity (identity-tf y-op y-inputs dx-ops)
+           :Mul (mul y-op y-inputs dx-ops)
+           :L2Loss (l2-loss y-op y-inputs dx-ops)
+           :Floor (floor y-op y-inputs dx-ops)
+           :RandomUniform (random-uniform y-op y-inputs dx-ops)
+           :Shape (shape y-op y-inputs dx-ops)
+           :Div (div y-op y-inputs dx-ops)
+           :Conv2D (conv2-d y-op y-inputs dx-ops)
+           :MaxPool (max-pool y-op y-inputs dx-ops)
+           :BiasAdd (bias-add y-op y-inputs dx-ops)
+           :Reshape (reshape y-op y-inputs dx-ops))
+         (sc/with-variable-scope local-scope)
+         (sc/with-variable-scope (:scope plan)))))

@@ -23,7 +23,6 @@
             :shape kernel-shape}
            (ru kernel-shape)))))
 
-;; TODO  o/bias-add
 (defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
   (let [[input] inputs
@@ -72,22 +71,23 @@
 
 (defmethod mc/build-macro :dense
   [^Graph g {:keys [id inputs relu? units]}]
-  (let [[input] inputs
-        {:keys [dtype shape]} (opn/get-desc-of-output input)
-        out-sh (-> shape
-                   last
-                   (vector units))
-        kernel (sc/with-variable-scope id
-                 (p/v :kernel
+  (sc/with-variable-scope id
+    (let [[input] inputs
+          {:keys [dtype shape]} (opn/get-desc-of-output input)
+          out-sh (-> shape
+                     last
+                     (vector units))
+          kernel (p/v :kernel
                       ;; trunc-normal vs rand-uni makes big diff for mnist!?!?! -- although results are bad for both (currently)
-                      (ru out-sh)))
-        bias (sc/with-variable-scope id
-               (p/v :bias
-                    (p/zeros [units] dtype)))]
-    [(-> input
-         (o/mat-mul kernel)
-         (o/bias-add bias)
-         ((if relu? o/relu identity)))]))
+                      (ru out-sh))
+          bias (p/v :bias
+                    (p/zeros [units] dtype))]
+      [(-> input
+           (o/mat-mul kernel)
+           (o/bias-add bias)
+           ((if relu? o/relu identity)))])))
+
+
 
 (defn dense
   [id relu? units input]
