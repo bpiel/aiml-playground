@@ -131,3 +131,10 @@
     :seed seed
     :seed2 seed2}))
 
+(defn one-hot
+  ([idxs depth]
+   (o/one-hot nil {} idxs depth 1. 0.))
+  ([id idxs depth]
+   (o/one-hot id {} idxs depth 1. 0.))
+  ([id attrs idxs depth]
+   (o/one-hot id attrs idxs depth 1. 0.)))

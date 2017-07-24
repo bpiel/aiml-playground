@@ -46,7 +46,7 @@ x (shitty though) default to float/int??
  - compare accuracy
  - where's py logic to set max/min of rand-uni var inits?????????
 
-- variable scope
+~ variable scope
   - variable regularizer
 
 ===============================

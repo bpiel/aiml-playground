@@ -78,7 +78,7 @@
                      last
                      (vector units))
           kernel (p/v :kernel
-                      ;; trunc-normal vs rand-uni makes big diff for mnist!?!?! -- although results are bad for both (currently)
+                      ;; trunc-normal vs rand-uni makes big diff for mnist!?!?!
                       (ru out-sh))
           bias (p/v :bias
                     (p/zeros [units] dtype))]
