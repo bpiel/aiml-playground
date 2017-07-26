@@ -48,6 +48,7 @@ x (shitty though) default to float/int??
  - SOMETIMES NaN?!?!?!
 
 ~ variable scope
+  x compare tensboard for mnist clj/py -- weird, but seems correct
   - variable regularizer
 
 ===============================
