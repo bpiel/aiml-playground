@@ -45,6 +45,7 @@ x (shitty though) default to float/int??
 ~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy
  - where's py logic to set max/min of rand-uni var inits?????????
+ - SOMETIMES NaN?!?!?!
 
 ~ variable scope
   - variable regularizer

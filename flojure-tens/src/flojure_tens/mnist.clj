@@ -79,7 +79,6 @@
                            (swap! labelvector conj (long (.readUnsignedByte data-input-stream)))))
                        @labelvector))))
 
-#_
 (def test-data (future
                        (with-open [^DataInputStream data-input-stream (get-data-stream "/t10k-images-idx3-ubyte") ]
                          (let [datavector (atom [])]
@@ -102,9 +101,6 @@
                                (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                            @datavector))))
 
-
-
-#_
 (def test-labels (future
                        (with-open [^DataInputStream data-input-stream (get-data-stream "/t10k-labels-idx1-ubyte")]
                          (let [labelvector (atom [])]
@@ -222,13 +218,6 @@
                    (take 5)
                    (o/one-hot $ (int 10) (float 1) (float 0))
                    (o/arg-max $ 1)))
-
-(ft/produce (l/conv2d {:id :conv-1
-                       :filters 1
-                       :kernel-size [ 1 1]
-                       :padding "SAME" ;; TODO
-                       :activation :relu}
-                      ))
 
 
 
