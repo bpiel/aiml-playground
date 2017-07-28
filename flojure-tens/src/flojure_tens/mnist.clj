@@ -206,4 +206,98 @@
   (println "=========="))
 
 
-;; TODO real deal
+;; TODO real dealing
+
+(let [test-batch-n 32
+      test-feed {:test-data (take test-batch-n @test-data)
+                 :test-labels (take test-batch-n @test-labels)}
+      {:keys [logits classes]}
+      (ut/id$->> (o/placeholder :test-data dt/float-kw [test-batch-n
+                                                        784])
+                 (o/reshape $ [-1 28 28 1])
+                 (l/conv2d {:id :conv-1
+                            :filters 32
+                            :kernel-size [5 5]
+                            :padding "SAME" ;; TODO
+                            :activation :relu})
+                 (l/max-pooling2d {:id :max-1
+                                   :pool-size [2 2]
+                                   :strides [2 2]})
+                 (l/conv2d {:id :conv-2
+                            :filters 64
+                            :kernel-size [5 5]
+                            :padding "SAME" ;; TODO
+                            :activation :relu})
+                 (l/max-pooling2d {:id :max-2
+                                   :pool-size [2 2]
+                                   :strides [2 2]})
+                 (o/reshape $ [-1
+                               (* 4 784)])
+                 (l/dense :dense-1 true 1024)
+                 (p/dropout 0.4)
+                 (l/dense :logits false 10)
+                 (o/arg-max :classes $ 1))
+      {:keys [loss opt]}
+      (ut/id$->> (o/placeholder :test-labels dt/int-kw [test-batch-n])
+                 (p/one-hot $ 10)
+                 (o/softmax-cross-entropy-with-logits logits)
+                 (o/mean :loss $ [0])
+                 (p/grad-desc-opt :opt $))
+      s (ft/build-all->session [opt  classes])]
+  (ft/run-global-vars-init s)
+  (spit-gd (:graph s))
+  (ft/run-all s (repeat 32 opt) test-feed)
+  (clojure.pprint/pprint (ft/fetch s loss test-feed))
+  (clojure.pprint/pprint (ft/fetch s classes test-feed))
+  (clojure.pprint/pprint (take test-batch-n @test-labels))
+  (println "=========="))
+
+(ft/produce (o/shape (->> @test-labels (take 6))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
