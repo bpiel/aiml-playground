@@ -43,8 +43,8 @@
 (defn normalize [x]
   (float (- (/ x 255.0) 0.5)))
 
-#_
-(defonce train-data (future
+
+(def train-data (future
                   (with-open [^DataInputStream data-input-stream (get-data-stream "/train-images-idx3-ubyte")]
                     (let [datavector (atom [])]
                       (if (not= (.readInt data-input-stream) 2051)
@@ -56,17 +56,17 @@
                       (if (not= (.readInt data-input-stream) SIZE)
                         (throw (Error. "Unexpected column count")))  
                       (dotimes [i CASE-COUNT]
-                        (let [darray (double-array (* SIZE SIZE))]
+                        (let [darray (float-array (* SIZE SIZE))]
                           (dotimes [y SIZE]
                             (dotimes [x SIZE]
-                              (aset-double 
+                              (aset-float 
                                darray 
                                (+ x (* y SIZE)) 
-                               (normalize (.readUnsignedByte data-input-stream)))))
+                               (float (normalize (.readUnsignedByte data-input-stream))))))
                           (swap! datavector conj (vec darray) #_(Vector/wrap darray))))
                       @datavector))))
 
-#_
+
 (defonce train-labels (future
                    (with-open [^DataInputStream data-input-stream (get-data-stream "/train-labels-idx1-ubyte")]
                      (let [labelvector (atom [])]
@@ -76,7 +76,7 @@
                          (throw (Error. "Unexpected image count")))  
                        (dotimes [i CASE-COUNT]
                          (do
-                           (swap! labelvector conj (long (.readUnsignedByte data-input-stream)))))
+                           (swap! labelvector conj (int (.readUnsignedByte data-input-stream)))))
                        @labelvector))))
 
 (def test-data (future
@@ -208,12 +208,18 @@
 
 ;; TODO real dealing
 
-(let [test-batch-n 32
-      test-feed {:test-data (take test-batch-n @test-data)
-                 :test-labels (take test-batch-n @test-labels)}
+(let [batch-n 64 ;; TODO need to be able to vary this
+      train-feed {:data (take batch-n @train-data)
+                  :labels (take batch-n @train-labels)
+                  :dropout (float 0.4)}
+      test-feed {:data (take batch-n @test-data)
+                 :labels (take batch-n @test-labels)
+                 :dropout (float 1.)} ;; TODO autocast
       {:keys [logits classes]}
-      (ut/id$->> (o/placeholder :test-data dt/float-kw [test-batch-n
-                                                        784])
+      (ut/id$->> (o/placeholder :data
+                                dt/float-kw
+                                [batch-n
+                                 784])
                  (o/reshape $ [-1 28 28 1])
                  (l/conv2d {:id :conv-1
                             :filters 32
@@ -234,70 +240,25 @@
                  (o/reshape $ [-1
                                (* 4 784)])
                  (l/dense :dense-1 true 1024)
-                 (p/dropout 0.4)
+                 (p/dropout (o/placeholder :dropout
+                                           dt/float-kw
+                                           []))
                  (l/dense :logits false 10)
                  (o/arg-max :classes $ 1))
       {:keys [loss opt]}
-      (ut/id$->> (o/placeholder :test-labels dt/int-kw [test-batch-n])
+      (ut/id$->> (o/placeholder :labels dt/int-kw [batch-n])
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
                  (o/mean :loss $ [0])
                  (p/grad-desc-opt :opt $))
       s (ft/build-all->session [opt  classes])]
   (ft/run-global-vars-init s)
-  (spit-gd (:graph s))
-  (ft/run-all s (repeat 32 opt) test-feed)
+  #_(spit-gd (:graph s))
+  (ft/run-all s (repeat 32 opt) train-feed)
+  (clojure.pprint/pprint (ft/fetch s loss train-feed))
+#_  (clojure.pprint/pprint (ft/fetch s classes train-feed))
+#_  (clojure.pprint/pprint (take batch-n @train-labels))
   (clojure.pprint/pprint (ft/fetch s loss test-feed))
-  (clojure.pprint/pprint (ft/fetch s classes test-feed))
-  (clojure.pprint/pprint (take test-batch-n @test-labels))
+#_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
+#_  (clojure.pprint/pprint (take batch-n @test-labels))
   (println "=========="))
-
-(ft/produce (o/shape (->> @test-labels (take 6))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
