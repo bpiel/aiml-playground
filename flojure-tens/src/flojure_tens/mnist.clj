@@ -157,7 +157,7 @@
 
 
 
-
+;; just test data
 (let [{:keys [logits classes]}
       (ut/id$->> @test-data
                  (take 6)
@@ -206,28 +206,4 @@
   (println "=========="))
 
 
-(ft/produce (o/reshape [1. 2. 3. 4.]
-                       [2 2]))
-
-
-
-(ft/produce (o/mean [1. 2. 5.] [(int 0)]))
-
-(ft/produce (ut/$- ->> @test-labels
-                   (take 5)
-                   (o/one-hot $ (int 10) (float 1) (float 0))
-                   (o/arg-max $ 1)))
-
-
-
-
-(def c1
-  (ft/produce
-   (l/conv2d {:id :conv1
-              :filters 32
-              :kernel-size [5 5]
-              :padding "SAME" ;; TODO
-              :activation :relu}
-             [[[[(float 1.) (float 2.) (float 3.)]]]])))
-
-#_(clojure.pprint/pprint c1)
+;; TODO real deal

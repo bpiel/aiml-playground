@@ -40,16 +40,14 @@ x? udacity 3
 
 x (shitty though) default to float/int??
 
-- more udacity?
-
 ~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy
  - where's py logic to set max/min of rand-uni var inits?????????
- - SOMETIMES NaN?!?!?!
 
 ~ variable scope
   x compare tensboard for mnist clj/py -- weird, but seems correct
   - variable regularizer
+  - templates: activation, regularization, other?
 
 ===============================
 VAR SCOPE
@@ -82,14 +80,16 @@ variable will reshape initzr only if shape provided??
 
 ===============================
 
-- op attrs as map instead of vecs?
-
-- fix "ASSUME THIS IS COOL"
 
 - layers (so many!)
   - rnn/lstm!!!
 
-- templates: activation, regularization, other?
+- fix "ASSUME THIS IS COOL"
+
+- more udacity?
+
+- op attrs as map instead of vecs?
+
 
 - work through lots of examples
 
