@@ -218,7 +218,7 @@
       {:keys [logits classes]}
       (ut/id$->> (o/placeholder :data
                                 dt/float-kw
-                                [batch-n
+                                [-1 #_batch-n
                                  784])
                  (o/reshape $ [-1 28 28 1])
                  (l/conv2d {:id :conv-1

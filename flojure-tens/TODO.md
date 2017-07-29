@@ -42,7 +42,6 @@ x (shitty though) default to float/int??
 
 ~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy
- - where's py logic to set max/min of rand-uni var inits?????????
 
 ~ variable scope
   x compare tensboard for mnist clj/py -- weird, but seems correct
@@ -80,6 +79,8 @@ variable will reshape initzr only if shape provided??
 
 ===============================
 
+- glorot_uniform_initializer
+ -- defaults for random_uniform_initializer
 
 - layers (so many!)
   - rnn/lstm!!!
@@ -98,11 +99,15 @@ variable will reshape initzr only if shape provided??
 - auto-apply scope when building macros??
   - nil ids??
 
+- feed by plan instead of just keyword
+
 - auto-cast-inputs-fn ???
   - TShape
   - that other type attr?
 
+- logging hook?
 
+- estimators???
 
 
 
@@ -111,7 +116,6 @@ variable will reshape initzr only if shape provided??
 - option to rebuild op fns w/ debugging
   -- attaches stacktrace to meta 
 
-- do-steps???
 - with-closables / with-closables-let
 
 - awesome repl debugger?
