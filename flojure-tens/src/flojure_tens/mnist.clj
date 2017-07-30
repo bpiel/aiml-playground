@@ -225,7 +225,7 @@
                             :filters 32
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
-                            :activation :relu})
+                            :activation o/relu})
                  (l/max-pooling2d {:id :max-1
                                    :pool-size [2 2]
                                    :strides [2 2]})
@@ -233,17 +233,20 @@
                             :filters 64
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
-                            :activation :relu})
+                            :activation o/relu})
                  (l/max-pooling2d {:id :max-2
                                    :pool-size [2 2]
                                    :strides [2 2]})
                  (o/reshape $ [-1
                                (* 4 784)])
-                 (l/dense :dense-1 true 1024)
+                 (l/dense {:id :dense-1
+                           :activation o/relu
+                           :units 1024})
                  (p/dropout (o/placeholder :dropout
                                            dt/float-kw
                                            []))
-                 (l/dense :logits false 10)
+                 (l/dense {:id :logits
+                           :units 10})
                  (o/arg-max :classes $ 1))
       {:keys [loss opt]}
       (ut/id$->> (o/placeholder :labels dt/int-kw [batch-n])
@@ -256,9 +259,9 @@
   #_(spit-gd (:graph s))
   (ft/run-all s (repeat 32 opt) train-feed)
   (clojure.pprint/pprint (ft/fetch s loss train-feed))
-#_  (clojure.pprint/pprint (ft/fetch s classes train-feed))
-#_  (clojure.pprint/pprint (take batch-n @train-labels))
+  #_  (clojure.pprint/pprint (ft/fetch s classes train-feed))
+  #_  (clojure.pprint/pprint (take batch-n @train-labels))
   (clojure.pprint/pprint (ft/fetch s loss test-feed))
-#_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
-#_  (clojure.pprint/pprint (take batch-n @test-labels))
+  #_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
+  #_  (clojure.pprint/pprint (take batch-n @test-labels))
   (println "=========="))

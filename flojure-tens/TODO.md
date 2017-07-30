@@ -48,7 +48,8 @@ x (shitty though) default to float/int??
   x compare tensboard for mnist clj/py -- weird, but seems correct
   - templates: 
    -- initialization
-   -- activation
+    --- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
+   x- activation
    -- regularization
    -- other?
 
@@ -160,7 +161,7 @@ v macro
 - needs to take initzr, regulzr etc
 - init value can be const or initzr?
 
-initzr should take shape? dtype?
+initializer should take shape? dtype?
 
 
 

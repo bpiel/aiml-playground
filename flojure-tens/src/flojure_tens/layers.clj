@@ -9,10 +9,24 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
+(defn mk-activation-template
+  [a]
+  (if (fn? a)
+    (a :$/input)
+    a))
+
+(defn mk-activation-plan
+  [template input]
+  (if-not (nil? template)
+    (clojure.walk/postwalk-replace {:$/input input}
+                                   template)
+    input))
+
 (defn ru [shape]
   (o/sub (o/random-uniform {:dtype dt/float-kw}
                            shape)
          (float 0.5)))
+
 
 (defn- mk-kernel
   [{:keys [scope input-shape filters kernel-size dtype]}]
@@ -43,14 +57,14 @@
                       input
                       kernel)
            (o/bias-add bias)
-           ;; TODO don't hardcode activation
-           o/relu)]))) 
+           ((partial mk-activation-plan activation)))]))) 
 
 (defn conv2d
   [{:keys [id filters kernel-size padding activation] :as opts} input]
   (merge opts
          {:macro :conv2d
-          :inputs [input]}))
+          :inputs [input]
+          :activation (mk-activation-template activation)}))
 
 (defmethod mc/build-macro :max-pooling2d
   [^Graph g {:keys [id inputs pool-size strides]}]
@@ -67,9 +81,8 @@
          {:macro :max-pooling2d
           :inputs [input]}))
 
-
 (defmethod mc/build-macro :dense
-  [^Graph g {:keys [id inputs relu? units]}]
+  [^Graph g {:keys [id inputs activation units]}]
   (sc/with-variable-scope id
     (let [[input] inputs
           {:keys [dtype shape]} (opn/get-desc-of-output input)
@@ -84,17 +97,12 @@
       [(-> input
            (o/mat-mul kernel)
            (o/bias-add bias)
-           ((if relu? o/relu identity)))])))
-
-
+           ((partial mk-activation-plan activation)))])))
 
 (defn dense
-  [id relu? units input]
+  [{:keys [id activation units]} input]
   {:macro :dense
    :id id
    :inputs [input]
    :units units
-   :relu? relu?})
-
-
-
+   :activation (mk-activation-template activation)})
