@@ -9,6 +9,14 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
+(defn- mk-id
+  [^Graph g base-kw]
+  (-> base-kw
+      name
+      (str "_" (swap! (:counter g)
+                      inc))
+      keyword))
+
 (defn mk-activation-template
   [a]
   (if (fn? a)
@@ -38,7 +46,8 @@
 
 (defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
-  (sc/with-variable-scope id
+  (sc/with-variable-scope (or id
+                              (mk-id g :conv2d))
     (let [[input] inputs
           {:keys [shape dtype]} (opn/get-desc-of-output input)
           kernel (mk-kernel {:scope id
@@ -83,7 +92,8 @@
 
 (defmethod mc/build-macro :dense
   [^Graph g {:keys [id inputs activation units]}]
-  (sc/with-variable-scope id
+  (sc/with-variable-scope (or id
+                              (mk-id g :dense))
     (let [[input] inputs
           {:keys [dtype shape]} (opn/get-desc-of-output input)
           out-sh (-> shape

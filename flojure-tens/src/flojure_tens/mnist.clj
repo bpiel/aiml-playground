@@ -162,27 +162,25 @@
       (ut/id$->> @test-data
                  (take 6)
                  (o/reshape $ [-1 28 28 1])
-                 (l/conv2d {:id :conv-1
-                            :filters 32
+                 (l/conv2d {:filters 32
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
-                            :activation :relu})
-                 (l/max-pooling2d {:id :max-1
-                                   :pool-size [2 2]
+                            :activation o/relu})
+                 (l/max-pooling2d {:pool-size [2 2]
                                    :strides [2 2]})
-                 (l/conv2d {:id :conv-2
-                            :filters 64
+                 (l/conv2d {:filters 64
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
-                            :activation :relu})
-                 (l/max-pooling2d {:id :max-2
-                                   :pool-size [2 2]
+                            :activation o/relu})
+                 (l/max-pooling2d {:pool-size [2 2]
                                    :strides [2 2]})
                  (o/reshape $ [-1
                                (* 4 784)])
-                 (l/dense :dense-1 true 1024)
+                 (l/dense {:activation o/relu
+                           :units 1024})
                  (p/dropout 0.4)
-                 (l/dense :logits false 10)
+                 (l/dense {:id :logits
+                           :units 10})
                  (o/arg-max :classes $ 1))
       {:keys [loss opt]}
       (ut/id$->> @test-labels
@@ -221,26 +219,21 @@
                                 [-1 #_batch-n
                                  784])
                  (o/reshape $ [-1 28 28 1])
-                 (l/conv2d {:id :conv-1
-                            :filters 32
+                 (l/conv2d {:filters 32
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
                             :activation o/relu})
-                 (l/max-pooling2d {:id :max-1
-                                   :pool-size [2 2]
+                 (l/max-pooling2d {:pool-size [2 2]
                                    :strides [2 2]})
-                 (l/conv2d {:id :conv-2
-                            :filters 64
+                 (l/conv2d {:filters 64
                             :kernel-size [5 5]
                             :padding "SAME" ;; TODO
                             :activation o/relu})
-                 (l/max-pooling2d {:id :max-2
-                                   :pool-size [2 2]
+                 (l/max-pooling2d {:pool-size [2 2]
                                    :strides [2 2]})
                  (o/reshape $ [-1
                                (* 4 784)])
-                 (l/dense {:id :dense-1
-                           :activation o/relu
+                 (l/dense {:activation o/relu
                            :units 1024})
                  (p/dropout (o/placeholder :dropout
                                            dt/float-kw
