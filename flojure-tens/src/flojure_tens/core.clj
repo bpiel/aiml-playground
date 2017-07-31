@@ -121,7 +121,7 @@
       run-global-vars-init
       (fetch-all plans feed)))
 
-(defn produce
+#_(defn produce
   ([plan]
    (-> plan
        build->session
@@ -131,26 +131,16 @@
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
 
+(defn produce
+  ([plan]
+   (let [{:keys [graph] :as session} (build->session plan)
+         r (-> session
+               run-global-vars-init
+               (fetch plan))]
+     (tfnative.Graph/delete (:handle graph))
+     (tfnative.Session/delete (:handle session))
+     r))
+  ([^Session session plan & [feed]]
+   (build->graph (:graph session) plan)
+   (fetch session plan feed)))
 
-
-(defmulti do-step
-  (fn [agg [cmd args]] cmd))
-
-(defmethod do-step :build
-  [{:keys [g] :as agg} [_ args]]
-  (assoc agg :g
-         (if g
-           (build-all->graph g args)
-           (build-all->graph args))))
-
-(defmethod do-step :init
-  [{:keys [g s] :as agg} [_ args]]
-  (let [s' (or s
-               (graph->session g))
-        ])
-)
-
-(defn do-steps
-  [steps]
-
-  )
