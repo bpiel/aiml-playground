@@ -18,12 +18,10 @@
 (defmethod close :default [_])
 
 (defmethod close Graph [v]
-  (clojure.pprint/pprint v)
   (tfnative.Graph/delete (:handle v))
   (reset! (:closed v) true))
 
 (defmethod close Session [v]
-    (clojure.pprint/pprint v)
   (tfnative.Session/delete (:handle v)))
 
 (defn with-close-let*
@@ -45,6 +43,11 @@
 
 (defn tensor->value [tensor]
   (tsr/get-value-clj tensor))
+
+(defn delete-tensor->value [tensor]
+  (let [r (tensor->value tensor)]
+    (tfnative.Tensor/delete (:handle tensor))
+    r))
 
 (defn graph->session [^Graph graph]
   (sess/create graph))
@@ -96,11 +99,11 @@
 
 (defn fetch [^Session session plan & [feed]]
   (-> (fetch->tensor session plan feed)
-      tensor->value))
+      delete-tensor->value))
 
 (defn fetch-all [^Session session plans & [feed]]
   (->> (fetch-all->tensors session plans feed)
-       (map tensor->value)))
+       (map delete-tensor->value)))
 
 (defn exec
   ([plan]

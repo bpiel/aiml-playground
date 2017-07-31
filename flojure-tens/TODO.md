@@ -56,11 +56,11 @@ x ids optional for layers (see mnist)
    -- regularization
    -- other?
 
-- memory leaks stuff -- call delete on graph, tensors? other stuff?
- -- produce fn
+~ memory leaks stuff -- call delete on graph, tensors? other stuff?
+ x- produce fn
  -- others..........
 - Session.run delete things / clean up
-- with-closables / with-closables-let
+- with-close / with-close-let
 
 - fix "ASSUME THIS IS COOL"
 
