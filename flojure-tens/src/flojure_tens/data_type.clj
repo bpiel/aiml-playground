@@ -227,6 +227,7 @@
 (defn array? [a] (or (scalar-array? a)
                      (some-other-array? a)))
 
+
 (defn seq->array
   [s]
   ((-> s
@@ -249,17 +250,18 @@
     v))
 
 (defn ->tf-attr-val [ty v & [dims]]
-  (if-not (array? v)
+  (if-let [dt (data-type-of-array v)]
+    (if (-> dt :kw (= ty))
+      v
+      (throw (Exception. (format "NOT IMPLEMENTED. Dest type and current type do not match. %s %s"
+                                 ty v))))
     (let [dims' (or dims (sh/num-dimensions-seq v))]
       (case dims'
         0 ((-> ty kw->dt :scalar-fn) v)
         1 ((-> ty kw->dt :array-fn) v)
         (to-array (map #(->tf-attr-val ty % (dec dims'))
-                       v))))
-    (do (println
-         (format "!!! ASSUMING THIS IS ALREADY COOL %s %s"
-                 ty v))
-        v)))
+                       v))))))
+
 
 (defn convert-vecs
   [v f]
