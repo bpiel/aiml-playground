@@ -262,7 +262,6 @@
         (to-array (map #(->tf-attr-val ty % (dec dims'))
                        v))))))
 
-
 (defn convert-vecs
   [v f]
   (w/prewalk #(if (coll? %)

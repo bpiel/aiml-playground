@@ -16,7 +16,6 @@
                       inc))
       keyword))
 
-;; TODO should this be in plan-time?
 (defmethod mc/build-macro :variable
   [^Graph g {:keys [id var-scope attrs inputs]}]
   (sc/with-scopes-syncd (update var-scope :scope conj id)
@@ -29,7 +28,7 @@
            util/build-eagerly)
        vari])))
 
-
+;; TODO move to layers?
 (defn dropout
   ([^Graph g keep-prob x]
    (dropout g nil keep-prob x {}))

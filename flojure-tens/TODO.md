@@ -69,6 +69,8 @@ x with-close / with-close-let
 - glorot_uniform_initializer
  -- defaults for random_uniform_initializer
 
+- reduce-mean
+
 - save/restore variables
 
 - auto-apply scope when building macros??

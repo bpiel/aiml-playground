@@ -8,3 +8,4 @@
 
 (ft/produce (o/add 1 3))
 
+(ft/produce (p/v :v 2.))

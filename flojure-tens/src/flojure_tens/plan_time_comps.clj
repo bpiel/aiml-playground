@@ -1,12 +1,8 @@
 (ns flojure-tens.plan-time-comps
   (:require [flojure-tens.ops :as o]
-            [flojure-tens.macros :as mcro]
-            [flojure-tens.ops :as ops]
-            [flojure-tens.ops-gen-config :as ogc]
+            [flojure-tens.ops-gen-util :as ogu]
             [flojure-tens.scope :as sc]
-            [flojure-tens.util :as util]
-            [flojure-tens.data-type :as dt])
-  (:import [flojure_tens.common Graph]))
+            [flojure-tens.data-type :as dt]))
 
 (defn safe-shape-div
   [x y]
@@ -90,14 +86,18 @@
 
 (defn v
   "MACRO Variable"
+  ([id-attrs] (v (ogu/id-attrs->id id-attrs)
+                 (ogu/id-attrs->attrs id-attrs)
+                 nil))
   ([id init] (v id {} init))
   ([id {:keys [shape regularizer] :as attrs} init]
    (sc/assoc-scopes-to-plan
     {:macro :variable
      :id id
-     :inputs [(mk-initilizer init shape)]
+     :inputs (if init
+               [(mk-initilizer init shape)]
+               [])
      :attrs (or attrs {})})))
-
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
 (defn zeros
