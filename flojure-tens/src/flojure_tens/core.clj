@@ -13,9 +13,35 @@
   (:import [flojure_tens.common Graph]
            [flojure_tens.session Session]))
 
-(defn init-variable-assignments [^Graph g])
+(defmulti close (fn [v] (type v)))
 
-;; =========================================================
+(defmethod close :default [_])
+
+(defmethod close Graph [v]
+  (clojure.pprint/pprint v)
+  (tfnative.Graph/delete (:handle v))
+  (reset! (:closed v) true))
+
+(defmethod close Session [v]
+    (clojure.pprint/pprint v)
+  (tfnative.Session/delete (:handle v)))
+
+(defn with-close-let*
+  [bindings body]
+  (let [syms (->> bindings
+                  (partition 2)
+                  (map first)
+                  (mapcat (partial tree-seq coll? seq))
+                  (filter symbol?))]
+    `(let ~bindings
+       (let [r# (do ~@body)]
+         (doseq [sym# [~@syms]] ;; TODO close graphs before sessions
+           (close sym#))
+         r#))))
+
+(defmacro with-close-let
+  [bindings & body]
+  (with-close-let* bindings body))
 
 (defn tensor->value [tensor]
   (tsr/get-value-clj tensor))
@@ -121,26 +147,12 @@
       run-global-vars-init
       (fetch-all plans feed)))
 
-#_(defn produce
-  ([plan]
-   (-> plan
-       build->session
-       run-global-vars-init
-       (fetch plan)))
-  ([^Session session plan & [feed]]
-   (build->graph (:graph session) plan)
-   (fetch session plan feed)))
-
 (defn produce
   ([plan]
-   (let [{:keys [graph] :as session} (build->session plan)
-         r (-> session
-               run-global-vars-init
-               (fetch plan))]
-     (tfnative.Graph/delete (:handle graph))
-     (tfnative.Session/delete (:handle session))
-     r))
+   (with-close-let [{:keys [graph] :as session} (build->session plan)]
+     (-> session
+         run-global-vars-init
+         (fetch plan))))
   ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
-
