@@ -188,19 +188,19 @@
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
                  (o/mean :loss $ [0])
-                 (p/grad-desc-opt :opt $))
-      s (ft/build-all->session [opt  classes])]
-  (ft/run-global-vars-init s)
-  (spit-gd (:graph s))
-  (clojure.pprint/pprint (ft/fetch s loss))
-  (clojure.pprint/pprint (ft/fetch s classes))
-  (ft/run-all s (repeat 1 opt))
-  (clojure.pprint/pprint (ft/fetch s loss))
-  (clojure.pprint/pprint (ft/fetch s classes))
-  (ft/run-all s (repeat 20 opt))
-  (clojure.pprint/pprint (ft/fetch s loss))
-  (clojure.pprint/pprint (ft/fetch s classes))
-  (clojure.pprint/pprint (take 6 @test-labels))
+                 (p/grad-desc-opt :opt $))]
+  (ft/with-close-let [{:keys [graph] :as s} (ft/build-all->session [opt  classes])]
+    (ft/run-global-vars-init s)
+    #_(spit-gd (:graph s))
+    (clojure.pprint/pprint (ft/fetch s loss))
+    (clojure.pprint/pprint (ft/fetch s classes))
+    (ft/run-all s (repeat 1 opt))
+    (clojure.pprint/pprint (ft/fetch s loss))
+    (clojure.pprint/pprint (ft/fetch s classes))
+    (ft/run-all s (repeat 20 opt))
+    (clojure.pprint/pprint (ft/fetch s loss))
+    (clojure.pprint/pprint (ft/fetch s classes))
+    (clojure.pprint/pprint (take 6 @test-labels)))
   (println "=========="))
 
 
@@ -258,3 +258,4 @@
   #_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
   #_  (clojure.pprint/pprint (take batch-n @test-labels))
   (println "=========="))
+
