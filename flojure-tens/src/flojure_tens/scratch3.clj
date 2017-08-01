@@ -11,9 +11,9 @@
 (ft/produce (p/v :v 2.))
 
 (ft/produce
- (p/v {:id :v :shape [2 2]}
-      p/random-uniform))
+ (p/v :v {:shape [2 2]} p/random-uniform))
 
 (ft/produce
- (sc/with-variable-scope {:initializer p/random-uniform}
-   (p/v {:id :v :shape [2 2]})))
+ (sc/with-variable-scope {:initializer p/random-uniform
+                          :regularizer p/l2-loss}
+   (p/v {:id :v :shape [2 1]})))

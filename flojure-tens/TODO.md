@@ -52,10 +52,8 @@ x fix "ASSUME THIS IS COOL"
 ~ variable scope
   x compare tensboard for mnist clj/py -- weird, but seems correct
   - templates: 
-   -- initialization
-    --- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
-    --- need test cases
-      --- just make some in python!!!
+   x- initialization
+    x-- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
    x- activation
    -- regularization
    -- other?

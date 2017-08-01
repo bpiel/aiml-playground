@@ -146,3 +146,54 @@
 
 (defmulti build (fn [g op-plan] (:op op-plan)))
 
+(defmethod build :default [_ op-plan] op-plan)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

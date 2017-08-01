@@ -8,6 +8,8 @@
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph Op]))
 
+;; TODO move most of build-macros to plan-time???????
+
 (defn- mk-id
   [^Graph g base-kw]
   (-> base-kw
@@ -28,7 +30,6 @@
            util/build-eagerly)
        vari])))
 
-;; TODO move to layers?
 (defn dropout
   ([^Graph g keep-prob x]
    (dropout g nil keep-prob x {}))
@@ -62,3 +63,9 @@
     [(o/random-uniform {:id id
                         :dtype dtype}
                        shape)]))
+
+(defmethod mc/build-macro :l2-loss
+  [^Graph g {:keys [id attrs inputs] :as args}]
+  [(o/l2-loss id
+              (or attrs {})
+              (first inputs))])

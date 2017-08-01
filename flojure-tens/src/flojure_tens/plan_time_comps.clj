@@ -101,21 +101,30 @@
           ;; TODO reshape the constant
           :else init')))
 
+(defn- mk-regularizer
+  [regu {:keys [regularizer]}]
+  (let [regu' (or regu regularizer)]
+    (if (fn? regu')
+      (regu')
+      regu')))
+
 (defn v
   "MACRO Variable"
-  ([id-attrs] (v (ogu/id-attrs->id id-attrs)
-                 (ogu/id-attrs->attrs id-attrs)
-                 nil))
+  ([id-attrs] (v id-attrs nil))
   ([id-attrs init] (v (ogu/id-attrs->id id-attrs)
                       (ogu/id-attrs->attrs id-attrs)
                       init))
-  ([id {:keys [dtype shape regularizer] :as attrs} init]
-   (assoc {:macro :variable
-           :id id
-           :inputs [(mk-initilizer init sc/*var-scope* shape dtype)]
-           :attrs (or attrs {})}
-          :scope
-          (:scope sc/*var-scope* []))))
+  ([id {:keys [dtype shape] :as attrs} init]
+   {:macro :variable
+    :id id
+    :inputs [(mk-initilizer init sc/*var-scope* shape dtype)]
+    :attrs (if attrs
+             (update attrs
+                     :regularizer
+                     mk-regularizer
+                     sc/*var-scope*)
+             {})
+    :scope (:scope sc/*var-scope* [])}))
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
 (defn zeros
@@ -162,3 +171,16 @@
    {:macro :random-uniform
     :attrs {:shape :$/shape
             :dtype :$/dtype}}))
+
+(defn l2-loss
+  ([] {:macro :l2-loss
+       :inputs [:$/input]}))
+
+
+
+
+
+
+
+
+

@@ -144,12 +144,14 @@
  "Const"
  {:fn-name 'c
   :plan-fn-bodies (constantly
-                   '[([value] {:op :Const
-                               :attrs {:value value
-                                       :dtype (-> value
-                                                  flojure-tens.data-type/data-type-of-whatever 
-                                                  :kw
-                                                  flojure-tens.ops-gen-config/auto-cast)}})
+                   '[([value] (if (nil? value)
+                                nil
+                                {:op :Const
+                                 :attrs {:value value
+                                         :dtype (-> value
+                                                    flojure-tens.data-type/data-type-of-whatever 
+                                                    :kw
+                                                    flojure-tens.ops-gen-config/auto-cast)}}))
                      ([value data-type] {:op :Const ;; TODO change arg order?
                                          :id nil
                                          :attrs {:value value
