@@ -6,7 +6,8 @@
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.scope :as sc]
             [flojure-tens.util :as util]
-            [flojure-tens.data-type :as dt])
+            [flojure-tens.data-type :as dt]
+            [clojure.walk :as w])
   (:import [flojure_tens.common Graph Op]))
 
 (defn- mk-id
@@ -26,8 +27,8 @@
 (defn mk-activation-plan
   [template input]
   (if-not (nil? template)
-    (clojure.walk/postwalk-replace {:$/input input}
-                                   template)
+    (w/postwalk-replace {:$/input input}
+                        template)
     input))
 
 (defn ru [shape]

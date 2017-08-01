@@ -2,7 +2,8 @@
   (:require [flojure-tens.ops :as o]
             [flojure-tens.ops-gen-util :as ogu]
             [flojure-tens.scope :as sc]
-            [flojure-tens.data-type :as dt]))
+            [flojure-tens.data-type :as dt]
+            [clojure.walk :as w]))
 
 (defn safe-shape-div
   [x y]
@@ -76,28 +77,45 @@
     :output-idx output-idx
     :inputs [y dxs]}))
 
+
+(defn- mk-initilizer-from-template
+  [template shape dtype]
+  (update template :attrs
+          (partial w/postwalk-replace
+                   {:$/shape shape
+                    :$/dtype dtype})))
+
 (defn- mk-initilizer
-  [init shape]
-  (cond (nil? shape) init
-         ;; TODO replace :$/shape
-        (map? init) init
-        ;; TODO reshape
-        :else init))
+  [init {:keys [initializer]} shape dtype]
+  (let [init' (or init initializer)
+        dtype' (or dtype dt/float-kw)]
+    (cond (fn? init')
+          (mk-initilizer-from-template (init')
+                                       shape
+                                       dtype')
+          (map? init') (mk-initilizer-from-template init'
+                                                   shape
+                                                   dtype')
+          (nil? shape) init'
+          ;; TODO handle dtype/init mismatch
+          ;; TODO reshape the constant
+          :else init')))
 
 (defn v
   "MACRO Variable"
   ([id-attrs] (v (ogu/id-attrs->id id-attrs)
                  (ogu/id-attrs->attrs id-attrs)
                  nil))
-  ([id init] (v id {} init))
-  ([id {:keys [shape regularizer] :as attrs} init]
-   (sc/assoc-scopes-to-plan
-    {:macro :variable
-     :id id
-     :inputs (if init
-               [(mk-initilizer init shape)]
-               [])
-     :attrs (or attrs {})})))
+  ([id-attrs init] (v (ogu/id-attrs->id id-attrs)
+                      (ogu/id-attrs->attrs id-attrs)
+                      init))
+  ([id {:keys [dtype shape regularizer] :as attrs} init]
+   (assoc {:macro :variable
+           :id id
+           :inputs [(mk-initilizer init sc/*var-scope* shape dtype)]
+           :attrs (or attrs {})}
+          :scope
+          (:scope sc/*var-scope* []))))
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
 (defn zeros
@@ -138,3 +156,9 @@
    (o/one-hot id {} idxs depth 1. 0.))
   ([id attrs idxs depth]
    (o/one-hot id attrs idxs depth 1. 0.)))
+
+(defn random-uniform
+  ([]
+   {:macro :random-uniform
+    :attrs {:shape :$/shape
+            :dtype :$/dtype}}))

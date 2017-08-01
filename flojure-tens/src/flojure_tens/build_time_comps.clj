@@ -56,3 +56,9 @@
   (let [[keep-prob x] inputs]
     [(dropout g id keep-prob x args)]))
 
+(defmethod mc/build-macro :random-uniform
+  [^Graph g {:keys [id attrs] :as args}]
+  (let [{:keys [shape dtype]} attrs]
+    [(o/random-uniform {:id id
+                        :dtype dtype}
+                       shape)]))

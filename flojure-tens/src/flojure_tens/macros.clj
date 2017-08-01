@@ -7,7 +7,10 @@
 (defmulti build-macro (fn [^Graph g plan] (:macro plan)))
 
 (defmethod pre-build-macro :default [_ plan] plan)
-(defmethod build-macro :default [_ plan] plan)
+(defmethod build-macro :default [_ plan]
+  (if (contains? plan :macro)
+    (throw (Exception. (str "Unknown macro " plan)))
+    plan))
 
 (defn compute-hash
   [{:keys [id scope] :as plan}]
