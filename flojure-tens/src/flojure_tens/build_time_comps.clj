@@ -19,8 +19,8 @@
       keyword))
 
 (defmethod mc/build-macro :variable
-  [^Graph g {:keys [id var-scope attrs inputs]}]
-  (sc/with-scopes-syncd (update var-scope :scope conj id)
+  [^Graph g {:keys [id scope attrs inputs]}]
+  (sc/with-id-scopes (conj scope id)
     (let [[init] inputs
           vari (o/variable :variable (merge (opn/get-desc-of-output init)
                                      attrs))]

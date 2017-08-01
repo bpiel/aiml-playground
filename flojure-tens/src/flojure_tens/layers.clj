@@ -38,7 +38,7 @@
 
 
 (defn- mk-kernel
-  [{:keys [scope input-shape filters kernel-size dtype]}]
+  [{:keys [input-shape filters kernel-size dtype]}]
   (let [kernel-shape (conj kernel-size (last input-shape) filters)]
     (p/v :kernel
          {:dtype dtype
@@ -47,27 +47,27 @@
 
 (defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
-  (sc/with-variable-scope (or id
-                              (mk-id g :conv2d))
-    (let [[input] inputs
-          {:keys [shape dtype]} (opn/get-desc-of-output input)
-          kernel (mk-kernel {:scope id
-                             :input-shape shape
-                             :dtype dtype
-                             :filters filters
-                             :kernel-size kernel-size})
-          bias (p/v :bias
-                    {:dtype dtype
-                     :shape [filters]}
-                    (p/zeros [filters] dtype))]
-      [(-> (o/conv2-d id
-                      {:strides [1 1 1 1]
-                       :padding (or padding "VALID")
-                       :data_format "NHWC"} ;; TODO
-                      input
-                      kernel)
-           (o/bias-add bias)
-           ((partial mk-activation-plan activation)))]))) 
+  (let [id' (or id
+                (mk-id g :conv2d))]
+    (sc/with-variable-scope id'
+      (let [[input] inputs
+            {:keys [shape dtype]} (opn/get-desc-of-output input)
+            kernel (mk-kernel {:input-shape shape
+                               :dtype dtype
+                               :filters filters
+                               :kernel-size kernel-size})
+            bias (p/v :bias
+                      {:dtype dtype
+                       :shape [filters]}
+                      (p/zeros [filters] dtype))]
+        [(-> (o/conv2-d id'
+                        {:strides [1 1 1 1]
+                         :padding (or padding "VALID")
+                         :data_format "NHWC"} ;; TODO
+                        input
+                        kernel)
+             (o/bias-add bias)
+             ((partial mk-activation-plan activation)))])))) 
 
 (defn conv2d
   [{:keys [id filters kernel-size padding activation] :as opts} input]
