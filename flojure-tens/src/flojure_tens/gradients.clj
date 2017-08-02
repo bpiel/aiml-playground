@@ -82,14 +82,16 @@
   (let [[s1 s2] (map o/shape x)
         r1 (o/broadcast-gradient-args s1 s2)
         r2 (assoc r1 :output-idx 1)]
-    [(o/reshape (p/reduce-sum grad :axis r1)
-                s1)
-     (o/reshape (p/reduce-sum grad :axis r2)
-                s2)]))
+    [(-> grad
+         (p/reduce-sum :axis r1)
+         (o/reshape s1))
+     (-> grad
+         (p/reduce-sum :axis r2)
+         (o/reshape s2))]))
 
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L324
 (defn relu
-  [op [x1 :as x] [grad]]
+  [op x [grad]]
   [(o/relu-grad grad op)])
 
 (defn identity-tf
