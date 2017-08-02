@@ -45,6 +45,8 @@ x ids optional for layers (see mnist)
 
 x fix "ASSUME THIS IS COOL"
 
+x reduce-mean
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -57,6 +59,7 @@ x fix "ASSUME THIS IS COOL"
    x- activation
    -- regularization
      --- try in python
+     --- how to actually incorporate into loss function?
    -- other?
 
 ~ memory leaks stuff -- call delete on graph, tensors? other stuff?
@@ -68,14 +71,14 @@ x with-close / with-close-let
 - glorot_uniform_initializer
  -- defaults for random_uniform_initializer
 
-- reduce-mean
-
 - save/restore variables
 
 - auto-apply scope when building macros??
   - nil ids??
 
 - feed by plan instead of just keyword
+
+- does python allow you to reuse variables across layers? (ex two dense)
 
 - macro plans have n-outputs key????????
 
@@ -93,9 +96,9 @@ x with-close / with-close-let
 
 - fix references to '/home/bill'
 
-- tensorboard??
+- tensorboard/summary
 
-- accuracy comp?
+- accuracy comp op?
 
 - tf.scan?
 

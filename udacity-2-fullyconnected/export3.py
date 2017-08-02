@@ -10,8 +10,8 @@ from tensorflow.python.platform import gfile
 graph = tf.Graph()
 with graph.as_default():
 
-    x1 = tf.get_variable("v", [1])
-
+    x1 = tf.get_variable("x1", [1], regularizer=tf.contrib.layers.l2_regularizer(0.8))
+    x2 = tf.get_variable("x2", [1], regularizer=tf.contrib.layers.l2_regularizer(0.8))
 
 
 with tf.Session(graph=graph) as session:
