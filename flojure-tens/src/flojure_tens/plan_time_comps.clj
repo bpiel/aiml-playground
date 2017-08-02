@@ -45,6 +45,19 @@
           input-tensor
           (reduction-dims input-tensor axis)))
 
+(defn reduce-mean
+  ([input-tensor]
+   (reduce-mean nil {} input-tensor))
+  ([id-attrs input-tensor]
+   (reduce-mean (ogu/id-attrs->id id-attrs)
+                (ogu/id-attrs->attrs id-attrs)
+                input-tensor))
+  ([id {:keys [keep-dims axis]} input-tensor]
+   (o/mean id
+           {:keep_dims (true? keep-dims)}
+           input-tensor
+           (reduction-dims input-tensor axis))))
+
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/math_ops.py#L1224
 (defn reduce-sum
   [input-tensor & {:keys [axis keep-dims id]}]

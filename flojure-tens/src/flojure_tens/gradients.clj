@@ -59,7 +59,7 @@
     [(o/tile grad tile-scaling) nil]))
 
 (defn mean
-  [op [x1 x2 :as x] [grad]]
+  [op [x1 x2 :as x] [grad grad-idxs]]
   (let [sum-grad (first (sum op x [grad]))
         input-shape (o/shape x1)
         output-shape (o/shape op)
@@ -165,9 +165,12 @@
               (p/to-int32 (o/shape x1)))
    (o/zeros-like grad2)])
 
+
+
 (def floor -no-gradient-)
 (def random-uniform -no-gradient-)
 (def shape -no-gradient-)
+(def range-tf -no-gradient-)
 
 (defmethod mcro/build-macro :grad
   [^Graph g plan]
@@ -195,6 +198,7 @@
            :Conv2D (conv2-d y-op y-inputs dx-ops)
            :MaxPool (max-pool y-op y-inputs dx-ops)
            :BiasAdd (bias-add y-op y-inputs dx-ops)
-           :Reshape (reshape y-op y-inputs dx-ops))
+           :Reshape (reshape y-op y-inputs dx-ops)
+           :Range (range-tf y-op y-inputs dx-ops))
          (sc/with-variable-scope local-scope)
          (sc/with-variable-scope (:scope plan)))))

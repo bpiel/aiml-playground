@@ -56,6 +56,7 @@ x fix "ASSUME THIS IS COOL"
     x-- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
    x- activation
    -- regularization
+     --- try in python
    -- other?
 
 ~ memory leaks stuff -- call delete on graph, tensors? other stuff?
@@ -92,6 +93,11 @@ x with-close / with-close-let
 
 - fix references to '/home/bill'
 
+- tensorboard??
+
+- accuracy comp?
+
+- tf.scan?
 
 ===============================================
 MAKE REPO
@@ -127,11 +133,15 @@ MAKE REPO
 
 - cache const tensors (optionally), across graph builds
 
-
-
-
+- dev mode!
+  -- assoc meta
+    --- stacktrace
+    --- plan
+  -- $g namespace w/ nodes as vars ?!?!?!?!
+  -- preserve last graph&session in atom
 - awesome repl debugger?
 - insane debugging web app
+  - select nodes by src file/line (via captured stacktrace)
 
 
 - reorg-plan ???

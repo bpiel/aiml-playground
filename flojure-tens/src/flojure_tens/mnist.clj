@@ -245,7 +245,7 @@
       (ut/id$->> (o/placeholder :labels dt/int-kw [batch-n])
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
-                 (o/mean :loss $ [0])
+                 (p/reduce-mean :loss)
                  (p/grad-desc-opt :opt $))
       s (ft/build-all->session [opt  classes])]
   (ft/run-global-vars-init s)
