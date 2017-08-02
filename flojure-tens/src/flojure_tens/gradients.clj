@@ -8,9 +8,9 @@
   (:import [flojure_tens.common Graph]))
 
 (defn -no-gradient-
-  [_ _ grads]
+  [_ xs _]
   (mapv o/zeros-like
-        grads))
+        xs))
 
 ;; TODO add ctrl and conj
 (defn sin
@@ -33,20 +33,20 @@
   (let [{ta :transpose_a tb :transpose_b} (op->attrs-map op)]
     (case [(true? ta) (true? tb)]
       [false false]
-      [(o/mat-mul nil {:transpose_b true} grad x2)
-       (o/mat-mul nil {:transpose_a true} x1 grad)]
+      [(o/mat-mul {:transpose_b true} grad x2)
+       (o/mat-mul {:transpose_a true} x1 grad)]
 
       [false true]
-      [(o/mat-mul nil {} grad x2)
-       (o/mat-mul nil {:transpose_a true} grad x1)]
+      [(o/mat-mul {} grad x2)
+       (o/mat-mul {:transpose_a true} grad x1)]
 
       [true false]
-      [(o/mat-mul nil {:transpose_b true}  x2 grad)
-       (o/mat-mul nil {} x1 grad)]
+      [(o/mat-mul {:transpose_b true}  x2 grad)
+       (o/mat-mul {} x1 grad)]
 
       [true true]
-      [(o/mat-mul nil {:transpose_a true :transpose_b true} x2 grad)
-       (o/mat-mul nil {:transpose_a true :transpose_b true} grad x1)])))
+      [(o/mat-mul {:transpose_a true :transpose_b true} x2 grad)
+       (o/mat-mul {:transpose_a true :transpose_b true} grad x1)])))
 
 ;; TODO fast path
 (defn sum
@@ -66,7 +66,7 @@
         factor (p/safe-shape-div (p/reduce-prod input-shape)
                                   (p/reduce-prod output-shape))]
     [(o/real-div sum-grad (o/cast-tf {:DstT (-> op :dtypes first)} factor))
-     nil]))
+     (o/zeros-like x2)]))
 
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L393
 (defn softmax-cross-entropy-with-logits
@@ -160,17 +160,17 @@
                     grad)])
 
 (defn reshape
-  [op [x1] [grad1 grad2]]
+  [op [x1 x2] [grad1 _]]
   [(o/reshape grad1
               (p/to-int32 (o/shape x1)))
-   (o/zeros-like grad2)])
-
+   (o/zeros-like x2)])
 
 
 (def floor -no-gradient-)
 (def random-uniform -no-gradient-)
 (def shape -no-gradient-)
 (def range-tf -no-gradient-)
+(def rank -no-gradient-)
 
 (defmethod mcro/build-macro :grad
   [^Graph g plan]
@@ -199,6 +199,7 @@
            :MaxPool (max-pool y-op y-inputs dx-ops)
            :BiasAdd (bias-add y-op y-inputs dx-ops)
            :Reshape (reshape y-op y-inputs dx-ops)
-           :Range (range-tf y-op y-inputs dx-ops))
+           :Range (range-tf y-op y-inputs dx-ops)
+           :Rank (rank y-op y-inputs dx-ops))
          (sc/with-variable-scope local-scope)
          (sc/with-variable-scope (:scope plan)))))

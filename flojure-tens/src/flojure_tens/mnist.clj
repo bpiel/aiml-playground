@@ -117,44 +117,6 @@
 
 (ft/produce (o/reshape [1 2 3 4] [(int 2)  (int 2)]))
 
-(def c1
-  (ft/produce
-   (l/conv2d {:id :conv1
-              :filters 32
-              :kernel-size [5 5]
-              :padding "SAME" ;; TODO
-              :activation :relu}
-             [[[[(float 1.) (float 2.) (float 3.)]]]])))
-
-
-(def plan1
-  (l/conv2d {:filters 32
-             :kernel-size [5 5]
-             :padding "SAME" ;; TODO
-             :activation :relu}
-            (p/v :a [[[[(float 1.) (float 2.) (float 3.)]]]])))
-
-(def plan2
-  (l/max-pooling2d {:pool-size [2 2]
-                    :strides [1 1]}
-                   (p/v :a [[[[(float 1.)] [(float 2.)] [(float 3.)]]
-                             [[(float 1.)] [(float 2.)] [(float 3.)]]]])))
-
-(def plan3
-  (l/dense :d3 false 2 [[1. 2. 3]]))
-
-
-(let [opt (p/grad-desc-opt :opt
-                           plan3)
-      s (ft/build->session opt)]
-  (ft/run-global-vars-init s)
-  (spit-gd (:graph s))
-  (ft/run-all s (repeat 1 opt))
-  (ft/fetch s plan3))
-
-(def data (o/c [[[[(float 1.)] [(float 2.)] [(float 3.)]]
-                 [[(float 4.)] [(float 5.)] [(float 6.)]]]]))
-
 
 
 ;; just test data
@@ -187,7 +149,7 @@
                  (take 6)
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
-                 (o/mean :loss $ [0])
+                 (p/reduce-mean :loss)
                  (p/grad-desc-opt :opt $))]
   (ft/with-close-let [{:keys [graph] :as s} (ft/build-all->session [opt  classes])]
     (ft/run-global-vars-init s)
