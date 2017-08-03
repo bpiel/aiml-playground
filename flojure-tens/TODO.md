@@ -101,12 +101,17 @@ x with-close / with-close-let
 - review changes/fixes to TF java api stuff 
   -- the DeleteStatus memory leak???
 
+- fix naming of multi-caps ops
+  -- ex: f-i-f-o-queue => fifo-queue
+
 ===============================================
 MAKE REPO
 
 - split out examples repo 
 - README
   -- look at others' READMEs
+  -- compiling and what not
+  -- pre-build planning
 - docstrings
 - rename things
   - guildsman
@@ -162,6 +167,7 @@ MAKE REPO
 - insane debugging web app
   - select nodes by src file/line (via captured stacktrace)
 
+- queues/recordreader
 
 - reorg-plan ???
 
@@ -243,3 +249,235 @@ fetch
 run+fetch = fetch
 build+run = exec
 build+run+fetch = produce
+
+
+
+
+===============================================
+tf symbol usage in example by freq
+
+    151 tf.Variable
+     89 tf.placeholder
+     78 tf.random_normal
+     78 tf.float32
+     70 tf.matmul
+     67 tf.reduce_mean
+     65 tf.name_scope
+     58 tf.argmax
+     57 tf.Session
+     42 tf.nn.relu
+     39 tf.global_variables_initializer
+     39 tf.constant
+     38 tf.cast
+     36 tf.add
+     32 tf.zeros
+     32 tf.estimator.EstimatorSpec
+     31 tf.estimator.inputs.numpy_input_fn
+     30 tf.app.run
+     28 tf.nn.softmax
+     25 tf.nn.softmax_cross_entropy_with_logits
+     24 tf.equal
+     23 tf.truncated_normal
+     22 tf.train.GradientDescentOptimizer
+     22 tf.summary.scalar
+     20 tf.Graph
+     19 tf.layers.dense
+     17 tf.reshape
+     17 tf.int32
+     16 tf.train.AdamOptimizer
+     15 tf.reduce_sum
+     15 tf.device
+     14 tf.summary.histogram
+     14 tf.layers.conv2d
+     13 tf.multiply
+     12 tf.variable_scope
+     12 tf.summary.FileWriter
+     12 tf.one_hot
+     12 tf.estimator.ModeKeys.TRAIN
+     11 tf.train.get_global_step
+     11 tf.logging.info
+     11 tf.feature_column.numeric_column
+     11 tf.estimator.ModeKeys.PREDICT
+     11 tf.estimator.Estimator
+     10 tf.metrics.accuracy
+-------------------------------------------- top 20%
+     10 tf.losses.softmax_cross_entropy
+      9 tf.summary.merge_all
+      9 tf.logging.error
+      8 tf.nn.sigmoid
+      8 tf.logging.fatal
+      8 tf.expand_dims
+      7 tf.unstack
+      7 tf.test.main
+      7 tf.resource_loader.get_data_files_path
+      7 tf.logging.set_verbosity
+      7 tf.log
+      7 tf.layers.max_pooling2d
+      6 tf.trainable_variables
+      6 tf.square
+      6 tf.saved_model.utils.build_tensor_info
+      6 tf.nn.conv2d
+      6 tf.logging.INFO
+      6 tf.group
+      6 tf.GraphDef
+      6 tf.gradients
+      6 tf.gfile.Exists
+      5 tf.train.Saver
+      5 tf.train.AdagradOptimizer
+      5 tf.test.TestCase
+      5 tf.sqrt
+      5 tf.pow
+      5 tf.load_op_library
+      5 tf.get_default_graph
+      5 tf.feature_column.categorical_column_with_vocabulary_list
+      5 tf.contrib.learn.datasets.load_dataset
+      5 tf.ConfigProto
+      4 tf.transpose
+      4 tf.train.start_queue_runners
+      4 tf.string
+      4 tf.squeeze
+      4 tf.reduce_max
+      4 tf.random_uniform
+      4 tf.nn.embedding_lookup
+      4 tf.nn.dropout
+      4 tf.logging.warning
+      4 tf.layers.dropout
+      4 tf.layers.batch_normalization
+      4 tf.InteractiveSession
+      4 tf.int16
+      4 tf.import_graph_def
+      4 tf.image.resize_bilinear
+      4 tf.image.decode_jpeg
+      4 tf.identity
+      4 tf.h
+      4 tf.FixedLenFeature
+      4 tf.feature_column.indicator_column
+      4 tf.estimator.DNNClassifier
+      4 tf.add_n
+      3 tf.train.exponential_decay
+      3 tf.train.Coordinator
+      3 tf.subtract
+      3 tf.stack
+      3 tf.sigmoid
+      3 tf.shape
+      3 tf.saved_model.signature_def_utils.build_signature_def
+      3 tf.nn.max_pool
+      3 tf.local_variables_initializer
+      3 tf.GraphKeys.ASSET_FILEPATHS
+      3 tf.gfile.MakeDirs
+      3 tf.gfile.FastGFile
+      3 tf.gfile.DeleteRecursively
+      3 tf.feature_column.embedding_column
+      3 tf.feature_column.crossed_column
+      3 tf.errors.OutOfRangeError
+      3 tf.contrib.rnn.static_rnn
+      3 tf.contrib.learn.MetricSpec
+      3 tf.contrib.learn.datasets.base.load_csv_without_header
+      3 tf.compat.as_str
+      3 tf.compat.as_bytes
+      2 tf.uint8
+      2 tf.train.slice_input_producer
+      2 tf.train.RMSPropOptimizer
+      2 tf.train.Feature
+      2 tf.train.Example
+      2 tf.train.batch
+      2 tf.test.is_built_with_cuda
+      2 tf.test.compute_gradient_error
+      2 tf.tanh
+      2 tf.saved_model.tag_constants.SERVING
+      2 tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
+      2 tf.RunOptions.FULL_TRACE
+      2 tf.RunOptions
+      2 tf.RunMetadata
+      2 tf.reduce_min
+      2 tf.nn.xw_plus_b
+      2 tf.nn.conv2d_transpose
+      2 tf.nn.bias_add
+      2 tf.negative
+      2 tf.learn
+      2 tf.gfile.GFile
+      2 tf.get_collection
+      2 tf.feature_column.categorical_column_with_hash_bucket
+      2 tf.estimator.LinearClassifier
+      2 tf.estimator.inputs.pandas_input_fn
+      2 tf.estimator.DNNRegressor
+      2 tf.control_dependencies
+      2 tf.contrib.rnn.GRUCell
+      2 tf.contrib.learn.preprocessing.VocabularyProcessor
+      2 tf.contrib.learn.preprocessing.ByteProcessor
+      2 tf.contrib.learn.datasets.DATASETS
+      2 tf.contrib.learn.datasets.base.load_csv_with_header
+      2 tf.contrib.layers.embed_sequence
+      2 tf.concat
+      2 tf.arg_min
+      2 tf.abs
+      1 tf.user_ops.my_fact
+      1 tf.train.string_input_producer
+      1 tf.train.shuffle_batch
+      1 tf.train.QueueRunner
+      1 tf.train.Optimizer.minimize
+      1 tf.train.LoggingTensorHook
+      1 tf.train.Int64List
+      1 tf.train.Features
+      1 tf.train.BytesList
+      1 tf.to_int64
+      1 tf.TFRecordReader
+      1 tf.test.mock.patch.object
+      1 tf.test.Benchmark.
+      1 tf.test.Benchmark
+      1 tf.summary.image
+      1 tf.softmax
+      1 tf.saved_model.signature_constants.REGRESS_OUTPUTS
+      1 tf.saved_model.signature_constants.REGRESS_METHOD_NAME
+      1 tf.saved_model.signature_constants.REGRESS_INPUTS
+      1 tf.saved_model.signature_constants.PREDICT_METHOD_NAME
+      1 tf.saved_model.signature_constants.CLASSIFY_OUTPUT_SCORES
+      1 tf.saved_model.signature_constants.CLASSIFY_METHOD_NAME
+      1 tf.saved_model.signature_constants.CLASSIFY_INPUTS
+      1 tf.saved_model.main_op.main_op
+      1 tf.saved_model.builder.SavedModelBuilder
+      1 tf.read_file
+      1 tf.range
+      1 tf.random_crop
+      1 tf.python_io.TFRecordWriter
+      1 tf.placeholder_with_default
+      1 tf.parse_single_example
+      1 tf.parse_example
+      1 tf.OptimizerOptions.ON_1
+      1 tf.nn.sparse_softmax_cross_entropy_with_logits
+      1 tf.nn.sampled_softmax_loss
+      1 tf.nn.nce_loss
+      1 tf.nn.in_top_k
+      1 tf.nn.avg_pool
+      1 tf.nce_loss
+      1 tf.metrics.root_mean_squared_error
+      1 tf.maximum
+      1 tf.losses.mean_squared_error
+      1 tf.logging.WARN
+      1 tf.layers.
+      1 tf.json
+      1 tf.int64
+      1 tf.image.random_flip_left_right
+      1 tf.image.decode_png
+      1 tf.image.decode_gif
+      1 tf.image.decode_bmp
+      1 tf.gfile.Open
+      1 tf.gather
+      1 tf.float64
+      1 tf.feature_column.input_layer
+      1 tf.feature_column.categorical_column_with_identity
+      1 tf.feature_column.bucketized_column
+      1 tf.estimator.RunConfig
+      1 tf.estimator.DNNLinearCombinedClassifier
+      1 tf.divide
+      1 tf.decode_raw
+      1 tf.contrib.rnn.BasicLSTMCell
+      1 tf.contrib.metrics.streaming_recall
+      1 tf.contrib.metrics.streaming_precision
+      1 tf.contrib.metrics.streaming_accuracy
+      1 tf.contrib.learn.RunConfig
+      1 tf.contrib.learn.monitors.ValidationMonitor
+      1 tf.contrib.learn.DNNClassifier
+      1 tf.contrib.layers.real_valued_column
+      1 tf.clip_by_global_norm
+      1 tf.add_to_collection
