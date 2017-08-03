@@ -47,20 +47,28 @@ x fix "ASSUME THIS IS COOL"
 
 x reduce-mean
 
-===============================================
-^^^ DONE ^^^
-===============================================
-
 ~ variable scope
   x compare tensboard for mnist clj/py -- weird, but seems correct
   - templates: 
    x- initialization
     x-- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
    x- activation
-   -- regularization
-     --- try in python
-     --- how to actually incorporate into loss function?
-   -- other?
+
+
+===============================================
+^^^ DONE ^^^
+===============================================
+
+- does python allow you to reuse variables across layers? (ex two dense)
+
+- auto-apply var-scope when building macros??
+
+- feed by plan instead of just id keyword
+
+- glorot_uniform_initializer
+ -- defaults for random_uniform_initializer
+
+- op attrs as map instead of vecs????
 
 ~ memory leaks stuff -- call delete on graph, tensors? other stuff?
  x- produce fn
@@ -68,27 +76,13 @@ x reduce-mean
 - Session.run delete things / clean up
 x with-close / with-close-let
 
-- glorot_uniform_initializer
- -- defaults for random_uniform_initializer
-
-- save/restore variables
-
-- auto-apply scope when building macros??
-  - nil ids??
-
-- feed by plan instead of just keyword
-
-- does python allow you to reuse variables across layers? (ex two dense)
+- dev mode / option to rebuild op fns w/ debugging
+  -- attaches stacktrace to meta 
 
 - macro plans have n-outputs key????????
 
 - fetch macro output by keyword 
   - aliases?
-
-- op attrs as map instead of vecs????
-
-- option to rebuild op fns w/ debugging
-  -- attaches stacktrace to meta 
 
 - helper fn to get outputs from plan/op
 
@@ -100,13 +94,35 @@ x with-close / with-close-let
 
 - accuracy comp op?
 
-- tf.scan?
+- graphref sync stuff??
+
+- many TODO comments
+
+- review changes/fixes to TF java api stuff 
+  -- the DeleteStatus memory leak???
 
 ===============================================
 MAKE REPO
+
+- split out examples repo 
+- README
+  -- look at others' READMEs
+- docstrings
+- rename things
+  - guildsman
+  - tfjni?
+
 ===============================================
 
+- save/restore variables
 
+- tf.scan?
+
+~ variable scope
+   -- regularization
+     --- try in python
+     --- how to actually incorporate into loss function?
+   -- other?
 
 ~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy

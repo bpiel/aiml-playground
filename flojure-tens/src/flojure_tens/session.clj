@@ -56,7 +56,12 @@
       (apply map vector
              (for [[k v] feed]
                [(-> v tsr/create-from-value :handle)
-                (-> k name id->node :handle)
+                (-> (if (keyword? k)
+                      k
+                      (:id k))
+                    name
+                    id->node
+                    :handle)
                 ;; TODO don't hard code 0
                 0]))
       [[] [] []])))

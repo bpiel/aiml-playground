@@ -17,3 +17,8 @@
  (sc/with-variable-scope {:initializer p/random-uniform
                           :regularizer p/l2-loss}
    (p/v {:id :v :shape [2 1]})))
+
+(let [ph (o/placeholder :ph1 dt/float-kw [])]
+  (-> ph
+      ft/build->session
+      (ft/produce ph {:feed {ph 3.}})))
