@@ -65,7 +65,7 @@ x feed by plan instead of just id keyword
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- fix variable scope
+~ fix variable scope
  -- allow layers to share
  -- :reuse?
 
@@ -79,13 +79,13 @@ push-id-scope
 push-var-scope
 push-both-scopes
 reuse?-var-scope
-capture-varn-scope
+capture-var-scope
 
  
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-- auto-apply var-scope when building macros??
+~ auto-apply var-scope when building macros??
 
 - auto-cast feed
 
