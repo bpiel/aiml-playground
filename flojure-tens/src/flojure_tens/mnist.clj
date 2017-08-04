@@ -211,7 +211,7 @@
                  (p/grad-desc-opt :opt $))
       s (ft/build-all->session [opt  classes])]
   (ft/run-global-vars-init s)
-  #_(spit-gd (:graph s))
+  (spit-gd (:graph s))
   (ft/run-all s (repeat 32 opt) train-feed)
   (clojure.pprint/pprint (ft/fetch s loss train-feed))
   #_  (clojure.pprint/pprint (ft/fetch s classes train-feed))

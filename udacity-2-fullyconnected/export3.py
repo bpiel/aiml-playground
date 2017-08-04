@@ -10,9 +10,12 @@ from tensorflow.python.platform import gfile
 graph = tf.Graph()
 with graph.as_default():
 
-    x1 = tf.get_variable("x1", [1], regularizer=tf.contrib.layers.l2_regularizer(0.8))
-    x2 = tf.get_variable("x2", [1], regularizer=tf.contrib.layers.l2_regularizer(0.8))
-
+    x = tf.random_normal(shape=[10, 32, 32, 3])
+    conv1 = tf.layers.conv2d(x, 3, [2, 2], padding='SAME', reuse=None, name='conv')
+    conv2 = tf.layers.conv2d(x, 3, [2, 2], padding='SAME', reuse=True, name='conv')
+    print(conv1.name)
+    print(conv2.name)
+    print([x.name for x in tf.global_variables()])
 
 with tf.Session(graph=graph) as session:
 

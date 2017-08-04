@@ -74,12 +74,12 @@
 (defn grad-desc-opt
   "MACRO"
   [id target & [scope]]
-  (sc/with-variable-scope (or scope
-                              :gradients)
+  (sc/with-push-both-scopes (or scope :gradients)
     (sc/assoc-scopes-to-plan
      {:macro :grad-desc-opt
       :id id
-      :inputs [target]})))
+      :inputs [target]
+      :no-auto-scope? true})))
 
 (defn gradient
   "MACRO"
@@ -88,8 +88,8 @@
    {:macro :grad
     :id id
     :output-idx output-idx
-    :inputs [y dxs]}))
-
+    :inputs [y dxs]
+    :no-auto-scope? true}))
 
 (defn- mk-initilizer-from-template
   [template shape dtype]
@@ -128,16 +128,16 @@
                       (ogu/id-attrs->attrs id-attrs)
                       init))
   ([id {:keys [dtype shape] :as attrs} init]
-   {:macro :variable
-    :id id
-    :inputs [(mk-initilizer init sc/*var-scope* shape dtype)]
-    :attrs (if attrs
-             (update attrs
-                     :regularizer
-                     mk-regularizer
-                     sc/*var-scope*)
-             {})
-    :scope (:scope sc/*var-scope* [])}))
+   (sc/assoc-scopes-to-plan ;; TODO :(
+    {:macro :variable
+     :id id
+     :inputs [(mk-initilizer init sc/*var-scope* shape dtype)]
+     :attrs (if attrs
+              (update attrs
+                      :regularizer
+                      mk-regularizer
+                      sc/*var-scope*)
+              {})})))
 
 ;; https://github.com/tensorflow/tensorflow/blob/c996c7b381a8eb54f9c7d7b298b24b1715645b68/tensorflow/python/ops/array_ops.py#L1353
 (defn zeros
@@ -146,7 +146,7 @@
             dt/bool-kw false
             dt/string-kw ""
             0)]
-    (sc/with-id-scope :zeros
+    (sc/with-push-both-scopes :zeros
       (o/fill shape
               (o/c z dtype))))) ;; TODO infer type?
 
@@ -188,12 +188,3 @@
 (defn l2-loss
   ([] {:macro :l2-loss
        :inputs [:$/input]}))
-
-
-
-
-
-
-
-
-

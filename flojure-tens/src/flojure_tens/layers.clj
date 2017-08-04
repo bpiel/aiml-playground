@@ -47,39 +47,35 @@
 
 (defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
-  (let [id' (or id
-                (mk-id g :conv2d))]
-    (sc/with-variable-scope id'
-      (let [[input] inputs
-            {:keys [shape dtype]} (opn/get-desc-of-output input)
-            kernel (mk-kernel {:input-shape shape
-                               :dtype dtype
-                               :filters filters
-                               :kernel-size kernel-size})
-            bias (p/v :bias
-                      {:dtype dtype
-                       :shape [filters]}
-                      (p/zeros [filters] dtype))]
-        [(-> (o/conv2-d id'
-                        {:strides [1 1 1 1]
-                         :padding (or padding "VALID")
-                         :data_format "NHWC"} ;; TODO
-                        input
-                        kernel)
-             (o/bias-add bias)
-             ((partial mk-activation-plan activation)))])))) 
+  (let [[input] inputs
+        {:keys [shape dtype]} (opn/get-desc-of-output input)
+        kernel (mk-kernel {:input-shape shape
+                           :dtype dtype
+                           :filters filters
+                           :kernel-size kernel-size})
+        bias (p/v :bias
+                  {:dtype dtype
+                   :shape [filters]}
+                  (p/zeros [filters] dtype))]
+    [(-> (o/conv2-d {:strides [1 1 1 1]
+                     :padding (or padding "VALID")
+                     :data_format "NHWC"} ;; TODO
+                    input
+                    kernel)
+         (o/bias-add bias)
+         ((partial mk-activation-plan activation)))])) 
 
 (defn conv2d
   [{:keys [id filters kernel-size padding activation] :as opts} input]
-  (merge opts
-         {:macro :conv2d
-          :inputs [input]
-          :activation (mk-activation-template activation)}))
+  (->> {:macro :conv2d
+        :inputs [input]
+        :activation (mk-activation-template activation)}
+       (merge opts)
+       sc/assoc-scopes-to-plan))
 
 (defmethod mc/build-macro :max-pooling2d
   [^Graph g {:keys [id inputs pool-size strides]}]
-  [(o/max-pool {:id id
-                :ksize (vec (concat [1] pool-size [1])) ;; TODO assumes 'channels_last'
+  [(o/max-pool {:ksize (vec (concat [1] pool-size [1])) ;; TODO assumes 'channels_last'
                 :strides (vec (concat [1] strides [1]))
                 :padding "VALID"
                 :data_format "NHWC"}
@@ -87,32 +83,32 @@
 
 (defn max-pooling2d
   [{:keys [id pool-size strides] :as opts} input]
-  (merge opts
-         {:macro :max-pooling2d
-          :inputs [input]}))
+  (->> {:macro :max-pooling2d
+        :inputs [input]}
+       (merge opts)
+       sc/assoc-scopes-to-plan))
 
 (defmethod mc/build-macro :dense
   [^Graph g {:keys [id inputs activation units]}]
-  (sc/with-variable-scope (or id
-                              (mk-id g :dense))
-    (let [[input] inputs
-          {:keys [dtype shape]} (opn/get-desc-of-output input)
-          out-sh (-> shape
-                     last
-                     (vector units))
-          kernel (p/v :kernel
-                      (ru out-sh))
-          bias (p/v :bias
-                    (p/zeros [units] dtype))]
-      [(-> input
-           (o/mat-mul kernel)
-           (o/bias-add bias)
-           ((partial mk-activation-plan activation)))])))
+  (let [[input] inputs
+        {:keys [dtype shape]} (opn/get-desc-of-output input)
+        out-sh (-> shape
+                   last
+                   (vector units))
+        kernel (p/v :kernel
+                    (ru out-sh))
+        bias (p/v :bias
+                  (p/zeros [units] dtype))]
+    [(-> input
+         (o/mat-mul kernel)
+         (o/bias-add bias)
+         ((partial mk-activation-plan activation)))]))
 
 (defn dense
   [{:keys [id activation units]} input]
-  {:macro :dense
-   :id id
-   :inputs [input]
-   :units units
-   :activation (mk-activation-template activation)})
+  (sc/assoc-scopes-to-plan
+   {:macro :dense
+    :id id
+    :inputs [input]
+    :units units
+    :activation (mk-activation-template activation)}))

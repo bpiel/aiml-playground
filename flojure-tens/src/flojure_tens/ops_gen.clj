@@ -46,7 +46,7 @@
   [plan]
   #_  (sc/assoc-scopes-to-plan plan)
   ;; TODO do we really want var-scope assoc'd here?
-  (with-meta (sc/assoc-scopes-to-plan plan)
+  (with-meta (sc/assoc-scope-to-plan plan)
       ;; TODO only if debugging is on
         {:trace (Exception. "--debug--")}))
 

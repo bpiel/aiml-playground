@@ -180,7 +180,7 @@
         y-inputs (->> y-op
                       :inputs
                       (map (gr/id->node g)))
-        local-scope (str (:id y-op) "_grad")]
+        local-scope (keyword (str (:id y-op) "_grad"))]
     (def p1 plan)
     (def l1 local-scope)
     (->> (case (:op y-op)
@@ -203,5 +203,5 @@
            :Reshape (reshape y-op y-inputs dx-ops)
            :Range (range-tf y-op y-inputs dx-ops)
            :Rank (rank y-op y-inputs dx-ops))
-         (sc/with-variable-scope local-scope)
-         (sc/with-variable-scope (:scope plan)))))
+         (sc/with-push-both-scopes local-scope)
+         (sc/with-push-both-scopes (:scope plan)))))

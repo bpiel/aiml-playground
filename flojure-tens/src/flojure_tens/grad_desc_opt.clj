@@ -195,7 +195,7 @@
   (let [{:keys [id inputs scope]} plan
         [input] inputs
         [v-a v-b] (:inputs input)]
-    [(sc/with-variable-scope scope
+    [(sc/with-push-both-scopes scope
        (o/no-op id
                 {:ctrl-inputs
                  (mk-applicators 
