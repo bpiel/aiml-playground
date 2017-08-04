@@ -54,16 +54,22 @@ x reduce-mean
     x-- https://github.com/tensorflow/tensorflow/blob/91d0f2eaa8e8bf340c48a36f32140ef0cdbda0a8/tensorflow/python/ops/init_ops.py#L49
    x- activation
 
+x does python allow you to reuse variables across layers? (ex two dense)
+ -- YES!
+
+x feed by plan instead of just id keyword
 
 ===============================================
 ^^^ DONE ^^^
 ===============================================
 
-- does python allow you to reuse variables across layers? (ex two dense)
+- fix variable scope
+ -- allow layers to share
+ -- :reuse?
 
 - auto-apply var-scope when building macros??
 
-- feed by plan instead of just id keyword
+- auto-cast feed
 
 - glorot_uniform_initializer
  -- defaults for random_uniform_initializer
@@ -116,6 +122,19 @@ MAKE REPO
 - rename things
   - guildsman
   - tfjni?
+
+===============================================
+
+
+===============================================
+GOAL
+
+- Ready for work
+  -- LSTM
+  -- docs & docstrings
+  -- binary encoding/decoding?
+  -- dev tools?
+
 
 ===============================================
 
