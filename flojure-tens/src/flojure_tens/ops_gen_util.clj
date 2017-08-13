@@ -150,7 +150,7 @@
 #_(defn fn-name-default [op-def]
   (symbol (clojure.string/lower-case (:name op-def))))
 
-(defn fn-name-default
+#_(defn fn-name-default
   [{n :name}]
   (->> n
        (re-seq #"[A-Z][a-z0-9]*")
@@ -158,6 +158,15 @@
        (clojure.string/join "-")
        symbol))
 
+(defn fn-name-default
+  [{n :name}]
+  (->> n
+       (re-seq #"([A-Z0-9]+$)|([A-Z0-9]+(?=[A-Z0-9]))|([A-Z0-9][a-z]*)")
+       (map first)
+       (remove empty?)
+       (map clojure.string/lower-case)
+       (clojure.string/join "-")
+       symbol))
 
 (defn id-attrs->id
   [id-attrs]

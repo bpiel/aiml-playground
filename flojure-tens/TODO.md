@@ -59,6 +59,9 @@ x does python allow you to reuse variables across layers? (ex two dense)
 
 x feed by plan instead of just id keyword
 
+x fix naming of multi-caps ops
+  -- ex: f-i-f-o-queue => fifo-queue
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -125,8 +128,6 @@ x with-close / with-close-let
 - review changes/fixes to TF java api stuff 
   -- the DeleteStatus memory leak???
 
-- fix naming of multi-caps ops
-  -- ex: f-i-f-o-queue => fifo-queue
 
 ===============================================
 MAKE REPO
@@ -518,3 +519,6 @@ tf symbol usage in example by freq
       1 tf.contrib.layers.real_valued_column
       1 tf.clip_by_global_norm
       1 tf.add_to_collection
+
+
+abdeglnoruwy
