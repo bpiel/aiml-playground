@@ -220,4 +220,3 @@
   #_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
   #_  (clojure.pprint/pprint (take batch-n @test-labels))
   (println "=========="))
-

@@ -89,6 +89,30 @@
          (p/reduce-sum :axis r2)
          (o/reshape s2))]))
 
+(defn sub
+  [op [x1 x2 :as x] [grad]]
+  (let [[s1 s2] (map o/shape x)
+        r1 (o/broadcast-gradient-args s1 s2)
+        r2 (assoc r1 :output-idx 1)]
+    [(-> grad
+         (p/reduce-sum :axis r1)
+         (o/reshape s1))
+     (-> grad
+         (p/reduce-sum :axis r2)
+         o/neg
+         (o/reshape s2))]))
+
+(defn abs
+  [op [x1] [grad]]
+  [(o/mul grad
+          (o/sign x1))])
+
+;; TODO ctrl deps & conj
+(defn sigmoid
+  [op _ [grad]]
+  [(o/sigmoid-grad (assoc op :output-idx 0)
+                   grad)])
+
 ;; https://github.com/tensorflow/tensorflow/blob/3a64879a86e46908ad90a387efe56ad32be61e94/tensorflow/python/ops/nn_grad.py#L324
 (defn relu
   [op x [grad]]
@@ -189,6 +213,8 @@
            :Mean (mean y-op y-inputs dx-ops)
            :SoftmaxCrossEntropyWithLogits (softmax-cross-entropy-with-logits y-op y-inputs dx-ops)
            :Add (add y-op y-inputs dx-ops)
+           :Sub (sub y-op y-inputs dx-ops)
+           :Abs (abs y-op y-inputs dx-ops)
            :Relu (relu y-op y-inputs dx-ops)
            :Identity (identity-tf y-op y-inputs dx-ops)
            :Mul (mul y-op y-inputs dx-ops)
@@ -202,6 +228,7 @@
            :BiasAdd (bias-add y-op y-inputs dx-ops)
            :Reshape (reshape y-op y-inputs dx-ops)
            :Range (range-tf y-op y-inputs dx-ops)
-           :Rank (rank y-op y-inputs dx-ops))
+           :Rank (rank y-op y-inputs dx-ops)
+           :Sigmoid (sigmoid y-op y-inputs dx-ops))
          (sc/with-push-both-scopes local-scope)
          (sc/with-push-both-scopes (:scope plan)))))

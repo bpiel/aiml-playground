@@ -32,9 +32,10 @@
     input))
 
 (defn ru [shape]
-  (o/sub (o/random-uniform {:dtype dt/float-kw}
-                           shape)
-         (float 0.5)))
+  (o/mul (o/sub (o/random-uniform {:dtype dt/float-kw}
+                                  shape)
+                (float 0.5))
+         0.5))
 
 
 (defn- mk-kernel
