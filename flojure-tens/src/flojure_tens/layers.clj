@@ -58,7 +58,7 @@
                   {:dtype dtype
                    :shape [filters]}
                   (p/zeros [filters] dtype))]
-    [(-> (o/conv2-d {:strides [1 1 1 1]
+    [(-> (o/conv-2d {:strides [1 1 1 1]
                      :padding (or padding "VALID")
                      :data_format "NHWC"} ;; TODO
                     input

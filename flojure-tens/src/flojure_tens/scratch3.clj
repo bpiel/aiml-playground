@@ -1,5 +1,6 @@
 (ns flojure-tens.scratch3
   (:require [flojure-tens.core :as ft]
+            [flojure-tens.dev :as d]
             [flojure-tens.scope :as sc]
             [flojure-tens.ops :as o]
             [flojure-tens.plan-time-comps :as p]
@@ -77,7 +78,8 @@
                  o/abs
                  (p/reduce-mean :loss)
                  (p/grad-desc-opt :opt))]
-  (ft/with-close-let [{:keys [graph] :as s} (ft/build->session opt)]
+  (let [{:keys [graph] :as s} (ft/build->session opt)]
+    (d/mk-ns s)
     (ft/run-global-vars-init s)
     (ft/run-all s (repeat 1000 opt))
     (ft/fetch-all s [v1 v2])))
@@ -91,10 +93,19 @@
     (ft/run-all s (repeat 10 opt))
     (ft/fetch-all s [v1])))
 
+(let [v1 (p/v :v1 [1. 2. 3.])
+      {:keys [loss opt]}
+      (ut/id$->> (o/sigmoid v1)
+                 (p/grad-desc-opt :opt))]
+  (let [{:keys [graph] :as s} (ft/build->session opt)]
+    (ft/run-global-vars-init s)
+    (ft/run-all s (repeat 10 opt))
+    (ft/fetch-all s [v1])
+    (d/mk-ns s)))
+
 ;;  a b d e g l n o r u w y
 {0 [0 0 1 1 0 0 0 0 1 0 0 0]  ;; red
  1 [1 0 0 1 1 0 1 1 1 0 0 0]  ;; orange
  2 [0 0 0 1 0 2 0 1 0 0 1 1]  ;; yellow
  3 [0 0 0 2 1 0 0 0 1 0 0 0]  ;; green
  4 [0 1 0 1 0 1 0 0 0 1 0 0]} ;; blue
-

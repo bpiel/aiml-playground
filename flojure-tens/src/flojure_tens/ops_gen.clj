@@ -4,6 +4,9 @@
             [flojure-tens.ops-gen-config :as cfg]
             [flojure-tens.ops-gen-util :as ogu]))
 
+(def assoc-meta-to-op? (atom false))
+
+#_ (reset! assoc-meta-to-op? true)
 
 (defn fetch-pre-build-op-fn
   [op-def]
@@ -44,16 +47,30 @@
 
 (defn finalize-plan
   [plan]
-  #_  (sc/assoc-scopes-to-plan plan)
   ;; TODO do we really want var-scope assoc'd here?
-  (with-meta (sc/assoc-scope-to-plan plan)
-      ;; TODO only if debugging is on
-        {:trace (Exception. "--debug--")}))
+  (let [p (sc/assoc-scope-to-plan plan)]
+    (if-not @assoc-meta-to-op?
+      p
+      (with-meta p
+        {:stack (ogu/get-stack)
+         :plan p}))))
+
+#_(defn finalize-plan
+  [plan]
+  ;; TODO do we really want var-scope assoc'd here?
+  (sc/assoc-scope-to-plan plan))
 
 (defn inject-finalizer
   [bodies]
   (for [[args & b] bodies]
     `(~args (finalize-plan (do ~@b)))))
+
+(def pretty-op-def
+  "pprint is time-consuming"
+  (memoize
+   (fn [op-def]
+     (with-out-str
+       (clojure.pprint/pprint op-def)))))
 
 (defn dyn-defn-op [op-def]
   (let [fn-name-sym (get-op-fn-name-sym op-def)]
@@ -62,8 +79,7 @@
      (inject-finalizer
       (get-op-fn-body fn-name-sym op-def))
      (str "\n"
-          (with-out-str
-            (clojure.pprint/pprint op-def))))))
+          (pretty-op-def op-def)))))
 
 (defn dyn-def-op-fns [op-def]
   (let [op (cfg/op-def-processor op-def)]

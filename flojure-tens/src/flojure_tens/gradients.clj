@@ -158,18 +158,18 @@
   [op [x1] [grad]]
   [(o/mul x1 grad)])
 
-(defn conv2-d
+(defn conv-2d
   [op [x0 x1 :as x] [grad]]
   (let [attrs (op->attrs-map op)
         [s0 s1] (map o/shape x)]
-    [(o/conv2-d-backprop-input attrs
-                               s0
-                               x1
-                               grad)
-     (o/conv2-d-backprop-filter attrs
-                                x0
-                                s1
-                                grad)]))
+    [(o/conv-2d-backprop-input attrs
+                s0
+                x1
+                grad)
+     (o/conv-2d-backprop-filter attrs
+                x0
+                s1
+                grad)]))
 
 (defn max-pool
   [op [x0] [grad]]
@@ -223,7 +223,7 @@
            :RandomUniform (random-uniform y-op y-inputs dx-ops)
            :Shape (shape y-op y-inputs dx-ops)
            :Div (div y-op y-inputs dx-ops)
-           :Conv2D (conv2-d y-op y-inputs dx-ops)
+           :Conv2D (conv-2d y-op y-inputs dx-ops)
            :MaxPool (max-pool y-op y-inputs dx-ops)
            :BiasAdd (bias-add y-op y-inputs dx-ops)
            :Reshape (reshape y-op y-inputs dx-ops)

@@ -138,25 +138,16 @@
 (defn dyn-defn
   [name-sym bodies & [docs]]
   (let [d (or docs "UNDOCUMENTED")]
-    (eval `(defn ~name-sym
-             ~d
-             ~@bodies))))
+    (binding [*ns* (the-ns 'flojure-tens.ops)] ;; TODO not great?
+      (eval `(defn ~name-sym
+               ~d
+               ~@bodies)))))
 
 (defn dyn-defmethod
   [name-sym dispatch-val body]
-  (eval `(defmethod ~name-sym ~dispatch-val
-           ~body)))
-
-#_(defn fn-name-default [op-def]
-  (symbol (clojure.string/lower-case (:name op-def))))
-
-#_(defn fn-name-default
-  [{n :name}]
-  (->> n
-       (re-seq #"[A-Z][a-z0-9]*")
-       (map clojure.string/lower-case)
-       (clojure.string/join "-")
-       symbol))
+  (binding [*ns* (the-ns 'flojure-tens.ops)]
+    (eval `(defmethod ~name-sym ~dispatch-val
+             ~body))))
 
 (defn fn-name-default
   [{n :name}]
@@ -185,3 +176,15 @@
   (if (map? id-attrs)
     (:ctrl-inputs id-attrs [])
     []))
+
+(defn StackTraceElement->map
+  [^StackTraceElement o]
+  {:class-name (.getClassName o)
+   :file-name (.getFileName o)
+   :method-name (.getMethodName o)
+   :line-number (.getLineNumber o)})
+
+(defn get-stack
+  []
+  (mapv StackTraceElement->map
+        (.getStackTrace (Exception. "get-stack"))))
