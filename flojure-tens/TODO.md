@@ -87,6 +87,8 @@ capture-var-scope
  
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+~ dev mode / option to rebuild op fns w/ debugging
+  ~- attaches stacktrace to meta 
 
 ~ auto-apply var-scope when building macros??
 
@@ -102,9 +104,6 @@ capture-var-scope
  -- others..........
 - Session.run delete things / clean up
 x with-close / with-close-let
-
-- dev mode / option to rebuild op fns w/ debugging
-  -- attaches stacktrace to meta 
 
 - macro plans have n-outputs key????????
 
@@ -294,43 +293,47 @@ build+run+fetch = produce
 ===============================================
 tf symbol usage in example by freq
 
-    151 tf.Variable
-     89 tf.placeholder
-     78 tf.random_normal
+
+
+
+
+x    151 tf.Variable
+x     89 tf.placeholder
+x     78 tf.random_normal
      78 tf.float32
-     70 tf.matmul
-     67 tf.reduce_mean
-     65 tf.name_scope
-     58 tf.argmax
-     57 tf.Session
-     42 tf.nn.relu
-     39 tf.global_variables_initializer
-     39 tf.constant
-     38 tf.cast
-     36 tf.add
-     32 tf.zeros
+x     70 tf.matmul
+x     67 tf.reduce_mean
+x     65 tf.name_scope
+x     58 tf.argmax
+x    57 tf.Session
+x     42 tf.nn.relu
+x     39 tf.global_variables_initializer
+x     39 tf.constant
+x     38 tf.cast
+x     36 tf.add
+x     32 tf.zeros
      32 tf.estimator.EstimatorSpec
      31 tf.estimator.inputs.numpy_input_fn
      30 tf.app.run
-     28 tf.nn.softmax
-     25 tf.nn.softmax_cross_entropy_with_logits
-     24 tf.equal
-     23 tf.truncated_normal
-     22 tf.train.GradientDescentOptimizer
+x     28 tf.nn.softmax
+x     25 tf.nn.softmax_cross_entropy_with_logits
+x     24 tf.equal
+x     23 tf.truncated_normal
+x     22 tf.train.GradientDescentOptimizer
      22 tf.summary.scalar
-     20 tf.Graph
-     19 tf.layers.dense
-     17 tf.reshape
+x     20 tf.Graph
+x     19 tf.layers.dense
+x     17 tf.reshape
      17 tf.int32
      16 tf.train.AdamOptimizer
-     15 tf.reduce_sum
+x     15 tf.reduce_sum
      15 tf.device
      14 tf.summary.histogram
-     14 tf.layers.conv2d
-     13 tf.multiply
-     12 tf.variable_scope
+x     14 tf.layers.conv2d
+x     13 tf.multiply
+x     12 tf.variable_scope
      12 tf.summary.FileWriter
-     12 tf.one_hot
+x     12 tf.one_hot
      12 tf.estimator.ModeKeys.TRAIN
      11 tf.train.get_global_step
      11 tf.logging.info
