@@ -5,7 +5,8 @@
             [flojure-tens.macros :as mcro]
             [flojure-tens.util :as util]
             [flojure-tens.tensor :as tsr]
-            [flojure-tens.builder :as bdr])
+            [flojure-tens.builder :as bdr]
+            [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph]))
 
 (defrecord Session [handle ^Graph graph])
@@ -55,15 +56,22 @@
     (if (not-empty feed)
       (apply map vector
              (for [[k v] feed]
-               [(-> v tsr/create-from-value :handle)
-                (-> (if (keyword? k)
-                      k
-                      (:id k))
-                    name
-                    id->node
-                    :handle)
-                ;; TODO don't hard code 0
-                0]))
+               (let [{:keys [handle dtypes] :as node}
+                     (-> (if (keyword? k)
+                           k
+                           (:id k))
+                         name
+                         id->node)
+                     ;; TODO don't assume output-idx 0
+                     dtype (first dtypes)]
+
+                 [(-> v
+                      (dt/convert-whatever dtype) ;; TODO only convert if type doesn't match
+                      tsr/create-from-value
+                      :handle)
+                  handle
+                  ;; TODO don't hard code 0
+                  0])))
       [[] [] []])))
 
 ;; TODO use Graph doSync

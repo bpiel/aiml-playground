@@ -108,7 +108,7 @@
 
 (defn color*
   [c]
-  (float (- c 0.2)))
+  (- c 0.2))
 
 (def colors
   ;;  a b d e g l n o r u w y
@@ -167,3 +167,7 @@
     (clojure.pprint/pprint (ft/fetch-all s [loss]))
     (ft/run-all s (repeat 1000 opt))
     (clojure.pprint/pprint (ft/fetch-all s [loss a]))))
+
+(let [p (o/identity-tf (o/placeholder :x dt/float-kw [1]))
+      s (ft/build->session p)]
+  (ft/produce s p {:x [4.]}))

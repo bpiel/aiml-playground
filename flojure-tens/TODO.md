@@ -62,6 +62,8 @@ x feed by plan instead of just id keyword
 x fix naming of multi-caps ops
   -- ex: f-i-f-o-queue => fifo-queue
 
+x auto-cast feed
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -92,7 +94,7 @@ capture-var-scope
 
 ~ auto-apply var-scope when building macros??
 
-- auto-cast feed
+
 
 - glorot_uniform_initializer
  -- defaults for random_uniform_initializer
@@ -188,11 +190,11 @@ GOAL
   - TShape
   - that other type attr?
 
-- logging hook?
+- summary / logging hook?
 
 - estimators???
 
-- cache const tensors (optionally), across graph builds
+- dev mode: cache const tensors (optionally), across graph builds
 
 - dev mode!
   -- assoc meta

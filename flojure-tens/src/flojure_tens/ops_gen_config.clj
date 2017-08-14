@@ -135,9 +135,10 @@
 ;;TODO make less shitty
 (defn auto-cast
   [dt-kw]
-  (dt-kw {dt/long-kw dt/int-kw
-          dt/double-kw dt/float-kw}
-         dt-kw))
+  (when dt-kw
+    (dt-kw {dt/long-kw dt/int-kw
+            dt/double-kw dt/float-kw}
+           dt-kw)))
 
 ;; (= (hash 0) (hash 0.0)) !!!!!!
 (register-op-gen-cfg!
