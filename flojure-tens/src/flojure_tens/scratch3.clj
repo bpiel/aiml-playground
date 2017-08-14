@@ -171,3 +171,4 @@
 (let [p (o/identity-tf (o/placeholder :x dt/float-kw [1]))
       s (ft/build->session p)]
   (ft/produce s p {:x [4.]}))
+

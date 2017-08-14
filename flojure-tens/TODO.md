@@ -64,6 +64,10 @@ x fix naming of multi-caps ops
 
 x auto-cast feed
 
+x glorot_uniform_initializer
+ -- defaults for random_uniform_initializer
+
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -94,10 +98,8 @@ capture-var-scope
 
 ~ auto-apply var-scope when building macros??
 
+- placeholder defaults to float
 
-
-- glorot_uniform_initializer
- -- defaults for random_uniform_initializer
 
 - op attrs as map instead of vecs????
 
@@ -152,8 +154,8 @@ GOAL
 - Ready for work
   -- LSTM
   -- docs & docstrings
-  -- binary encoding/decoding?
   -- dev tools?
+  -- pipeline (see tf book)
 
 
 ===============================================

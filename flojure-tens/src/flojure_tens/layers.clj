@@ -37,6 +37,34 @@
                 (float 0.5))
          0.5))
 
+(defn compute-fans
+  [shape]
+  (let [[sh0 sh1] shape
+        csh (count shape)]
+    (cond (< csh 1) [1 1]
+          (= csh 1) [sh0 sh0]
+          (= csh 2) [sh0 sh1]
+          :else
+          (let [rev-shape (reverse shape)
+                [sh-1 sh-2] rev-shape
+                receptive-field-size (->> rev-shape
+                                          (drop 2)
+                                          (apply * 1.))]
+            [(* receptive-field-size sh-2)
+             (* receptive-field-size sh-1)]))))
+
+;; TODO
+(defn glorot-uniform-initializer
+  [shape]
+  (let [[fan-in fan-out] (compute-fans shape)
+        scale (Math/sqrt (/ 1.0
+                            (max 1.
+                                 (/ (+ fan-in fan-out)
+                                    2.))))]
+    (o/mul (o/sub (o/random-uniform {:dtype dt/float-kw}
+                                    shape)
+                  (/ scale 2.))
+           scale)))
 
 (defn- mk-kernel
   [{:keys [input-shape filters kernel-size dtype]}]
@@ -44,7 +72,7 @@
     (p/v :kernel
          {:dtype dtype
           :shape kernel-shape}
-         (ru kernel-shape))))
+         (glorot-uniform-initializer kernel-shape))))
 
 (defmethod mc/build-macro :conv2d
   [^Graph g {:keys [id inputs filters kernel-size padding activation]}]
@@ -97,7 +125,7 @@
                    last
                    (vector units))
         kernel (p/v :kernel
-                    (ru out-sh))
+                    (glorot-uniform-initializer out-sh))
         bias (p/v :bias
                   (p/zeros [units] dtype))]
     [(-> input
