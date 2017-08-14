@@ -51,8 +51,7 @@
 ;; TODO fast path
 (defn sum
   [op [x1 x2] [grad]]
-  (let [input-shape (o/c (-> x1 :shapes (get (:output-idx x1 0)) )
-                         :int32)
+  (let [input-shape (o/shape x1)
         output-shape-kept-dims (p/reduced-shape input-shape x2)
         tile-scaling (p/safe-shape-div input-shape output-shape-kept-dims)
         grad (o/reshape grad output-shape-kept-dims)]

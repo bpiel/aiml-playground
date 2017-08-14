@@ -10,6 +10,8 @@
   (:import [flojure_tens.common Graph Op]
            [flojure_tens.session Session]))
 
+(def dev-nses (atom #{}))
+
 (def ^:dynamic *default-ns* '$g)
 
 
