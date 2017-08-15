@@ -162,6 +162,11 @@ GOAL
 
 - save/restore variables
 
+- AdamOptimizer
+ - apply-adam exists!
+ - https://arxiv.org/pdf/1412.6980.pdf
+
+
 - tf.scan?
 
 ~ variable scope
@@ -172,11 +177,6 @@ GOAL
 
 ~ mnist/conv2d/maxpool2d/dense/dropout example
  - compare accuracy
-
-
-- AdamOptimizer
- - apply-adam exists!
- - https://arxiv.org/pdf/1412.6980.pdf
 
 
 - layers (so many!)
