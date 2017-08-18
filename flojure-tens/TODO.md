@@ -93,6 +93,18 @@ capture-var-scope
  
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- TF GRADS
+ -- Floor NONE
+ -- RandomUniform NONE
+ -- Range NONE
+ -- L2Loss
+ -- Conv2D
+ -- MaxPool
+ -- BiasAdd
+ -- Mean
+ -- SoftmaxCrossEntropyWithLogits
+
+
 ~ dev mode / option to rebuild op fns w/ debugging
   ~- attaches stacktrace to meta 
 

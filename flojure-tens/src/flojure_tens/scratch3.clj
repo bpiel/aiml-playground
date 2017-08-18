@@ -3,6 +3,7 @@
             [flojure-tens.dev :as d]
             [flojure-tens.scope :as sc]
             [flojure-tens.ops :as o]
+            [flojure-tens.op-node :as opn]
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
@@ -172,4 +173,25 @@
       s (ft/build->session p)]
   (ft/produce s p {:x [4.]}))
 
+
+(let [a (p/v :a [[2.]])
+      b (p/v :b [[3.]])
+      y #_(o/mat-mul a b)
+       (o/mat-mul (o/mat-mul a b) (o/mat-mul a b))
+      dx (o/c [[1.0]])
+      g (ft/build-all->graph [y dx])
+      s (ft/graph->session g)
+      nodes (-> g :state deref :id->node)
+      a-handle (-> nodes (get "a/read") :handle)
+      b-handle (-> nodes (get "b/read") :handle)
+      y-handle (:handle (opn/get-op-by-plan g y))
+      dx-handle (:handle (opn/get-op-by-plan g dx))
+      d1 (long-array 2)
+      d2 (int-array 2)
+      grads (tfnative.Graph/addGradients (:handle g)
+                                          (long-array [y-handle]) (int-array [0])
+                                          (long-array [a-handle b-handle]) (int-array [0 0])
+                                          (long-array [dx-handle]) (int-array [0])
+                                          d1 d2)]
+  (clojure.pprint/pprint [d1 d2]))
 
