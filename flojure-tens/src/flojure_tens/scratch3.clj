@@ -4,6 +4,7 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.ops :as o]
             [flojure-tens.op-node :as opn]
+            [flojure-tens.macros :as m]
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
@@ -177,7 +178,7 @@
 (let [a (p/v :a [[2.]])
       b (p/v :b [[3.]])
       y #_(o/mat-mul a b)
-       (o/mat-mul (o/mat-mul a b) (o/mat-mul a b))
+       (o/add (o/mat-mul a b) (o/sin a))
       dx (o/c [[1.0]])
       g (ft/build-all->graph [y dx])
       s (ft/graph->session g)
@@ -194,4 +195,67 @@
                                           (long-array [dx-handle]) (int-array [0])
                                           d1 d2)]
   (clojure.pprint/pprint [d1 d2]))
+
+(let [a (p/v :a [[2.]])
+      b (p/v :b [[3.]])
+      y #_(o/mat-mul a b)
+      (o/l2-loss a)
+      dx (o/c [[1.0]])
+      g (ft/build-all->graph [y dx])
+      s (ft/graph->session g)
+      nodes (-> g :state deref :id->node)
+      a-handle (-> nodes (get "a/read") :handle)
+      y-handle (:handle (opn/get-op-by-plan g y))
+      dx-handle (:handle (opn/get-op-by-plan g dx))
+      d1 (long-array 1)
+      d2 (int-array 1)
+      grads (tfnative.Graph/addGradients (:handle g)
+                                          (long-array [y-handle]) (int-array [0])
+                                          (long-array [a-handle]) (int-array [0])
+                                          (long-array [dx-handle]) (int-array [0])
+                                          d1 d2)]
+  (clojure.pprint/pprint [d1 d2]))
+
+(let [{y :$ :keys [a]}
+      (ut/id$->> (p/v :a [[[[1.]]]])
+                 (l/max-pooling2d {:pool-size [1 1]
+                                   :strides [1 1]}))
+      dx (o/c [[1.0]])
+      g (ft/build-all->graph [y dx])
+      nodes (-> g :state deref :id->node)
+      a-handle (-> nodes (get "a/read") :handle)
+      y-handle (:handle (opn/get-op-by-plan g (m/macro-plan->op-plan g y)))
+      dx-handle (:handle (opn/get-op-by-plan g dx))
+      d1 (long-array 1)
+      d2 (int-array 1)
+      grads (tfnative.Graph/addGradients (:handle g)
+                                         (long-array [y-handle]) (int-array [0])
+                                         (long-array [a-handle]) (int-array [0])
+                                         (long-array [dx-handle]) (int-array [0])
+                                         d1 d2)]
+  (clojure.pprint/pprint [d1 d2])
+  (-> g :state deref clojure.pprint/pprint ))
+
+(let [{y :$ :keys [a]}
+      (ut/id$->> (p/v :a [[[[1.]]]])
+                 (l/max-pooling2d {:pool-size [1 1]
+                                   :strides [1 1]}))
+      dx (o/c [[1.0]])
+      grads (p/gradient2 :grads y dx [a])
+      grads2 (p/gradient2 :grads2 y dx [a])
+      g (ft/build-all->graph [grads dx grads2])]
+  #_(clojure.pprint/pprint [d1 d2])
+#_  (-> g :state deref clojure.pprint/pprint ))
+
+(ft/produce (o/sum [[[1.] [2.]]
+                    [[3.] [4.]]
+                    [[5.] [6.]]
+                    ] [1]))
+
+(ft/produce (o/max-pool {:ksize [1 2 2 1]
+                         :strides [1 1 1 1]
+                         :padding "SAME"
+                         :data_format "NHWC"}
+                        [[[[1.][1.]]
+                          [[1.][1.]]]]))
 

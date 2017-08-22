@@ -36,7 +36,7 @@
                          :hsh (mcro/compute-hash plan)))
       (build-eagers g)
       (nth (or output-idx 0))
-      (or (throw (Exception. (with-out-str (clojure.pprint/pprint plan)))))))
+      #_(or (throw (Exception. (with-out-str (clojure.pprint/pprint plan)))))))
 
 (defn built?
   [^Graph g plan]

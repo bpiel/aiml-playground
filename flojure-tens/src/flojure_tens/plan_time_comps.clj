@@ -91,6 +91,16 @@
     :inputs [y dxs]
     :no-auto-scope? true}))
 
+(defn gradient2
+  "MACRO"
+  [id y dx xs]
+  (sc/assoc-scopes-to-plan
+   {:macro :gradients
+    :id id
+    :output-idx 0 #_ output-idx
+    :inputs [y dx xs]
+    :no-auto-scope? true}))
+
 (defn- mk-initilizer-from-template
   [template shape dtype]
   (update template :attrs

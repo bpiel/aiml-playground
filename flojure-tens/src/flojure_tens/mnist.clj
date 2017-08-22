@@ -220,3 +220,16 @@
   #_  (clojure.pprint/pprint (ft/fetch s classes test-feed))
   #_  (clojure.pprint/pprint (take batch-n @test-labels))
   (println "=========="))
+
+(let [{xxx :$} (ut/id$->> (o/placeholder :data
+                                         dt/float-kw
+                                         [4])
+                          (o/reshape $ [1 2 2 1])
+                          (l/conv2d {:filters 1
+                                     :kernel-size [1 1]
+                                     :padding "SAME"}))
+      s (ft/build->session xxx)]
+  (ft/run-global-vars-init s)
+  (flojure-tens.shape/shape-of-seq  (ft/produce s xxx {:data [1. 2. 3. 4]})))
+
+

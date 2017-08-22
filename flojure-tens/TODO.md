@@ -97,11 +97,12 @@ capture-var-scope
  -- Floor NONE
  -- RandomUniform NONE
  -- Range NONE
- -- L2Loss
- -- Conv2D
+ ~~ L2Loss
+ ~~ Conv2D
  -- MaxPool
- -- BiasAdd
- -- Mean
+ ~~ BiasAdd
+ ~~ Sum
+ ~~ Mean
  -- SoftmaxCrossEntropyWithLogits
 
 
