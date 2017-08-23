@@ -242,10 +242,10 @@
                                    :strides [1 1]}))
       dx (o/c [[1.0]])
       grads (p/gradient2 :grads y dx [a])
-      grads2 (p/gradient2 :grads2 y dx [a])
-      g (ft/build-all->graph [grads dx grads2])]
+      g (ft/build-all->graph [grads dx])]
+  (def g1 g)
   #_(clojure.pprint/pprint [d1 d2])
-#_  (-> g :state deref clojure.pprint/pprint ))
+#_  (-> g1 :state deref clojure.pprint/pprint ))
 
 (ft/produce (o/sum [[[1.] [2.]]
                     [[3.] [4.]]

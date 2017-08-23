@@ -50,8 +50,7 @@
   (->> op-handle
        (tfnative.Operation/toNodeDef)
        (pr/protobuf-load NodeDefP)
-       :name
-       keyword))
+       :name))
 
 (defn get-output-desc-by-handle
   [graph-handle op-handle]

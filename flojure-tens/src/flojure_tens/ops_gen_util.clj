@@ -102,11 +102,13 @@
 
 (defn get-node-def-input-id [ndi]
   (when-not (= \^ (first ndi))
-    (node-def-name->plan-id ndi)))
+    ndi
+#_    (node-def-name->plan-id ndi)))
 
 (defn get-node-def-ctrl-input-id [ndi]
   (when (= \^ (first ndi))
-    (node-def-name->plan-id (apply str (rest ndi)))))
+    (apply str (rest ndi))
+#_    (node-def-name->plan-id (apply str (rest ndi)))))
 
 (defn group-inputs
   [inputs op-def attrs]
@@ -126,7 +128,7 @@
 
 (defn node-def->plan-default [node-def op-def]
   (let [attrs (node-def-attrs-> (:attr node-def))]
-    {:id (-> node-def :name node-def-name->plan-id)
+    {:id (-> node-def :name #_node-def-name->plan-id)
      :op (-> node-def :op keyword)
      :inputs (group-inputs (vec (keep get-node-def-input-id
                                       (:input node-def)))
