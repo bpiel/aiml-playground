@@ -54,9 +54,9 @@
         x-count (count x-ops)
         dy-handles (long-array x-count)
         dy-idxs (int-array x-count)]
-    (def ag1 {:y-op y-op
-              :dx-op dx-op
-              :x-ops x-ops
+    (def ag1 {;:y-op y-op
+              ;:dx-op dx-op
+              ;:x-ops x-ops
               :y-handle y-handle
               :y-idx y-idx
               :x-handles x-handles
@@ -67,7 +67,7 @@
               :dy-idxs dy-idxs})
     #_ (clojure.pprint/pprint ag1)
     (clojure.pprint/pprint ag1)
-    (throw (Exception. "NAH"))
+    #_(throw (Exception. "NAH"))
     (tfnative.Graph/addGradients (:handle g)
                                  (long-array [y-handle]) (int-array [y-idx])
                                  (long-array x-handles) (int-array x-idx)

@@ -4,6 +4,7 @@
             [flojure-tens.graph :as gr]
             [flojure-tens.tensor :as tsr]
             [flojure-tens.shape :as sh]
+            [flojure-tens.util :as ut]
             [flatland.protobuf.core :as pr]
             [flojure-tens.common])
   (:import [flojure_tens.common Graph Op GraphRef]
@@ -43,7 +44,10 @@
 
 (defn id->plan
   [^Graph g id]
-  (handle->plan (tfnative.Graph/operation (:handle g) (name id))))
+  (let [{:keys [scoped-id output-idx]} (ut/parse-tf-id id)]
+    (assoc (handle->plan (tfnative.Graph/operation (:handle g) scoped-id))
+           :output-idx
+           output-idx)))
 
 (defn handle->id
   [op-handle]
@@ -89,3 +93,15 @@
           graph-ref)))
   ([op-handle ^GraphRef graph-ref]
    (create-from-handle op-handle 0 graph-ref)))
+
+
+
+
+
+
+
+
+
+
+
+

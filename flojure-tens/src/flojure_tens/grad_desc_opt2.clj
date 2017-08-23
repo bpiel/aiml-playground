@@ -40,10 +40,12 @@
                    assoc
                    ::tagged?
                    true)]
-    (if (= (:op node) :VariableV2)
+    #_    (if (= (:op node) :VariableV2)
+            (update x' :collector assoc (:id node) node)
+            x')
+    (if (re-find #"read" (:id node)) ;; HACK!!!!!!!!!!!!!!!!!!!!!!!!!!
       (update x' :collector assoc (:id node) node)
       x')))
-
 
 (defn find-vari-paths
   [state target]
@@ -65,20 +67,21 @@
       vec))
 
 (defn mk-applicator
-  [grads idx trainable]
-  (o/apply-gradient-descent trainable
+  [^Graph g grads idx trainable]
+  (o/apply-gradient-descent ((-> g :state deref :id->node)
+                             (-> trainable :inputs first))
                             0.01
                             (assoc grads
                                    :output-idx                                   
                                    idx)))
 
 (defn mk-applicators
-  [y-op trainables]
+  [^Graph g  y-op trainables]
   (let [grads {:macro :gradients
                :inputs [y-op
                         (o/ones-like y-op)
                         trainables]}]
-    (mapv (partial mk-applicator grads)
+    (mapv (partial mk-applicator g grads)
           (range (count trainables))
           trainables)))
 
@@ -90,5 +93,6 @@
        (o/no-op id
                 {:ctrl-inputs
                  (mk-applicators
+                  g
                   input
                   (find-trainables g input))}))]))
