@@ -66,6 +66,8 @@
               :dy-handles dy-handles
               :dy-idxs dy-idxs})
     #_ (clojure.pprint/pprint ag1)
+    (clojure.pprint/pprint ag1)
+    (throw (Exception. "NAH"))
     (tfnative.Graph/addGradients (:handle g)
                                  (long-array [y-handle]) (int-array [y-idx])
                                  (long-array x-handles) (int-array x-idx)

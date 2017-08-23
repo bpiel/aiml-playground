@@ -189,7 +189,6 @@
                                      ::target-idx (:output-idx target 0)
                                      ::tagged? true))))
 
-
 (defmethod mc/build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope]} plan
