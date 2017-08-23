@@ -12,38 +12,6 @@
   [p]
   (assoc p :handle (-> p meta ::opn/handle)))
 
-#_(defn discover-new-plans-from-id*
-  [^Graph g discovered id]
-  (if (contains? discovered id)
-    [discovered []]
-    (let [plan (assoc-meta-handle-to-plan (opn/id->plan g id))]
-      [(assoc discovered
-              (:id plan)
-              plan)
-       (flatten (into (:inputs plan)
-                      (:ctrl-inputs plan)))])))
-
-#_(defn discover-new-plans-from-ids
-  [^Graph g ids]
-  (loop [discovered (into {}
-                          (for [[k _] (-> g :state deref :nodes)]
-                            [k nil]))
-         [id & tail] ids]
-    (if id
-      (let [[d ids'] (discover-new-plans-from-id* g discovered id)]
-        (recur d (into ids' tail)))
-      (->> discovered
-           vals
-           (remove nil?)))))
-
-;; TODO this is crazy
-#_(defn discover-new-ops-from-handles
-  [^Graph g op-handles]
-  (let [gref (gr/mk-graph-ref g)]
-    (mapv #(opn/create-from-handle (:handle %) gref )
-          (discover-new-plans-from-ids g
-                                       (map opn/handle->id op-handles)))))
-
 (defn discover-new-plans-from-ids*
   [^Graph g id]
   (let [plan (assoc-meta-handle-to-plan (opn/id->plan g id))]
@@ -55,7 +23,7 @@
          discovered []
          [id & tail] ids]
     (if id
-      (let [[plan ids'] (discover-new-plans-from-id* g id)
+      (let [[plan ids'] (discover-new-plans-from-ids* g id)
             ids'' (remove existing-ids ids')]
         (recur (into existing-ids ids'')
                (conj discovered plan)
@@ -107,19 +75,11 @@
           dy-idx-vec (vec dy-idxs)]
       (def ag2 [dy-handles-vec dy-idx-vec])
       (clojure.pprint/pprint ag2)
-      (dorun (map (partial gr/add-op-to-state! g)
-                  (discover-new-ops-from-handles g
-                                                 dy-handles-vec)))
-      ;; TODO dy-idx? aliases? what? do something!
-      [(opn/create-from-handle (first dy-handles-vec)
-                                (first dy-idx-vec)
-                                (gr/mk-graph-ref g))])))
-
-#_(def mpg1 (opn/create-from-handle (-> ag2 first first)
-                                   0
-                                   nil))
-#_(let [discovered (discover-new-op-nodes-from-handles g
-                                                     dy-handles-vec)]
-  (dorun (map (partial gr/add-op-to-state! g)
-              discovered))
-  (vec (take x-count discovered)))
+      (let [discovered (discover-new-op-nodes-from-handles g
+                                                           dy-handles-vec)]
+        (dorun (map (partial gr/add-op-to-state! g)
+                    discovered))
+        ;; TODO aliases? what? do something!
+        (mapv #(assoc % :output-idx %2)
+              (take x-count discovered)
+              dy-idx-vec)))))
