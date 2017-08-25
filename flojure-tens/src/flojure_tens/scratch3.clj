@@ -248,17 +248,20 @@
 #_  (-> g1 :state deref clojure.pprint/pprint ))
 
 (let [b (p/v :b 2.)
-      {y :$ :keys [a]}
+      {y :$ :keys [a id1]}
       (ut/id$->> (p/v :a 1.)
                  #_(p/v :a [[[[1.]]]])
                  #_(l/max-pooling2d {:pool-size [1 1]
                                      :strides [1 1]})
                  #_o/sin
+                 (o/identity-tf :id1)
                  (o/mul b))
+      a+b (o/add a b)
+      x (o/identity-tf :x id1 )
       dx (o/c [[1.0]])
       opt {:macro :grad-desc-opt2
            :inputs [y]}
-      g (ft/build-all->graph [opt])
+      g (ft/build-all->graph [a+b opt])
       s (ft/graph->session g)]
   (def g1 g)
   (ft/run-global-vars-init s)
@@ -267,6 +270,18 @@
   (ft/fetch-all s [a b])
   #_  (-> g1 :state deref clojure.pprint/pprint))
 
+(let [a (p/v :a 1.)
+      sin1 (o/sin a)
+      cos1 (o/cos a)
+      opt {:macro :grad-desc-opt2
+           :inputs [sin1]}
+      g (ft/build-all->graph [cos1 opt])
+      s (ft/graph->session g)]
+  (def g1 g)
+  (ft/run-global-vars-init s)
+  (ft/fetch-all s [sin1 cos1])
+
+  #_  (-> g1 :state deref clojure.pprint/pprint))
 
 (ft/produce (o/sum [[[1.] [2.]]
                     [[3.] [4.]]
@@ -279,6 +294,3 @@
                          :data_format "NHWC"}
                         [[[[1.][1.]]
                           [[1.][1.]]]]))
-
-
-

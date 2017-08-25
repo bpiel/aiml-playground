@@ -40,12 +40,12 @@
                    assoc
                    ::tagged?
                    true)]
-    #_    (if (= (:op node) :VariableV2)
-            (update x' :collector assoc (:id node) node)
-            x')
-    (if (re-find #"read" (:id node)) ;; HACK!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #_(if (= (:op node) :VariableV2)
       (update x' :collector assoc (:id node) node)
-      x')))
+      x')
+    (if (re-find #"read" (:id node)) ;; HACK!!!!!!!!!!!!!!!!!!!!!!!!!!
+        (update x' :collector assoc (:id node) node)
+        x')))
 
 (defn find-vari-paths
   [state target]

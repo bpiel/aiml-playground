@@ -99,7 +99,7 @@ capture-var-scope
  -- Range NONE
  ~~ L2Loss
  ~~ Conv2D
- -- MaxPool
+ ~~ MaxPool
  ~~ BiasAdd
  ~~ Sum
  ~~ Mean
@@ -142,8 +142,6 @@ x with-close / with-close-let
 - many TODO comments
 
 - review changes/fixes to TF java api stuff 
-  -- the DeleteStatus memory leak???
-
 
 ===============================================
 MAKE REPO
