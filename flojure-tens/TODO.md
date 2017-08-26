@@ -105,6 +105,9 @@ capture-var-scope
  ~~ Mean
  -- SoftmaxCrossEntropyWithLogits
 
+==> multi-output grad bug!!
+
+- Get grad desc working again
 
 ~ dev mode / option to rebuild op fns w/ debugging
   ~- attaches stacktrace to meta 
@@ -120,6 +123,7 @@ capture-var-scope
  x- produce fn
  -- others..........
 - Session.run delete things / clean up
+  -- TF_DeleteStatus
 x with-close / with-close-let
 
 - macro plans have n-outputs key????????
@@ -177,6 +181,7 @@ GOAL
  - apply-adam exists!
  - https://arxiv.org/pdf/1412.6980.pdf
 
+- estimators
 
 - tf.scan?
 
@@ -205,7 +210,7 @@ GOAL
 
 - summary / logging hook?
 
-- estimators???
+
 
 - dev mode: cache const tensors (optionally), across graph builds
 
