@@ -40,12 +40,9 @@
                    assoc
                    ::tagged?
                    true)]
-    #_(if (= (:op node) :VariableV2)
+    (if (= (:op node) :VariableV2)
       (update x' :collector assoc (:id node) node)
-      x')
-    (if (re-find #"read" (:id node)) ;; HACK!!!!!!!!!!!!!!!!!!!!!!!!!!
-        (update x' :collector assoc (:id node) node)
-        x')))
+      x')))
 
 (defn find-vari-paths
   [state target]
@@ -68,8 +65,7 @@
 
 (defn mk-applicator
   [^Graph g grads idx trainable]
-  (o/apply-gradient-descent ((-> g :state deref :id->node)
-                             (-> trainable :inputs first))
+  (o/apply-gradient-descent trainable 
                             0.01
                             (assoc grads
                                    :output-idx                                   

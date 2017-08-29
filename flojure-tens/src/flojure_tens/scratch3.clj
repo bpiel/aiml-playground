@@ -280,7 +280,6 @@
   (def g1 g)
   (ft/run-global-vars-init s)
   (ft/fetch-all s [sin1 cos1])
-
   #_  (-> g1 :state deref clojure.pprint/pprint))
 
 (ft/produce (o/sum [[[1.] [2.]]
