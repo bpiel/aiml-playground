@@ -293,3 +293,11 @@
                          :data_format "NHWC"}
                         [[[[1.][1.]]
                           [[1.][1.]]]]))
+
+(ft/produce (o/max-pool-v2 { :padding "SAME"
+                            :data_format "NHWC"}
+                           [[[[1.][1.]]
+                             [[1.][1.]]]]
+                           [1 2 2 1]
+                           [1 1 1 1]
+                           ))

@@ -97,27 +97,22 @@ capture-var-scope
  -- Floor NONE
  -- RandomUniform NONE
  -- Range NONE
- ~~ L2Loss
+ xx L2Loss
  ~~ Conv2D
  ~~ MaxPool
- ~~ BiasAdd
+ xx BiasAdd
  ~~ Sum
  ~~ Mean
  -- SoftmaxCrossEntropyWithLogits
 
-==> multi-output grad bug!!
-
 - Get grad desc working again
+ -- use new stuff, remove old stuff
 
-~ dev mode / option to rebuild op fns w/ debugging
-  ~- attaches stacktrace to meta 
+- placeholder defaults to float - DONE?
 
-~ auto-apply var-scope when building macros??
-
-- placeholder defaults to float
-
-
-- op attrs as map instead of vecs????
+- fix references to '/home/bill'
+  -- tfnative/Graph.java
+  -- tfnative/Session.java
 
 ~ memory leaks stuff -- call delete on graph, tensors? other stuff?
  x- produce fn
@@ -125,6 +120,10 @@ capture-var-scope
 - Session.run delete things / clean up
   -- TF_DeleteStatus
 x with-close / with-close-let
+
+- graphref sync stuff??
+
+- op attrs as map instead of vecs????
 
 - macro plans have n-outputs key????????
 
@@ -135,17 +134,19 @@ x with-close / with-close-let
 
 - use `intern` to create op fn vars??
 
-- fix references to '/home/bill'
-
 - tensorboard/summary
 
 - accuracy comp op?
 
-- graphref sync stuff??
-
 - many TODO comments
 
 - review changes/fixes to TF java api stuff 
+
+~ dev mode / option to rebuild op fns w/ debugging
+  ~- attaches stacktrace to meta 
+
+~ auto-apply var-scope when building macros?? - DONE?
+
 
 ===============================================
 MAKE REPO
@@ -174,6 +175,8 @@ GOAL
 
 
 ===============================================
+
+- c++ grads scoped by orig op name
 
 - save/restore variables
 
