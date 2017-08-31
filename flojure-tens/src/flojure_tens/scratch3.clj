@@ -8,7 +8,9 @@
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
-            [flojure-tens.data-type :as dt]))
+            [flojure-tens.data-type :as dt]
+            [flatland.protobuf.core :as pr])
+  (:import [org.tensorflow.framework Summary]))
 
 
 (ft/produce (o/add 1 3))
@@ -302,6 +304,7 @@
                            [1 1 1 1]
                            ))
 
+(def SummaryP (pr/protodef Summary))
 
 (let [a (p/v :a 1.)
       a2 (assoc a :output-idx 2)
@@ -309,7 +312,9 @@
       ss (o/scalar-summary :ss ["hi"] [3.0] )
       s (ft/build-all->session [a a2 x ss])]
   (ft/run-global-vars-init s)
-  (ft/fetch s :a))
+  #_(.getBytes (ft/fetch s ss))
+  (pr/protobuf-load SummaryP
+                    (.getBytes (ft/fetch s ss))))
 
 (ft/produce (o/identity-tf ["hi" "ho"]))
 
