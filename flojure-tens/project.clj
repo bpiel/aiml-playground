@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :source-paths ["src"]
   :java-source-paths ["src_java"]
+  :jvm-opts ["-Djava.library.path=./lib"]
   :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
                  [org.tensorflow/tensorflow  "1.2.0-rc1"]
                  [org.clojars.ghaskins/protobuf "3.3.1-1"]

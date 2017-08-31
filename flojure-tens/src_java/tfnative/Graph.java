@@ -3,7 +3,8 @@ package tfnative;
 public class Graph {
 
     static {
-        System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
+        // System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
+        NativeLibrary.load();
     }
 
     public static native long allocate();

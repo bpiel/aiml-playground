@@ -14,7 +14,8 @@ import java.util.Arrays;
 public final class Tensor{
 
     static {
-        System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
+        // System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
+        NativeLibrary.load();
     }
     
     public static native long allocate(int dtype, long[] shape, long byteSize);

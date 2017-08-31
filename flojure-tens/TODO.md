@@ -98,8 +98,8 @@ capture-var-scope
  -- RandomUniform NONE
  -- Range NONE
  xx L2Loss
- ~~ Conv2D
- ~~ MaxPool
+ xx Conv2D
+ xx MaxPool
  xx BiasAdd
  ~~ Sum
  ~~ Mean
@@ -112,8 +112,25 @@ capture-var-scope
 
 - fix references to '/home/bill'
   -- tfnative/Graph.java
-  -- tfnative/Session.java
+  -- tfnative/Tensor.java
+  -- cases to support
+    -- use embedded libtensorflow.so and libtensorflow_jni.so
+    -- use embedded libtensorflow_jni.so ONLY
+    -- use neither
+    -- allow overrides from the top!!?!
+      -- can guildsman access resources from including jar???????
+      -- guildsman_conf.json???
+    -- mac
+    -- win?
+  -- TODO
+    xx test Wl,rpath
+      -- compile libtensorflow_jni w/ Wl,rpath
+      -- mv libtensorflow.so to /tmp
+      -- run it
+    -- java lib loader class?
+    -- -Dguildsman.library.use_res ????
 
+    
 ~ memory leaks stuff -- call delete on graph, tensors? other stuff?
  x- produce fn
  -- others..........
@@ -285,7 +302,11 @@ variable will reshape initzr only if shape provided??
 
 -----
 g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o libtensorflow_jni.so *.cc -ltensorflow
+
+g++ -std=c++11 -Wl,-rpath,"/tmp" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -I/tmp -fPIC -shared  -o libtensorflow_jni.so *.cc -L/tmp  -ltensorflow
 -----
+
+ldd ./src_native/libtensorflow_jni.so
 
 
 -----
@@ -548,3 +569,21 @@ x     12 tf.one_hot
 
 
 abdeglnoruwy
+
+
+
+======================================================================
+
+DOCKER MADNESS
+
+- repl calls docker-machine
+- get new machine info
+- connects to new machine via ws
+
+- acreter
+ - asset is a dir
+ - each asset has a branch
+ - special "index" branch
+ 
+
+======================================================================
