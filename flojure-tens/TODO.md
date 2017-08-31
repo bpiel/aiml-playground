@@ -67,6 +67,13 @@ x auto-cast feed
 x glorot_uniform_initializer
  -- defaults for random_uniform_initializer
 
+x memory leaks stuff -- call delete on graph, tensors? other stuff? -- SEEMS OK??
+ x- produce fn
+ -- others..........
+- Session.run delete things / clean up
+  -- TF_DeleteStatus
+x with-close / with-close-let
+
 
 ===============================================
 ^^^ DONE ^^^
@@ -108,13 +115,12 @@ capture-var-scope
 - Get grad desc working again
  -- use new stuff, remove old stuff
 
-- placeholder defaults to float - DONE?
-
-- fix references to '/home/bill'
-  -- tfnative/Graph.java
-  -- tfnative/Tensor.java
+~ fix references to '/home/bill'
+  -- add `load` call to all java classes?
+  x- tfnative/Graph.java
+  x- tfnative/Tensor.java
   -- cases to support
-    -- use embedded libtensorflow.so and libtensorflow_jni.so
+    x- use embedded libtensorflow.so and libtensorflow_jni.so
     -- use embedded libtensorflow_jni.so ONLY
     -- use neither
     -- allow overrides from the top!!?!
@@ -123,39 +129,33 @@ capture-var-scope
     -- mac
     -- win?
   -- TODO
-    xx test Wl,rpath
+    x- test Wl,rpath
       -- compile libtensorflow_jni w/ Wl,rpath
       -- mv libtensorflow.so to /tmp
       -- run it
-    -- java lib loader class?
+    x- java lib loader class?
     -- -Dguildsman.library.use_res ????
 
-    
-~ memory leaks stuff -- call delete on graph, tensors? other stuff?
- x- produce fn
- -- others..........
-- Session.run delete things / clean up
-  -- TF_DeleteStatus
-x with-close / with-close-let
-
-- graphref sync stuff??
-
-- op attrs as map instead of vecs????
-
-- macro plans have n-outputs key????????
+- DO MACROS GET RUN ONCE FOR EACH OUTPUT BUILT?
 
 - fetch macro output by keyword 
   - aliases?
 
-- helper fn to get outputs from plan/op
+- op attrs as map instead of vecs????
 
-- use `intern` to create op fn vars??
+- placeholder defaults to float
 
 - tensorboard/summary
+
+- use `intern` to create op fn vars??
 
 - accuracy comp op?
 
 - many TODO comments
+
+- helper fn to get outputs from plan/op
+
+- macro plans have n-outputs key????????
 
 - review changes/fixes to TF java api stuff 
 
@@ -164,6 +164,11 @@ x with-close / with-close-let
 
 ~ auto-apply var-scope when building macros?? - DONE?
 
+- graphref sync stuff??
+
+- anything embarrassing
+ - centralize some errant type stuff
+ - autocast is messy
 
 ===============================================
 MAKE REPO
