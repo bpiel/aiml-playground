@@ -311,6 +311,6 @@
   (ft/run-global-vars-init s)
   (ft/fetch s :a))
 
-(ft/produce (o/identity-tf ["hi"]))
+(ft/produce (o/identity-tf ["hi" "ho"]))
 
 

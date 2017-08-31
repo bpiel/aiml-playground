@@ -40,6 +40,14 @@ Java_tfnative_Tensor_allocateScalarBytes(JNIEnv *, jclass, jbyteArray);
 
 /*
  * Class:     tfnative_Tensor
+ * Method:    allocateNonScalarBytes
+ * Signature: ([J[Ljava/lang/Object;)J
+ */
+JNIEXPORT jlong JNICALL Java_tfnative_Tensor_allocateNonScalarBytes(
+    JNIEnv *, jclass, jlongArray, jobjectArray);
+  
+/*
+ * Class:     tfnative_Tensor
  * Method:    delete
  * Signature: (J)V
  */

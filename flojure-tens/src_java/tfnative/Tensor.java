@@ -14,7 +14,6 @@ import java.util.Arrays;
 public final class Tensor{
 
     static {
-        // System.load("/home/bill/repos/aiml-playground/flojure-tens/src_native/libtensorflow_jni.so");
         NativeLibrary.load();
     }
     
@@ -22,6 +21,8 @@ public final class Tensor{
 
     public static native long allocateScalarBytes(byte[] value);
 
+    public static native long allocateNonScalarBytes(long[] shape, Object[] value);
+    
     public static native void delete(long handle);
 
     public static native ByteBuffer buffer(long handle);

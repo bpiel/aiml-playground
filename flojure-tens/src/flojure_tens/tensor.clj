@@ -11,7 +11,7 @@
 (defn get-data-type [^Tensor t]
   (-> t :handle tfnative.Tensor/dtype dt/native->dt))
 
-(defn create-from-value ^Tensor [v]
+#_(defn create-from-value ^Tensor [v]
   (let [shape (sh/shape-of-seq v)
         {:keys [kw native byte-size byte-size-fn]} (dt/data-type-of-whatever v)
         bs (or byte-size (byte-size-fn v))
@@ -21,6 +21,29 @@
         t (Tensor. handle kw shape)]
     (tfnative.Tensor/setValue handle (dt/seq->md-array v))
     t))
+
+
+(defn create-from-value ^Tensor [v]
+  (let [shape (sh/shape-of-seq v)
+        shape-arr (long-array shape)
+        {:keys [kw native byte-size to-bytes-fn]} (dt/data-type-of-whatever v)
+        t (Tensor. nil kw shape)]
+    (cond (not= kw dt/string-kw)
+          (let [handle (tfnative.Tensor/allocate native
+                                                 shape-arr
+                                                 (apply * (conj shape byte-size)))]
+            (tfnative.Tensor/setValue handle (dt/seq->md-array v))
+            (assoc t :handle handle))
+
+          (-> shape count (= 0))
+          (assoc t :handle
+                 (tfnative.Tensor/allocateScalarBytes (to-bytes-fn v)))
+
+          :else
+          (assoc t :handle
+                 (tfnative.Tensor/allocateNonScalarBytes shape-arr (to-array (map #(.getBytes % "UTF-8")
+                                                                                  v)))))))
+
 
 (defn create-from-handle ^Tensor [handle]
   (let [dummy (Tensor. handle nil nil)]
@@ -42,6 +65,10 @@
 (defmethod-getter :int64 scalarLong)
 (defmethod-getter :boolean scalarBoolean)
 
+(defmethod get-scalar-value :string
+  [^Tensor t]
+  (String. (tfnative.Tensor/scalarBytes (:handle t))))
+
 (defn zeros-array-by-dtype
   [shape dtype-kw]
   (sh/zeros-array-by-fn shape
@@ -53,28 +80,13 @@
     (get-scalar-value t)
     (let [dst (zeros-array-by-dtype shape dtype)]
       (tfnative.Tensor/readNDArray handle dst)
-      dst)))
+      (if (= dtype dt/string-kw)
+        (to-array (map #(String. %) ;; TODO -- fix gross HACK!!!!
+                       dst))
+        dst))))
 
 (defn get-value-clj
   [^Tensor t]
   (-> t
       get-value
       dt/md-array->vecs))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

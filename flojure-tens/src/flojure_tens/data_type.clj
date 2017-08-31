@@ -134,12 +134,16 @@
     :array? (constantly false)
     :scalar java.lang.String
     :scalar-fn str ;; maybe wrong?
-    :array-fn into-array
+    :array-fn (fn [v]
+                (if (sequential? v)
+                  (into-array v)
+                  (to-array (repeat v ""))))
     :pb-attr-key :s
     :pb-attr-fn #(if (is-goole-pb-byte-string? %)
                    (String. (.toByteArray %))
                    (str %))
-    :from-bytes #(String. %)}
+    :from-bytes #(String. %)
+    :to-bytes-fn (fn [^String s] (.getBytes s "UTF-8"))}
    {:kw :int64 
     :native 9  
     :byte-size 8 

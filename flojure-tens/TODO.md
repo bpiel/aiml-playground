@@ -140,7 +140,9 @@ capture-var-scope
     -- -Dguildsman.library.use_res ????
 
 - tensorboard/summary
- -- strings to tensors
+ x- strings to tensors
+ x- update jni/cc/java
+   -- tensor/allocateScalarBytes
 
 - op attrs as map instead of vecs????
 
