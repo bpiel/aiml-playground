@@ -74,6 +74,7 @@ x memory leaks stuff -- call delete on graph, tensors? other stuff? -- SEEMS OK?
   -- TF_DeleteStatus
 x with-close / with-close-let
 
+x DO MACROS GET RUN ONCE FOR EACH OUTPUT BUILT? NO
 
 ===============================================
 ^^^ DONE ^^^
@@ -136,7 +137,7 @@ capture-var-scope
     x- java lib loader class?
     -- -Dguildsman.library.use_res ????
 
-- DO MACROS GET RUN ONCE FOR EACH OUTPUT BUILT?
+
 
 - fetch macro output by keyword 
   - aliases?

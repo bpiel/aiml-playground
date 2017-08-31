@@ -301,3 +301,10 @@
                            [1 2 2 1]
                            [1 1 1 1]
                            ))
+
+
+(let [a (p/v :a 1.)
+      a2 (assoc a :output-idx 2)
+      s (ft/build-all->session [a a2])]
+  (ft/run-global-vars-init s)
+  (ft/fetch s a2))

@@ -41,13 +41,19 @@
                         (mcro/macro-plan->op-plan g)
                         (op-node/get-op-by-plan g))))
 
-(defn- ->handles
+(defn- ->handles-idx-pairs
   [plans ^Graph g]
   (or (some->> plans
                not-empty
                (mapv (partial ->op-node g))
-               (mapv :handle))
+               (mapv (juxt :handle :output-idx)))
       []))
+
+(defn- ->handles
+  [plans ^Graph g]
+  (map first
+       (->handles-idx-pairs plans
+                            g)))
 
 (defn- feed->
   [^Graph g feed]
@@ -79,6 +85,9 @@
   [^Session s ^RunRequest req]
   (let [{:keys [fetch targets feed return-meta options]} req
         g (:graph s)
+        fetch-pairs (->handles-idx-pairs fetch g)
+        fetch-handles (map first fetch-pairs)
+        fetch-idxs (map second fetch-pairs)
         outputs (long-array (vec
                              (take (count fetch)
                                    (repeatedly #(:handle (tsr/create-from-value 0))))))
@@ -86,11 +95,11 @@
         maybe-meta (tfnative.Session/run
                      (:handle s) 
                      options
-                     (long-array in-tsrs) ;; inputTensorHandles
-                     (long-array in-ops) ;; inputOpHandles
-                     (int-array in-idx)  ;; inputOpIndices
-                     (long-array (->handles fetch g)) ;; outputOpHandles
-                     (int-array (map #(:output-idx % 0) fetch)) ;; outputOpIndices
+                     (long-array in-tsrs)       ;; inputTensorHandles
+                     (long-array in-ops)        ;; inputOpHandles
+                     (int-array in-idx)         ;; inputOpIndices
+                     (long-array fetch-handles) ;; outputOpHandles
+                     (int-array fetch-idxs)     ;; outputOpIndices
                      (long-array (->handles targets g))
                      ;; targetOpHandles
                      return-meta
