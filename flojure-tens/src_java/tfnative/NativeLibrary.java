@@ -43,11 +43,36 @@ final class NativeLibrary {
       return;
     }
     // Native code is not present, perhaps it has been packaged into the .jar file containing this.
-    final String resourceName = makeResourceName();
-    log("resourceName: " + resourceName);
-    final InputStream resource =
-        NativeLibrary.class.getClassLoader().getResourceAsStream(resourceName);
-    if (resource == null) {
+
+    // LOAD TF LIB
+    final String resourceNameLib = makeResourceName(LIBNAME);
+    log("resourceName: " + resourceNameLib);
+    final InputStream resourceLib =
+        NativeLibrary.class.getClassLoader().getResourceAsStream(resourceNameLib);
+    if (resourceLib == null) {
+      throw new UnsatisfiedLinkError(
+          String.format(
+              "Cannot find TensorFlow library for OS: %s, architecture: %s. See "
+                  + "https://github.com/tensorflow/tensorflow/tree/master/tensorflow/java/README.md"
+                  + " for possible solutions (such as building the library from source). Additional"
+                  + " information on attempts to find the native library can be obtained by adding"
+                  + " org.tensorflow.NativeLibrary.DEBUG=1 to the system properties of the JVM.",
+              os(), architecture()));
+    }
+    try {
+        System.load(extractResource(resourceLib, LIBNAME));
+    } catch (IOException e) {
+      throw new UnsatisfiedLinkError(
+          String.format(
+              "Unable to extract tensorflow library into a temporary file (%s)", e.toString()));
+    }
+
+    // LOAD JNI LIB
+    final String resourceNameLibJNI = makeResourceName(LIBNAME_JNI);
+    log("resourceName: " + resourceNameLibJNI);
+    final InputStream resourceLibJNI =
+        NativeLibrary.class.getClassLoader().getResourceAsStream(resourceNameLibJNI);
+    if (resourceLibJNI == null) {
       throw new UnsatisfiedLinkError(
           String.format(
               "Cannot find TensorFlow native library for OS: %s, architecture: %s. See "
@@ -58,12 +83,13 @@ final class NativeLibrary {
               os(), architecture()));
     }
     try {
-      System.load(extractResource(resource));
+      System.load(extractResource(resourceLibJNI, LIBNAME_JNI));
     } catch (IOException e) {
       throw new UnsatisfiedLinkError(
           String.format(
               "Unable to extract native library into a temporary file (%s)", e.toString()));
     }
+    
   }
 
   private static boolean tryLoadLibrary() {
@@ -87,16 +113,17 @@ final class NativeLibrary {
     }
   }
 
-  private static String extractResource(InputStream resource) throws IOException {
-    final String sampleFilename = System.mapLibraryName(LIBNAME);
-    final int dot = sampleFilename.indexOf(".");
-    final String prefix = (dot < 0) ? sampleFilename : sampleFilename.substring(0, dot);
-    final String suffix = (dot < 0) ? null : sampleFilename.substring(dot);
+    private static String extractResource(InputStream resource, String libname) throws IOException {
+    final String sampleFilename = System.mapLibraryName(libname);
+    //final int dot = sampleFilename.indexOf(".");
+    //final String prefix = (dot < 0) ? sampleFilename : sampleFilename.substring(0, dot);
+    //final String suffix = (dot < 0) ? null : sampleFilename.substring(dot);
 
-    final File dst = File.createTempFile(prefix, suffix);
+    //final File dst = File.createTempFile(prefix, suffix);
+    final File dst = new File(System.getProperty("java.io.tmpdir"), sampleFilename);
     final String dstPath = dst.getAbsolutePath();
     dst.deleteOnExit();
-    log("extracting native library to: " + dstPath);
+    log("extracting to: " + dstPath);
     final long nbytes = copy(resource, dst);
     log(String.format("copied %d bytes to %s", nbytes, dstPath));
     return dstPath;
@@ -126,10 +153,10 @@ final class NativeLibrary {
     }
   }
 
-  private static String makeResourceName() {
+  private static String makeResourceName(String libname) {
     return "native/"
         + String.format("%s-%s/", os(), architecture())
-        + System.mapLibraryName(LIBNAME);
+        + System.mapLibraryName(libname);
   }
 
   private static long copy(InputStream src, File dstFile) throws IOException {
