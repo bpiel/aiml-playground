@@ -124,12 +124,17 @@
     :array-fn nil}
    {:kw :string 
     :native 7  
-    :byte-size nil 
+    :byte-size nil
+    :byte-size-fn (fn [v]
+                    (let [v' (if (sequential? v)
+                               (flatten v)
+                               [v])]
+                      (apply + (map count v'))))
     :scalar? string?  
     :array? (constantly false)
     :scalar java.lang.String
     :scalar-fn str ;; maybe wrong?
-    :array-fn nil
+    :array-fn into-array
     :pb-attr-key :s
     :pb-attr-fn #(if (is-goole-pb-byte-string? %)
                    (String. (.toByteArray %))

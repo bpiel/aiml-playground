@@ -305,6 +305,12 @@
 
 (let [a (p/v :a 1.)
       a2 (assoc a :output-idx 2)
-      s (ft/build-all->session [a a2])]
+      x (o/add :x a 2.)
+      ss (o/scalar-summary :ss ["hi"] [3.0] )
+      s (ft/build-all->session [a a2 x ss])]
   (ft/run-global-vars-init s)
-  (ft/fetch s a2))
+  (ft/fetch s :a))
+
+(ft/produce (o/identity-tf ["hi"]))
+
+

@@ -76,6 +76,8 @@ x with-close / with-close-let
 
 x DO MACROS GET RUN ONCE FOR EACH OUTPUT BUILT? NO
 
+x fetch non-zero macro ops by plan
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -137,18 +139,15 @@ capture-var-scope
     x- java lib loader class?
     -- -Dguildsman.library.use_res ????
 
-
-
-- fetch macro output by keyword 
-  - aliases?
+- tensorboard/summary
+ -- strings to tensors
 
 - op attrs as map instead of vecs????
 
 - placeholder defaults to float
 
-- tensorboard/summary
-
 - use `intern` to create op fn vars??
+  -- will this be faster?
 
 - accuracy comp op?
 
@@ -162,10 +161,15 @@ capture-var-scope
 
 ~ dev mode / option to rebuild op fns w/ debugging
   ~- attaches stacktrace to meta 
+  -- crazy override of core fns??????
+    -- maybe just alt root binding?
 
 ~ auto-apply var-scope when building macros?? - DONE?
 
 - graphref sync stuff??
+
+- fetch macro output by keyword 
+  - aliases?
 
 - anything embarrassing
  - centralize some errant type stuff

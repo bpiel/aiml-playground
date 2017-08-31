@@ -13,10 +13,11 @@
 
 (defn create-from-value ^Tensor [v]
   (let [shape (sh/shape-of-seq v)
-        {:keys [kw native byte-size]} (dt/data-type-of-whatever v)
+        {:keys [kw native byte-size byte-size-fn]} (dt/data-type-of-whatever v)
+        bs (or byte-size (byte-size-fn v))
         handle (tfnative.Tensor/allocate native
                                          (long-array shape)
-                                         (apply * (conj shape byte-size)))
+                                         (apply * (conj shape bs)))
         t (Tensor. handle kw shape)]
     (tfnative.Tensor/setValue handle (dt/seq->md-array v))
     t))
@@ -59,3 +60,21 @@
   (-> t
       get-value
       dt/md-array->vecs))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
