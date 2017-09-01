@@ -82,6 +82,25 @@ x fetch non-zero macro ops by plan
 ^^^ DONE ^^^
 ===============================================
 
+
+===============================================
+INSANE WEB APP
+
+- ugh... reorg src
+
+- simplest ws wep app
+  - re-frame
+  - aleph
+  - transit
+- make ns from graph
+- send to web svr
+  - process for front-end
+  - send to front-end
+- render in front-end
+
+
+===============================================
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~ fix variable scope
@@ -138,6 +157,8 @@ capture-var-scope
       -- run it
     x- java lib loader class?
     -- -Dguildsman.library.use_res ????
+
+- write graphdef to tensorboard
 
 - tensorboard/summary
  x- strings to tensors
@@ -201,6 +222,7 @@ GOAL
   -- docs & docstrings
   -- dev tools?
   -- pipeline (see tf book)
+   -- queues!!
 
 
 ===============================================
