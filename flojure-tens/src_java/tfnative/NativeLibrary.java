@@ -120,10 +120,12 @@ final class NativeLibrary {
     //final String suffix = (dot < 0) ? null : sampleFilename.substring(dot);
 
     //final File dst = File.createTempFile(prefix, suffix);
-    final File dst = new File(System.getProperty("java.io.tmpdir"), sampleFilename);
+    final File dst = new File(System.getProperty("java.io.tmpdir") + "/guildsman", sampleFilename); // TODO make path random
+    final File parent = new File(dst.getParent());
     final String dstPath = dst.getAbsolutePath();
     dst.deleteOnExit();
     log("extracting to: " + dstPath);
+    parent.mkdir();
     final long nbytes = copy(resource, dst);
     log(String.format("copied %d bytes to %s", nbytes, dstPath));
     return dstPath;

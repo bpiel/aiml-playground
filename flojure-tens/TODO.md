@@ -316,6 +316,8 @@ variable will reshape initzr only if shape provided??
 g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -fPIC -shared  -o libtensorflow_jni.so *.cc -ltensorflow
 
 g++ -std=c++11 -Wl,-rpath,"/tmp" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -I/tmp -fPIC -shared  -o libtensorflow_jni.so *.cc -L/tmp  -ltensorflow
+
+g++ -std=c++11 -Wl,-rpath,"\$ORIGIN" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -I/tmp -fPIC -shared  -o libtensorflow_jni.so *.cc  -ltensorflow
 -----
 
 ldd ./src_native/libtensorflow_jni.so
