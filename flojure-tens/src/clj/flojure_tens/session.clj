@@ -4,7 +4,8 @@
             [flojure-tens.op-node :as op-node]
             [flojure-tens.macros :as mcro]
             [flojure-tens.util :as util]
-            [flojure-tens.tensor :as tsr]
+            [flojure-tens.tensor-mgr :as tm]
+            [flojure-tens.tensor :as tsr] ;;TODO remove
             [flojure-tens.builder :as bdr]
             [flojure-tens.data-type :as dt])
   (:import [flojure_tens.common Graph]))
@@ -73,8 +74,7 @@
 
                  [(-> v
                       (dt/convert-whatever dtype) ;; TODO only convert if type doesn't match
-                      tsr/create-from-value
-                      :handle)
+                      tm/get-tensor-ref-by-value)
                   handle
                   ;; TODO don't hard code 0
                   0])))
@@ -90,13 +90,13 @@
         fetch-idxs (map second fetch-pairs)
         outputs (long-array (vec
                              (take (count fetch)
-                                   (repeatedly #(:handle (tsr/create-from-value 0))))))
-        _ (def o1 (vec outputs))
+                                   (repeatedly #(:handle (tm/get-tensor-ref-by-value 0)))))) ;; TODO release
         [in-tsrs in-ops in-idx] (feed-> g feed)
+        _ (def in-tsrs1 (vec in-tsrs))
         maybe-meta (tfnative.Session/run
                      (:handle s) 
                      options
-                     (long-array in-tsrs)       ;; inputTensorHandles
+                     (long-array (map :handle in-tsrs)) ;; inputTensorHandles
                      (long-array in-ops)        ;; inputOpHandles
                      (int-array in-idx)         ;; inputOpIndices
                      (long-array fetch-handles) ;; outputOpHandles
@@ -105,6 +105,8 @@
                      ;; targetOpHandles
                      return-meta
                      outputs)]
+    (doseq [t in-tsrs]
+      (tm/release-ref t))
     outputs
     #_    {:output-handles outputs
            :meta-data maybe-meta}))
@@ -131,5 +133,3 @@
   (doseq [p plans]
     (run session p feed))
   session)
-
-#_(tsr/get-value-clj (tsr/create-from-handle (first o1)))

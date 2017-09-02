@@ -46,7 +46,7 @@
 
 
 (defn create-from-handle ^Tensor [handle]
-  (let [dummy (Tensor. handle nil nil)]
+  (let [dummy (Tensor. handle nil nil)] ;; TODO dumb?
     (Tensor. handle
              (:kw (get-data-type dummy))
              (get-shape dummy))))
@@ -75,7 +75,7 @@
    (:array-fn (dt/kw->dt dtype-kw))))
 
 (defn get-value
-  [^Tensor {:keys [handle dtype shape] :as t}]
+  [{:keys [handle dtype shape] :as t}]
   (if (sh/scalar? shape)
     (get-scalar-value t)
     (let [dst (zeros-array-by-dtype shape dtype)]
@@ -86,7 +86,7 @@
         dst))))
 
 (defn get-value-clj
-  [^Tensor t]
+  [t]
   (-> t
       get-value
       dt/md-array->vecs))

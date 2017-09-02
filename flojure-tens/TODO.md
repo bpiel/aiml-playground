@@ -103,6 +103,10 @@ x simplest web app
 
 ===============================================
 
+
+- tensors fed to session.run should either be deleted or cached (then deleted later)
+ -- hmmmmmmmmmmmmmmmmmmmm
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ~ fix variable scope

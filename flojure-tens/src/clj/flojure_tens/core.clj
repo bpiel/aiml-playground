@@ -2,7 +2,8 @@
   (:require [flojure-tens.graph :as gr]
             [flojure-tens.builder :as bdr]
             [flojure-tens.session :as sess]
-            [flojure-tens.tensor :as tsr]
+            [flojure-tens.tensor-mgr :as tm] 
+            [flojure-tens.tensor :as tsr] ;; TODO remove
             flojure-tens.macros
             flojure-tens.gradients
             flojure-tens.grad-desc-opt
@@ -46,7 +47,8 @@
 
 (defn delete-tensor->value [tensor]
   (let [r (tensor->value tensor)]
-    (tfnative.Tensor/delete (:handle tensor))
+    (tm/release-ref tensor)
+    #_(tfnative.Tensor/delete (:handle tensor))
     r))
 
 (defn graph->session [^Graph graph]
