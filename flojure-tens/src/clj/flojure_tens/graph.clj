@@ -1,4 +1,3 @@
-
 (ns flojure-tens.graph
   (:require [flojure-tens.common]
             [flojure-tens.tensor :as tsr]

@@ -91,6 +91,7 @@
         outputs (long-array (vec
                              (take (count fetch)
                                    (repeatedly #(:handle (tsr/create-from-value 0))))))
+        _ (def o1 (vec outputs))
         [in-tsrs in-ops in-idx] (feed-> g feed)
         maybe-meta (tfnative.Session/run
                      (:handle s) 
@@ -130,3 +131,5 @@
   (doseq [p plans]
     (run session p feed))
   session)
+
+#_(tsr/get-value-clj (tsr/create-from-handle (first o1)))

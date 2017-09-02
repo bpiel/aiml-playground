@@ -3,15 +3,60 @@
             [compojure.handler :as ch]
             [compojure.route :as cr]
             [aleph.http :as ah]
-            ;; [manifold.stream :as ms]
+            [manifold.stream :as ms]
             [taoensso.timbre :as log]
             [cognitect.transit :as t]
             [clojure.java.io :as io])
+  (:import [java.io ByteArrayInputStream ByteArrayOutputStream])
   (:gen-class))
 
-(def server (atom nil))
+(defonce server (atom nil))
+(defonce ws-conn (atom nil))
+
+(defn ->transit
+  [v]
+  (def v1 v)
+  (let [baos (ByteArrayOutputStream.)
+        tw (t/writer baos :json)]
+    (t/write tw v)
+    (.toByteArray baos)))
+
+(defn respond-transit
+  [data & [ws]]
+  (let [ws' (or ws @ws-conn)]
+    (ms/try-put! ws'
+                 (String. (->transit data))
+                 1000)))
+
+#_(respond-transit {:nodes [{:data {:id "a"}} {:data {:id "b"}} {:data {:id "c"}}] :edges [{:data {:source "a" :target "b"}}]})
+
+#_(respond-transit (flojure-tens.dev/w-mk-graph-def2))
+
+#_(defmacro xxx [x]
+  `(clojure.pprint/pprint [~*file* ~(meta (second &form))]))
+
+#_(xxx (inc 3))
+
+(defn ws-inbound-handler
+  [ws data]
+  (def ib-data data)
+  (println data))
+
+(defn ws-handler
+  [req]
+  (let [ws @(ah/websocket-connection req)
+        current-ws @ws-conn]
+    (when current-ws
+      (try (ms/close! current-ws)
+           (catch Exception e)))
+    (reset! ws-conn ws)
+    #_(ms/on-closed ws unsub-fn)
+    (ms/consume (partial ws-inbound-handler
+                         ws)
+                ws)))
 
 (c/defroutes routes
+  (c/GET "/ws" [] #'ws-handler)
   (c/GET "/" [] (fn [_] (-> "public/app.html" io/resource slurp)))
   (cr/resources "/"))
 

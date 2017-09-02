@@ -15,6 +15,17 @@ goog.addDependency("../reagent/impl/template.js", ['reagent.impl.template'], ['r
 goog.addDependency("../cljsjs/react-dom/development/react-dom.inc.js", ['cljsjs.react.dom'], ['cljsjs.react']);
 goog.addDependency("../reagent/dom.js", ['reagent.dom'], ['reagent.impl.util', 'reagent.interop', 'reagent.ratom', 'cljs.core', 'reagent.impl.template', 'reagent.impl.batching', 'cljsjs.react.dom', 'reagent.debug']);
 goog.addDependency("../reagent/core.js", ['reagent.core'], ['reagent.impl.util', 'reagent.interop', 'reagent.ratom', 'cljs.core', 'reagent.impl.template', 'reagent.impl.batching', 'reagent.impl.component', 'reagent.debug', 'reagent.dom']);
+goog.addDependency("../com/cognitect/transit/util.js", ['com.cognitect.transit.util'], ['goog.object']);
+goog.addDependency("../com/cognitect/transit/eq.js", ['com.cognitect.transit.eq'], ['com.cognitect.transit.util']);
+goog.addDependency("../com/cognitect/transit/types.js", ['com.cognitect.transit.types'], ['com.cognitect.transit.util', 'com.cognitect.transit.eq', 'goog.math.Long']);
+goog.addDependency("../com/cognitect/transit/delimiters.js", ['com.cognitect.transit.delimiters'], []);
+goog.addDependency("../com/cognitect/transit/caching.js", ['com.cognitect.transit.caching'], ['com.cognitect.transit.delimiters']);
+goog.addDependency("../com/cognitect/transit/impl/decoder.js", ['com.cognitect.transit.impl.decoder'], ['com.cognitect.transit.util', 'com.cognitect.transit.delimiters', 'com.cognitect.transit.caching', 'com.cognitect.transit.types']);
+goog.addDependency("../com/cognitect/transit/impl/reader.js", ['com.cognitect.transit.impl.reader'], ['com.cognitect.transit.impl.decoder', 'com.cognitect.transit.caching']);
+goog.addDependency("../com/cognitect/transit/handlers.js", ['com.cognitect.transit.handlers'], ['com.cognitect.transit.util', 'com.cognitect.transit.types', 'goog.math.Long']);
+goog.addDependency("../com/cognitect/transit/impl/writer.js", ['com.cognitect.transit.impl.writer'], ['com.cognitect.transit.util', 'com.cognitect.transit.caching', 'com.cognitect.transit.handlers', 'com.cognitect.transit.types', 'com.cognitect.transit.delimiters', 'goog.math.Long']);
+goog.addDependency("../com/cognitect/transit.js", ['com.cognitect.transit'], ['com.cognitect.transit.util', 'com.cognitect.transit.impl.reader', 'com.cognitect.transit.impl.writer', 'com.cognitect.transit.types', 'com.cognitect.transit.eq', 'com.cognitect.transit.impl.decoder', 'com.cognitect.transit.caching']);
+goog.addDependency("../cognitect/transit.js", ['cognitect.transit'], ['com.cognitect.transit.eq', 'cljs.core', 'com.cognitect.transit.types', 'com.cognitect.transit', 'goog.math.Long']);
 goog.addDependency("../cljs/core/async/impl/protocols.js", ['cljs.core.async.impl.protocols'], ['cljs.core']);
 goog.addDependency("../cljs/core/async/impl/buffers.js", ['cljs.core.async.impl.buffers'], ['cljs.core', 'cljs.core.async.impl.protocols']);
 goog.addDependency("../cljs/core/async/impl/dispatch.js", ['cljs.core.async.impl.dispatch'], ['cljs.core', 'cljs.core.async.impl.buffers', 'goog.async.nextTick']);
@@ -74,6 +85,6 @@ goog.addDependency("../re_frame/cofx.js", ['re_frame.cofx'], ['re_frame.intercep
 goog.addDependency("../re_frame/std_interceptors.js", ['re_frame.std_interceptors'], ['re_frame.interceptor', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.cofx', 'clojure.data', 're_frame.db']);
 goog.addDependency("../re_frame/subs.js", ['re_frame.subs'], ['re_frame.interop', 're_frame.trace', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.db']);
 goog.addDependency("../re_frame/core.js", ['re_frame.core'], ['re_frame.interop', 're_frame.interceptor', 're_frame.events', 're_frame.fx', 're_frame.registrar', 'cljs.core', 're_frame.router', 'clojure.set', 're_frame.std_interceptors', 're_frame.loggers', 're_frame.subs', 're_frame.cofx', 're_frame.db']);
-goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['reagent.core', 'cljs.core', 'goog.history.EventType', 'goog.History', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
+goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['reagent.core', 'cljs.core', 'goog.history.EventType', 'goog.History', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
 goog.addDependency("../process/env.js", ['process.env'], ['cljs.core']);
 goog.addDependency("../devtools/preload.js", ['devtools.preload'], ['cljs.core', 'devtools.core', 'devtools.prefs']);

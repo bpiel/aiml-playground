@@ -86,8 +86,10 @@ x fetch non-zero macro ops by plan
 ===============================================
 INSANE WEB APP
 
-- ugh... reorg src
+x ugh... reorg src
 
+x simplest web app
+  x figwheel
 - simplest ws wep app
   - re-frame
   - aleph
