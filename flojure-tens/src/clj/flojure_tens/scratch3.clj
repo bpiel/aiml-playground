@@ -9,8 +9,11 @@
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
             [flojure-tens.data-type :as dt]
+            [flojure-tens.tensor :as tsr]
             [flatland.protobuf.core :as pr])
-  (:import [org.tensorflow.framework Summary]))
+  (:import [org.tensorflow.framework Summary]
+           [com.billpiel.flojure_tens Tensor]))
+
 
 
 (ft/produce (o/add 1 3))
@@ -317,5 +320,23 @@
                     (.getBytes (ft/fetch s ss))))
 
 (ft/produce (o/identity-tf ["hi" "ho"]))
+
+
+(def t1 (tsr/create-from-value [(float 3.) (float 5.)]))
+
+(def t1b (tfnative.Tensor/buffer (:handle t1)))
+
+(def t1bo (.order t1b (java.nio.ByteOrder/nativeOrder)))
+
+(def t1fb (.asFloatBuffer t1bo))
+
+(def tt (Tensor. (:handle t1)
+                 t1fb
+                 (long-array [])
+                 1))
+
+(def ls (map identity (range 10)))
+(def s1 '(1 2 3))
+
 
 

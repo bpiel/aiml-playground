@@ -118,7 +118,7 @@
                      (set-attrs attrs')
                      (add-inputs inputs)
                      (add-ctrl-inputs ctrl-input-handles)
-                     tfnative.OperationBuilder/finish)
+                     tfnative.OperationBuilder/finish) ;; TODO release attr tensors? or done for us?
           {:keys [num-outputs shapes dtypes]} (opn/get-output-desc-by-handle (:handle g) handle)
           node (with-meta (Op. id'
                                [] ;; TODO add :0, when appropriate

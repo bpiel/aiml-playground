@@ -106,6 +106,40 @@ x simplest web app
 
 - tensors fed to session.run should either be deleted or cached (then deleted later)
  -- hmmmmmmmmmmmmmmmmmmmm
+ -- tensors get created for attributes during op build.. release after op is built??
+
+================
+
+HOLY SHIT
+
+- What's next?
+- What's the vision?
+- What to build?
+- How to know what is right?????
+
+estimators/experiments
+visualizations
+ - hist time series
+ - click nodes and do things??
+ - prettier?
+ - charts?
+random search
+
+- What are the steps process am I trying to optimize?
+
+
+
+
+
+
+
+================
+
+
+
+- canned goods (canned nn solutions) -- as code generators
+"sorry, snake people"
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
