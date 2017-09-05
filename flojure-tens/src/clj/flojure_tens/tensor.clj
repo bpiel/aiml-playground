@@ -5,6 +5,60 @@
 
 (defrecord Tensor [handle dtype shape])
 
+(defn dec-shape [shape]
+  (cons (-> shape first dec)
+        (rest shape)))
+
+(defn tv-top-size [shape]
+  (apply * (rest shape)))
+
+(defn slice-buffer
+  [^java.nio.Buffer b pos]
+  (locking b
+    (.position b pos)
+    (.slice b)))
+
+(deftype TensorValue [^java.nio.Buffer b ^long handle dtype shape whole?]
+
+  clojure.lang.Counted
+  (count [this] (or (first (.shape this))
+                    1))
+
+  clojure.lang.ISeq
+  (cons [this v] nil)
+  (empty [this] nil)
+  (equiv [this other] (= (.handle this)
+                         (.handle other)))
+  (first [this] (if (= (count shape) 1)
+                  (.nth this 0)
+                  (TensorValue. b
+                                handle
+                                dtype
+                                (rest shape)
+                                false)))
+  (more [this] (if (>= 0 (.count this))
+                 nil
+                 (TensorValue. (slice-buffer b
+                                             (tv-top-size shape))
+                               handle
+                               dtype
+                               (dec-shape shape)
+                               false)))
+  (next [this] (seq (.more this)))
+  (seq [this] (if (>= 0 (.count this))
+                nil
+                this))
+
+  clojure.lang.Indexed
+  (nth [this idx] (.get b idx))
+  
+  clojure.lang.ILookup
+  (valAt [this k] (.nth this k)))
+
+
+
+
+
 (defn get-shape [^Tensor t]
   (-> t :handle tfnative.Tensor/shape dt/md-array->vecs))
 
