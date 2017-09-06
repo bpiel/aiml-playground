@@ -1,4 +1,6 @@
 goog.addDependency("base.js", ['goog'], []);
+goog.addDependency("../cljsjs/d3/development/d3.inc.js", ['cljsjs.d3'], []);
+goog.addDependency("../cljsjs/c3/development/c3.inc.js", ['cljsjs.c3'], ['cljsjs.d3']);
 goog.addDependency("../cljsjs/react/development/react.inc.js", ['cljsjs.react'], []);
 goog.addDependency("../cljsjs/create-react-class/development/create-react-class.inc.js", ['cljsjs.create_react_class'], ['cljsjs.react']);
 goog.addDependency("../cljs/core.js", ['cljs.core'], ['goog.string', 'goog.object', 'goog.math.Integer', 'goog.string.StringBuffer', 'goog.array', 'goog.math.Long']);
@@ -85,6 +87,6 @@ goog.addDependency("../re_frame/cofx.js", ['re_frame.cofx'], ['re_frame.intercep
 goog.addDependency("../re_frame/std_interceptors.js", ['re_frame.std_interceptors'], ['re_frame.interceptor', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.cofx', 'clojure.data', 're_frame.db']);
 goog.addDependency("../re_frame/subs.js", ['re_frame.subs'], ['re_frame.interop', 're_frame.trace', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.db']);
 goog.addDependency("../re_frame/core.js", ['re_frame.core'], ['re_frame.interop', 're_frame.interceptor', 're_frame.events', 're_frame.fx', 're_frame.registrar', 'cljs.core', 're_frame.router', 'clojure.set', 're_frame.std_interceptors', 're_frame.loggers', 're_frame.subs', 're_frame.cofx', 're_frame.db']);
-goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['reagent.core', 'cljs.core', 'goog.history.EventType', 'goog.History', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
+goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['cljsjs.c3', 'reagent.core', 'cljs.core', 'goog.history.EventType', 'goog.History', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
 goog.addDependency("../process/env.js", ['process.env'], ['cljs.core']);
 goog.addDependency("../devtools/preload.js", ['devtools.preload'], ['cljs.core', 'devtools.core', 'devtools.prefs']);

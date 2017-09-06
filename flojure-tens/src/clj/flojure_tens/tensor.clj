@@ -210,7 +210,7 @@
                        dst))
         dst))))
 
-(defn get-value-clj
+#_(defn get-value-clj
   [t]
   (-> t
       get-value

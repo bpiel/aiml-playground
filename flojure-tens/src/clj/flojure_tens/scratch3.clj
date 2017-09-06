@@ -337,6 +337,3 @@
 
 (def ls (map identity (range 10)))
 (def s1 '(1 2 3))
-
-
-

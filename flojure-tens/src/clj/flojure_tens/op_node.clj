@@ -13,15 +13,16 @@
 
 (def NodeDefP (pr/protodef NodeDef))
 
-
 ;; TODO move to utils?
 (defn compute-hash
   [{:keys [id scope] :as plan}]
-  (if id
-    (hash [id scope])
-    (-> plan
-        (dissoc :output-idx)
-        hash)))
+  (cond (keyword? plan)
+        (hash [plan []])
+        id (hash [id scope])
+        :else
+        (-> plan
+            (dissoc :output-idx)
+            hash)))
 
 (defn get-op-by-plan
   [^Graph g plan]

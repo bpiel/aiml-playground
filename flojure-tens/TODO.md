@@ -78,6 +78,8 @@ x DO MACROS GET RUN ONCE FOR EACH OUTPUT BUILT? NO
 
 x fetch non-zero macro ops by plan
 
+x Tensor Mgr
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -135,7 +137,35 @@ random search
 
 ================
 
--------- Tensor Mgr
+
+========================================
+
+Dev MNIST
+
+todo:
+- click on node, see values (chart, hist series)??
+
+bugs to encounter:
+- loss not reducing
+- poorly scaled input
+- NaNs (high learning rate)
+- bad weight inits
+- (un)even number of inputs per class
+- vanishing gradients
+- not zero-centered activation
+- dead relus
+- exploding gradients
+
+dev process
+- 2k iters
+- 10 instances in training set
+- simplest version first
+
+http://russellsstewart.com/notes/0.html
+https://hackernoon.com/how-to-debug-neural-networks-manual-dc2a200f10f2
+
+========================================
+
 
 
 

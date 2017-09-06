@@ -66,25 +66,32 @@
 
 
 
-#_(time (let [{:keys [classes]}
+(time (let [{:keys [data1]}
             (ut/id$->> (o/placeholder :data
                                       dt/float-kw
                                       [-1 784])
-                       (o/identity-tf :classes))]
-        (ft/with-close-let [{:keys [graph] :as s} (ft/build->session classes)]
+                       (o/identity-tf :data1))]
+        (ft/with-close-let [{:keys [graph] :as s} (ft/build->session data1)]
           (def o
-            (ft/fetch s classes {:data (take 10000 @test-data)})))))
+            (ft/fetch-map s [:data1] {:data (take 1 @test-data)})))))
 
-(let [n 1000
-      d (mapv float (range 784))
-      dd (vec (repeat n d))]
-  (time (let [{:keys [classes]}
-              (ut/id$->> (o/placeholder :data
-                                        dt/float-kw
-                                        [-1 n])
-                         (o/identity-tf :classes))]
-          (ft/with-close-let [{:keys [graph] :as s} (ft/build->session classes)]
-            (println "=========")
-            (time
-             (def o
-               (ft/fetch s classes {:data dd})))))))
+(defn log-run
+  [{:keys [session feed fetch]}]
+  (swap! @(ns-resolve (the-ns '$g)
+                     '$log)
+         conj
+         {:feed feed
+          :fetch (ft/fetch-map session
+                               fetch
+                               feed)}))
+
+(time (let [{:keys [data1]}
+            (ut/id$->> (o/placeholder :data
+                                      dt/float-kw
+                                      [-1 3])
+                       (o/identity-tf :data1))]
+        (ft/with-close-let [{:keys [graph] :as s} (ft/build->session data1)]
+          (d/mk-ns s)
+          (log-run {:session s
+                    :feed {:data [1. 3. 4.]}
+                    :fetch [:data1]}))))

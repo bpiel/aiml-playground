@@ -2,8 +2,8 @@
   (:require [flojure-tens.graph :as gr]
             [flojure-tens.builder :as bdr]
             [flojure-tens.session :as sess]
-            [flojure-tens.tensor-mgr :as tm] 
-            [flojure-tens.tensor :as tsr] ;; TODO remove
+            [flojure-tens.tensor-mgr :as tm]
+            [flojure-tens.op-node :as opn]
             flojure-tens.macros
             flojure-tens.gradients
             flojure-tens.grad-desc-opt
@@ -43,7 +43,8 @@
   (with-close-let* bindings body))
 
 (defn tensor->value [tensor]
-  (tsr/get-value-clj tensor))
+  (:value tensor)
+  #_ (tsr/get-value-clj tensor))
 
 (defn delete-tensor->value [tensor]
   (let [r (tensor->value tensor)]
@@ -108,6 +109,13 @@
   (->> (fetch-all->tensors session plans feed)
        (map :value #_delete-tensor->value)))
 
+(defn fetch-map [^Session session plans & [feed]]
+  (let [g (:graph session)]
+    (zipmap (map (comp :id
+                       (partial opn/get-op-by-plan g))
+                 plans)
+            (fetch-all session plans feed))))
+
 (defn exec
   ([plan]
    (-> plan
@@ -162,3 +170,6 @@
   ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
+
+
+

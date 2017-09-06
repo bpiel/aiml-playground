@@ -17,7 +17,12 @@
   [v]
   (def v1 v)
   (let [baos (ByteArrayOutputStream.)
-        tw (t/writer baos :json)]
+        tw (t/writer baos :json
+                     {:handlers
+                      {flojure_tens.tensor.TensorNDArray (t/write-handler
+                                                          (constantly "list")
+                                                          vec
+                                                          str)}})]
     (t/write tw v)
     (.toByteArray baos)))
 

@@ -6,7 +6,8 @@
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
-            [flojure-tens.data-type :as dt])
+            [flojure-tens.data-type :as dt]
+            [flojure-tens.webapp.server :as wsvr])
   (:import [flojure_tens.common Graph Op]
            [flojure_tens.session Session]))
 
@@ -35,7 +36,8 @@
   (doseq [[k v] (-> g :state deref :id->node)]
     (intern ns'
             (symbol (clojure.string/replace k #"/" ">"))
-            v)))
+            (with-meta v
+              {:ns ns'}))))
 
 (defn mk-ns
   [^Session s]
@@ -43,17 +45,28 @@
     (unmap-interns ns')
     (intern ns' '$graph (:graph s))
     (intern ns' '$session s)
+    (intern ns' '$log (atom []))
     (mk-nodes-in-ns (:graph s) ns')))
 
 (defn plan [^Op op-node] (-> op-node meta :plan))
 (defn stack [^Op op-node] (-> op-node meta :stack))
 
+;; TODO can be fn (now)
 (defmacro fetch
   [op & feed]
   `(ft/fetch (deref (ns-resolve (-> (var ~op) meta :ns)
                                 (quote ~'$session)))
              ~op
              (or ~feed {})))
+
+(defn get-ns [op] (-> op meta :ns))
+(defn get-log [op] @(ns-resolve (get-ns op)
+                                '$log))
+
+(defn logged-fetches
+  [{:keys [id] :as op}]
+  (map #(-> % :fetch (get id))
+       @(get-log op)))
 
 (defn- w-mk-node-def
   [opnode]
@@ -73,6 +86,7 @@
       r)))
 
 (defn drop-output-idx [id] (first (clojure.string/split id #":")))
+
 
 (defn w-mk-node-defs
   [{:keys [id]}]
@@ -99,33 +113,19 @@
   (w-mk-graph-def @(ns-resolve (the-ns '$g)
                               '$graph)))
 
+(defn w-push
+  [data]
+  (wsvr/respond-transit data))
+
+(defn w-graph []
+  (w-push
+   (assoc (w-mk-graph-def2)
+          :cmd :graph)))
+
+(defn w-chartb
+  [data]
+  (w-push {:cmd :chart
+           :type :bar
+           :data data}))
+
 #_(clojure.pprint/pprint  (w-mk-graph-def2))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

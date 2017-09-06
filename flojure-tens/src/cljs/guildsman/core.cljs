@@ -5,7 +5,8 @@
             [goog.history.EventType :as HistoryEventType]
             [devtools.core :as devtools]
             [figwheel.client :as figwheel :include-macros true]
-            [cognitect.transit :as t])
+            [cognitect.transit :as t]
+            cljsjs.c3)
   (:import goog.History))
 
 (enable-console-print!)
@@ -16,6 +17,13 @@
 (def json-writer (t/writer :json))
 (def json-reader (t/reader :json))
 
+
+(defn chart
+  [m]
+  (println "chart")
+  (println m)
+  (.generate js/c3
+             (clj->js {:data {:columns [['data', 1, 3, 7, 2]]}})))
 
 
 (defn init-cyto
@@ -28,13 +36,21 @@
                                    :style {"curve-style" "unbundled-bezier"
                                            :control-point-distances [20]
                                            :control-point-weights [0.75]}}]
-                          :elements m})))
+                          :elements (select-keys m
+                                                 [:nodes :edges])})))
+
+(defn dispatch-ws-msg
+  [{:keys [cmd] :as msg}]
+  (case cmd
+    :graph (init-cyto msg)
+    :chart (chart msg)))
 
 (defn ws-onmessage
   [data]
   (println (.-data data))
   (let [d (t/read json-reader (.-data data))]
-    (init-cyto d)))
+    (println d)
+    (dispatch-ws-msg d)))
 
 (defn init-ws
   []
@@ -52,6 +68,7 @@
 #_(devtools/install!)
 
 #_(init!)
+(init-ws)
 
 ;; === app END
 
