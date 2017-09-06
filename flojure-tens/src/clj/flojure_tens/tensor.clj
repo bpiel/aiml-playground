@@ -105,7 +105,7 @@
   (-> handle tfnative.Tensor/shape dt/md-array->vecs))
 
 (defn get-data-type-by-handle [handle]
-  (-> handle tfnative.Tensor/dtype dt/native->dt :kw))
+  (-> handle tfnative.Tensor/dtype dt/native->dt))
 
 (defmulti get-scalar-value (fn [handle dtype] dtype))
 
@@ -173,12 +173,14 @@
 
 (defn create-ref-from-handle ^TensorRef [handle]
   (let [dtype (get-data-type-by-handle handle)
-        shape (get-shape-by-handle handle)]
+        shape (get-shape-by-handle handle)
+        ref-id (gensym "tref")]
     (TensorRef. handle
-                (gensym "tref")
+                ref-id
                 dtype
                 shape
                 (mk-tensor-value handle
+                                 ref-id
                                  dtype
                                  shape))))
 
@@ -189,7 +191,7 @@
               dtype
               shape
               (mk-tensor-value handle
-                               dtype
+                               (dt/kw->dt dtype)
                                shape)))
 
 (defn zeros-array-by-dtype

@@ -47,7 +47,7 @@
 
 (defn delete-tensor->value [tensor]
   (let [r (tensor->value tensor)]
-    (tm/release-ref tensor)
+    (tm/release-tensor-ref tensor)
     #_(tfnative.Tensor/delete (:handle tensor))
     r))
 
@@ -101,11 +101,12 @@
 
 (defn fetch [^Session session plan & [feed]]
   (-> (fetch->tensor session plan feed)
-      delete-tensor->value))
+      :value
+      #_delete-tensor->value))
 
 (defn fetch-all [^Session session plans & [feed]]
   (->> (fetch-all->tensors session plans feed)
-       (map delete-tensor->value)))
+       (map :value #_delete-tensor->value)))
 
 (defn exec
   ([plan]

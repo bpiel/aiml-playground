@@ -135,11 +135,15 @@ random search
 
 ================
 
+-------- Tensor Mgr
+
+
 
 
 - canned goods (canned nn solutions) -- as code generators
 "sorry, snake people"
 
+- batch normalization?????
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

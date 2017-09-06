@@ -66,13 +66,25 @@
 
 
 
-(time (let [{:keys [classes]}
+#_(time (let [{:keys [classes]}
             (ut/id$->> (o/placeholder :data
                                       dt/float-kw
                                       [-1 784])
                        (o/identity-tf :classes))]
         (ft/with-close-let [{:keys [graph] :as s} (ft/build->session classes)]
           (def o
-            (ft/fetch s classes {:data (take 1 @test-data)})))))
+            (ft/fetch s classes {:data (take 100 @test-data)})))))
 
-
+(let [n 4
+      d (mapv float (range 4 #_784))
+      dd (vec (repeat n d))]
+  (time (let [{:keys [classes]}
+              (ut/id$->> (o/placeholder :data
+                                        dt/float-kw
+                                        [-1 n])
+                         (o/identity-tf :classes))]
+          (ft/with-close-let [{:keys [graph] :as s} (ft/build->session classes)]
+            (println "=========")
+            (time
+             (def o
+               (ft/fetch s classes {:data dd})))))))

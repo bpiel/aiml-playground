@@ -28,7 +28,7 @@
   (let [value' (maybe-auto-cast value)]
     (try
       (condp = def-type ;; wtf
-        :tensor (:handle (tsr/create-from-value value'))
+        :tensor (:handle (tsr/create-ref-from-value value')) ;; TODO!!
         :type (if (keyword? value')
                 (dt/->tf-attr-val :int64 (-> value' dt/kw->dt :native))
                 (dt/->tf-attr-val :int64 value'))

@@ -264,6 +264,14 @@
       (to-array (map seq->md-array v)))
     v))
 
+(defn seq->flat-array
+  [v]
+  (if (sequential? v)
+    (let [v' (flatten v)
+          dt (data-type-of-seq v')]
+      ((:array-fn dt) v'))
+    v))
+
 (defn ->tf-attr-val [ty v & [dims]]
   (if-let [dt (data-type-of-array v)]
     (if (-> dt :kw (= ty))

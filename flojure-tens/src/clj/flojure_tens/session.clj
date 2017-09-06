@@ -106,7 +106,7 @@
                      return-meta
                      outputs)]
     (doseq [t in-tsrs]
-      (tm/release-ref t))
+      (tm/release-tensor-ref t))
     outputs
     #_    {:output-handles outputs
            :meta-data maybe-meta}))
@@ -114,7 +114,7 @@
 (defn run-req->tensors
   [^Session s ^RunRequest req]
   (let [handles (run-req->handles s req)]
-    (mapv tsr/create-from-handle
+    (mapv tm/get-tensor-ref-by-handle
           handles)))
 
 (defn fetch-all->tensors [^Session session plans & [feed]]

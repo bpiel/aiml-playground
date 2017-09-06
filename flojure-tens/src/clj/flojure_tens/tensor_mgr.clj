@@ -5,15 +5,10 @@
 
 ;; This is crazy, but maybe not terrible?
 
-(defn valid-ref?*
-  [st tsr-handle tref]
-  (when-let [refs (some-> st :refs (get tsr-handle))]
-    (-> (refs tref)
-        nil?
-        not)))
+;; TODO default to false
+(def cache-tensors? (atom true))
 
-
-(def init-state {:handle->refs {} :cache {} :vhsh->tnda {} :dibs {}})
+(def init-state {:handle->refs {} :cache {} :ref-id->tnda {} :dibs {}})
 (defonce state (atom init-state))
 
 (defn reset-state! "Don't do it!" [] (reset! state init-state))
@@ -21,13 +16,38 @@
 ;; TODO dumb?
 (def conj-set (fnil conj #{}))
 
+(defn- add-ref-to-state
+  [st handle ref-id]
+  (update-in st
+             [:handle->refs handle]
+             conj-set
+             ref-id))
+
+(defn- add-to-state-wo-cache
+  [st v]
+  (-> st
+      (add-ref-to-state (.handle v)
+                        (.ref-id v))
+      (assoc-in [:ref-id->tnda (.ref-id v)]
+                v)))
+
+;; TODO don't assume no cached copy exists?
+(defn- add-to-state-w-cache
+  [st ^TensorNDArray v hsh]
+  (let [handle (.handle v)
+        v-cached (:value (tsr/create-ref-from-handle handle))]
+    (-> st 
+        (add-to-state-wo-cache v)
+        (add-to-state-wo-cache v-cached)
+        (assoc-in [:cache hsh]
+                  v-cached))))
+
 (defn- try-cache*
   [{:keys [handle->refs cache] :as st} hsh dib]
-  (if-let [tref1 (cache hsh)]
-    (let [tref2 (tsr/create-ref-from-ref tref1)]
+  (if-let [tnda1 (cache hsh)]
+    (let [tref2 (tsr/create-ref-from-handle  (.handle tnda1))]
       (-> st
-          (update-in [:handle->refs (:handle tref1)]
-                     conj-set (:id tref2))
+          (add-to-state-wo-cache (:value tref2))
           (assoc-in [:dibs dib] tref2)))
     st))
 
@@ -35,114 +55,133 @@
   [st dib]
   (update st :dibs dissoc dib))
 
-(defn try-cache
+(defn- pop-dibbed
+  [dib]
+  (when-let [dibbed (get-in @state [:dibs dib])]
+    (swap! state undib dib)
+    dibbed))
+
+(defn- try-cache
   [hsh]
-  (let [dib (gensym "tref")]
+  (let [dib (gensym "dib")]
     (swap! state try-cache*
            hsh
            dib)
-    (when-let [dibbed (get-in @state [:dibs dib])]
-      (swap! state undib dib)
-      dibbed)))
+    (pop-dibbed dib)))
 
-;; TODO don't assume no cached copy exists?
-(defn- add-to-state*
-  [st hsh tref]
-  (let [tref-cached (tsr/create-ref-from-ref tref)]
-    (-> st
-        (update-in [:handle->refs (:handle tref)]
-                   conj-set
-                   (:id tref)
-                   (:id tref-cached))
-        (assoc-in [:cache hsh]
-                  tref-cached))))
-
-(defn add-to-state
-  [hsh tref]
-  (swap! state add-to-state* hsh tref))
+(defn manage
+  [^TensorNDArray v & [hsh]]
+  (if hsh
+    (swap! state add-to-state-w-cache v hsh)
+    (swap! state add-to-state-wo-cache v)))
 
 
+(defn manage-tensor-ref
+  [^TensorRef tref & [hsh]]
+  (let [{:keys [value]} tref]
+    (if (instance? TensorNDArray value)
+      (manage (:value tref) hsh)
+      (swap! state
+             add-ref-to-state
+             (:handle tref)
+             (:id tref)))))
 
-(defn- release-ref*
-  [st ^TensorRef tref dib]
-  (if (valid-ref?* st (:handle tref) (:id tref))
-    (let [st' (update-in st [:handle->refs (:handle tref)]
-                         disj (:id tref))]
-      (if (-> st' :handle->refs empty?)
-        (assoc-in st' [:dibs dib] tref)
-        st'))
-    st))
+(defn- release*
+  [st handle ref-id dib]
+  (let [st' (-> st
+                (update-in [:handle->refs handle]
+                           disj ref-id)
+                (update :ref-id->tnda
+                        dissoc ref-id))]
+    (if (empty? ((:handle->refs st') handle))
+      (-> st'
+          (update :handle->refs dissoc handle)
+          (assoc-in [:dibs dib] handle))
+      st')))
 
-(defn- maybe-delete
-  [st dib]
-  (when-let [target (get-in st [:dibs dib])]
-    (tfnative.Tensor/delete (:handle target)))
-  (update st :dibs dissoc dib))
+(defn release
+  [^TensorNDArray tnda]
+  (let [dib (gensym "dib")]
+    (swap! state release* (.handle tnda) (.ref-id tnda) dib)
+    (.invalidate! tnda)
+    (when-let [handle-to-delete (pop-dibbed dib)]
+      (tfnative.Tensor/delete handle-to-delete))))
 
-(defn release-ref
+(defn release-tensor-ref
   [^TensorRef tref]
   (let [dib (gensym "dib")]
-    (swap! state release-ref* tref dib)
-    (swap! state maybe-delete dib)))
+    (swap! state release* (:handle tref) (:id tref) dib)
+    (when-let [handle-to-delete (pop-dibbed dib)]
+      (tfnative.Tensor/delete handle-to-delete))))
 
-(defn clear-cache*
+(defn- clear-cache*
   [st dib]
   (let [cached (-> st :cache vals)]
     (-> st
         (assoc :cache {})
         (assoc-in [:dibs dib] cached))))
 
-
-(defn clean-up-handle->refs []
-  (swap! state
-         (fn [st]
-           (if-let [empties (keep (fn [[k v]] (when (empty? v) k))
-                                    (:handle->refs st))]
-             (update st
-                     :handle->refs
-                     (partial apply dissoc)
-                     empties)))))
-
 (defn clear-cache []
   (let [dib (gensym "dib")]
     (swap! state clear-cache* dib)
-    (when-let [targets (not-empty (get-in @state [:dibs dib]))]
-      (doseq [tref targets]
-        (release-ref tref)))
-    (swap! state update :dibs dissoc dib)
-    (clean-up-handle->refs)))
+    (when-let [targets (not-empty (pop-dibbed dib))]
+      (doseq [tnda targets]
+        (release tnda)))))
 
-(defn release
-  [^TensorNDArray tnda])
+(defn get-tensor-ref-by-handle ^TensorRef [handle]
+  (let [tref (tsr/create-ref-from-handle handle)]
+    (manage-tensor-ref tref)
+    tref))
 
-(defn release-tensor-ref [^TensorRef tref]
-  )
+(defn- should-cache? [v]
+  (and @cache-tensors?
+       (-> v dt/data-type-of nil?)))
+
+(defn get-tensor-ref-by-value*
+  ^TensorRef [v & [hsh]]
+  (let [tref (tsr/create-ref-from-value v)]
+    (manage-tensor-ref tref hsh)
+    tref))
 
 (defn get-tensor-ref-by-value ^TensorRef [v]
-  (let [hsh (hash [v (dt/data-type-of-whatever v)])]
-    (or (try-cache hsh)
-        (let [tref (tsr/create-ref-from-value v)]
-          (add-to-state hsh tref)
-          tref))))
+  (if (instance? TensorNDArray v)
+    (get-tensor-ref-by-handle (.handle v))
+    (if (should-cache? v)
+      (let [hsh (hash [v (dt/data-type-of-whatever v)])]
+        (or (try-cache hsh)
+            (get-tensor-ref-by-value* v hsh)))
+      (get-tensor-ref-by-value* v))))
 
-(defn get-tensor-ref-by-handle ^TensorRef [handle])
+(defn calc-size-all-tensors
+  []
+  (->> @state
+       :ref-id->tnda
+       vals
+       (group-by #(.handle %))
+       vals
+       (keep first)
+       (map #(.size %))
+       (apply +)))
+
+
 
 #_ (do
-     @state
+     (clojure.pprint/pprint      @state)
 
-     (def t1 (get-tensor-ref-by-value 4))
+     (def t1 (get-tensor-ref-by-value [1.]))
+     
      (def t2 (get-tensor-ref-by-value 4))
 
-     ((:valid? t1))
-
-     ((:valid? t2))
+     (.valid? (:value t1))
      
-     (release-ref t1)
+     (release-tensor-ref t1)
 
-          (release-ref t2)
+     (release-tensor-ref t2)
 
      (clear-cache)
 
      (clean-up-handle->refs)
      
-     (reset-state!))
+     (reset-state!)
+
+     (calc-size-all-tensors))
