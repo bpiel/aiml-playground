@@ -73,7 +73,7 @@
                      dtype (first dtypes)]
 
                  [(-> v
-                      (dt/convert-whatever dtype) ;; TODO only convert if type doesn't match
+                      (dt/maybe-convert-whatever dtype)
                       tm/get-tensor-ref-by-value)
                   handle
                   ;; TODO don't hard code 0
@@ -93,18 +93,18 @@
                                    (repeatedly #(:handle (tm/get-tensor-ref-by-value 0)))))) ;; TODO release
         [in-tsrs in-ops in-idx] (feed-> g feed)
         _ (def in-tsrs1 (vec in-tsrs))
-        maybe-meta (tfnative.Session/run
-                     (:handle s) 
-                     options
-                     (long-array (map :handle in-tsrs)) ;; inputTensorHandles
-                     (long-array in-ops)        ;; inputOpHandles
-                     (int-array in-idx)         ;; inputOpIndices
-                     (long-array fetch-handles) ;; outputOpHandles
-                     (int-array fetch-idxs)     ;; outputOpIndices
-                     (long-array (->handles targets g))
-                     ;; targetOpHandles
-                     return-meta
-                     outputs)]
+        maybe-meta (time (tfnative.Session/run
+                           (:handle s) 
+                           options
+                           (long-array (map :handle in-tsrs)) ;; inputTensorHandles
+                           (long-array in-ops)     ;; inputOpHandles
+                           (int-array in-idx)      ;; inputOpIndices
+                           (long-array fetch-handles) ;; outputOpHandles
+                           (int-array fetch-idxs)     ;; outputOpIndices
+                           (long-array (->handles targets g))
+                           ;; targetOpHandles
+                           return-meta
+                           outputs))]
     (doseq [t in-tsrs]
       (tm/release-tensor-ref t))
     outputs

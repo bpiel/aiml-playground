@@ -1,6 +1,7 @@
 (ns flojure-tens.tensor-mgr
   (:require [flojure-tens.tensor :as tsr]
-            [flojure-tens.data-type :as dt])
+            [flojure-tens.data-type :as dt]
+            [flojure-tens.shape :as sh])
   (:import [flojure_tens.tensor TensorRef TensorNDArray]))
 
 ;; This is crazy, but maybe not terrible?
@@ -9,7 +10,7 @@
 (def cache-tensors? (atom true))
 
 (def init-state {:handle->refs {} :cache {} :ref-id->tnda {} :dibs {}})
-(defonce state (atom init-state))
+(def state (atom init-state))
 
 (defn reset-state! "Don't do it!" [] (reset! state init-state))
 
@@ -78,13 +79,15 @@
 
 (defn manage-tensor-ref
   [^TensorRef tref & [hsh]]
-  (let [{:keys [value]} tref]
-    (if (instance? TensorNDArray value)
-      (manage (:value tref) hsh)
+  (let [{:keys [value shape]} tref]
+    (if (-> shape sh/scalar? not)
+      (manage value hsh)
       (swap! state
              add-ref-to-state
              (:handle tref)
              (:id tref)))))
+
+
 
 (defn- release*
   [st handle ref-id dib]
@@ -113,6 +116,11 @@
     (swap! state release* (:handle tref) (:id tref) dib)
     (when-let [handle-to-delete (pop-dibbed dib)]
       (tfnative.Tensor/delete handle-to-delete))))
+
+;; TODO make better
+(defn release-all []
+  (doseq [tnda (-> @state :ref-id->tnda vals)]
+    (release tnda)))
 
 (defn- clear-cache*
   [st dib]
@@ -143,8 +151,15 @@
     (manage-tensor-ref tref hsh)
     tref))
 
+;; TODO HACK!
+(defn hack-out-handle
+  [v]
+  (try (.handle v)
+       (catch Exception e nil)))
+
+;; TODO instance? not working well
 (defn get-tensor-ref-by-value ^TensorRef [v]
-  (if (instance? TensorNDArray v)
+  (if (hack-out-handle v) #_(instance? TensorNDArray v)
     (get-tensor-ref-by-handle (.handle v))
     (if (should-cache? v)
       (let [hsh (hash [v (dt/data-type-of-whatever v)])]
@@ -184,4 +199,6 @@
      
      (reset-state!)
 
-     (calc-size-all-tensors))
+     (calc-size-all-tensors)
+
+     (release-all))

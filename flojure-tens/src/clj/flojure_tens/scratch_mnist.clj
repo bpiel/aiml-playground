@@ -73,10 +73,10 @@
                        (o/identity-tf :classes))]
         (ft/with-close-let [{:keys [graph] :as s} (ft/build->session classes)]
           (def o
-            (ft/fetch s classes {:data (take 100 @test-data)})))))
+            (ft/fetch s classes {:data (take 10000 @test-data)})))))
 
-(let [n 4
-      d (mapv float (range 4 #_784))
+(let [n 1000
+      d (mapv float (range 784))
       dd (vec (repeat n d))]
   (time (let [{:keys [classes]}
               (ut/id$->> (o/placeholder :data
