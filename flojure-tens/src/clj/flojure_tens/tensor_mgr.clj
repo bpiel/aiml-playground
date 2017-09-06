@@ -1,56 +1,32 @@
 (ns flojure-tens.tensor-mgr
   (:require [flojure-tens.tensor :as tsr]
             [flojure-tens.data-type :as dt])
-  (:import [flojure_tens.tensor Tensor]))
+  (:import [flojure_tens.tensor TensorRef TensorNDArray]))
 
 ;; This is crazy, but maybe not terrible?
 
-(def init-state {:refs {} :cache {} :dibs {}})
+(defn valid-ref?*
+  [st tsr-handle tref]
+  (when-let [refs (some-> st :refs (get tsr-handle))]
+    (-> (refs tref)
+        nil?
+        not)))
+
+
+(def init-state {:handle->refs {} :cache {} :vhsh->tnda {} :dibs {}})
 (defonce state (atom init-state))
 
 (defn reset-state! "Don't do it!" [] (reset! state init-state))
-
-(defrecord TensorRef [handle dtype shape valid? id])
-
-(defn valid-ref?*
-  [st tsr-handle tref-id]
-  (when-let [refs (some-> st :refs (get tsr-handle))]
-    (-> (refs tref-id)
-        nil?
-        not)))
-
-(defn valid-ref?
-  [tsr-handle tref-id]
-  (when-let [refs (some-> @state :refs (get tsr-handle))]
-    (-> (refs tref-id)
-        nil?
-        not)))
-
-(defn- tensor->ref
-  [^Tensor t & [id]]
-  (let [{:keys [handle dtype shape]} t
-        id' (or id (gensym "tref"))]
-    (TensorRef. handle dtype shape
-                (partial valid-ref? handle id')
-                id')))
-
-(defn- copy-ref
-  [^TensorRef t & [id]]
-  (let [{:keys [handle dtype shape valid?]} t
-        id' (or id (gensym "tref"))]
-    (TensorRef. handle dtype shape
-                (partial valid-ref? handle id')            
-                id')))
 
 ;; TODO dumb?
 (def conj-set (fnil conj #{}))
 
 (defn- try-cache*
-  [{:keys [refs cache] :as st} hsh dib]
+  [{:keys [handle->refs cache] :as st} hsh dib]
   (if-let [tref1 (cache hsh)]
-    (let [tref2 (copy-ref tref1)]
+    (let [tref2 (tsr/create-ref-from-ref tref1)]
       (-> st
-          (update-in [:refs (:handle tref1)]
+          (update-in [:handle->refs (:handle tref1)]
                      conj-set (:id tref2))
           (assoc-in [:dibs dib] tref2)))
     st))
@@ -69,17 +45,12 @@
       (swap! state undib dib)
       dibbed)))
 
-(defn mk-new-tensor-ref
-  [v hsh]
-  (tensor->ref (tsr/create-from-value v)
-               (gensym "tref")))
-
 ;; TODO don't assume no cached copy exists?
 (defn- add-to-state*
   [st hsh tref]
-  (let [tref-cached (copy-ref tref)]
+  (let [tref-cached (tsr/create-ref-from-ref tref)]
     (-> st
-        (update-in [:refs (:handle tref)]
+        (update-in [:handle->refs (:handle tref)]
                    conj-set
                    (:id tref)
                    (:id tref-cached))
@@ -90,19 +61,14 @@
   [hsh tref]
   (swap! state add-to-state* hsh tref))
 
-(defn get-tensor-ref-by-value ^TensorRef [v]
-  (let [hsh (hash [v (dt/data-type-of-whatever v)])]
-    (or (try-cache hsh)
-        (let [tref (mk-new-tensor-ref v hsh)]
-          (add-to-state hsh tref)
-          tref))))
+
 
 (defn- release-ref*
   [st ^TensorRef tref dib]
   (if (valid-ref?* st (:handle tref) (:id tref))
-    (let [st' (update-in st [:refs (:handle tref)]
+    (let [st' (update-in st [:handle->refs (:handle tref)]
                          disj (:id tref))]
-      (if (-> st' :refs empty?)
+      (if (-> st' :handle->refs empty?)
         (assoc-in st' [:dibs dib] tref)
         st'))
     st))
@@ -127,13 +93,13 @@
         (assoc-in [:dibs dib] cached))))
 
 
-(defn clean-up-refs []
+(defn clean-up-handle->refs []
   (swap! state
          (fn [st]
            (if-let [empties (keep (fn [[k v]] (when (empty? v) k))
-                                    (:refs st))]
+                                    (:handle->refs st))]
              (update st
-                     :refs
+                     :handle->refs
                      (partial apply dissoc)
                      empties)))))
 
@@ -144,8 +110,22 @@
       (doseq [tref targets]
         (release-ref tref)))
     (swap! state update :dibs dissoc dib)
-    (clean-up-refs)))
+    (clean-up-handle->refs)))
 
+(defn release
+  [^TensorNDArray tnda])
+
+(defn release-tensor-ref [^TensorRef tref]
+  )
+
+(defn get-tensor-ref-by-value ^TensorRef [v]
+  (let [hsh (hash [v (dt/data-type-of-whatever v)])]
+    (or (try-cache hsh)
+        (let [tref (tsr/create-ref-from-value v)]
+          (add-to-state hsh tref)
+          tref))))
+
+(defn get-tensor-ref-by-handle ^TensorRef [handle])
 
 #_ (do
      @state
@@ -163,6 +143,6 @@
 
      (clear-cache)
 
-     (clean-up-refs)
+     (clean-up-handle->refs)
      
      (reset-state!))
