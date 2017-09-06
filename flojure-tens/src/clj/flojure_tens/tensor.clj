@@ -8,21 +8,24 @@
   (cons (-> shape first dec)
         (rest shape)))
 
-(defn- tnda-top-size [shape]
-  (apply * (rest shape)))
+(defn- tnda-top-size [byte-size shape]
+  (apply * byte-size (rest shape)))
 
 (defn- tnda-slice-buffer
   [^java.nio.ByteBuffer b pos]
   (locking b
     (.position b pos)
-    (.slice b)))
+    (.order (.slice b)
+            (java.nio.ByteOrder/nativeOrder))))
 
 (defn- tnda-get-by-type
   [^java.nio.ByteBuffer b idx ^clojure.lang.Keyword dtype]
-  (condp = dtype
-    dt/float-kw (.get (.asFloatBuffer b) idx)
-    dt/double-kw (.get (.asDoubleBuffer b) idx)
-    dt/int-kw (.get (.asIntBuffer b) idx)))
+  (locking b
+    (condp = dtype
+      dt/float-kw (.getFloat b idx)
+      dt/double-kw (.getDouble b idx)
+      dt/int-kw (.getInt b idx)
+      dt/long-kw (.getLong b idx))))
 
 (defprotocol PTensorNDArray
   (size [this])
@@ -31,13 +34,15 @@
 
 (deftype TensorNDArray [^java.nio.ByteBuffer b
                         ^long handle
+                        ref-id
                         ^clojure.lang.Keyword dtype
+                        byte-size
                         shape
                         ^java.lang.Boolean whole?
                         ^clojure.lang.Volatile valid?-v]
 
   PTensorNDArray
-  (size [this] (apply * shape))
+  (size [this] (apply * byte-size shape))
   (invalidate! [this]
     (locking valid?-v
       (vreset! valid?-v false)))
@@ -50,18 +55,20 @@
   clojure.lang.ISeq
   (cons [this v] nil)
   (empty [this] nil)
-  ;; TODO support equiv for partials
-  (equiv [this other] (and (= handle (.handle other))
-                           (true? whole?)
-                           (true? (.whole? other))))
+  ;; TODO make good
+  (equiv [this other] (and (seq? other)
+                           (= (-> this seq hash)
+                              (-> other seq hash))))
   (first [this] (.nth this 0))
   (more [this] (if (>= 0 (.count this))
                  nil
                  (TensorNDArray. (->> shape
-                                      tnda-top-size
+                                      (tnda-top-size byte-size)
                                       (tnda-slice-buffer b))
-                                 handle                 
+                                 handle
+                                 ref-id
                                  dtype
+                                 byte-size
                                  (tnda-dec-shape shape)
                                  false
                                  valid?-v)))
@@ -76,15 +83,17 @@
       (when-not (valid? this)
         (throw (Exception. "The tensor backing this structure is no longer valid.")))
       (if (= (count shape) 1)
-        (tnda-get-by-type b idx dtype)
+        (tnda-get-by-type b (* idx byte-size) dtype)
         (TensorNDArray. (if (= idx 0)
                           b
                           (->> shape
-                               tnda-top-size
+                               (tnda-top-size byte-size)
                                (* idx)
                                (tnda-slice-buffer b)))
                         handle
+                        ref-id
                         dtype
+                        byte-size
                         (rest shape)
                         false
                         valid?-v))))
@@ -117,30 +126,32 @@
   (String. (tfnative.Tensor/scalarBytes handle)))
 
 (defn- mk-tensor-ndarray
-  [handle dtype shape]
+  [handle ref-id {:keys [kw byte-size]} shape]
   (let [bb (.order (tfnative.Tensor/buffer handle)
                    (java.nio.ByteOrder/nativeOrder))]
     (TensorNDArray. bb
                     handle
-                    dtype
+                    ref-id
+                    kw
+                    byte-size
                     shape
                     true
                     (volatile! true))))
 
 (defn- mk-tensor-value
-  [handle dtype shape]
+  [handle ref-id dtype shape]
   (if (sh/scalar? shape)
-    (get-scalar-value handle dtype)
-    (mk-tensor-ndarray handle dtype shape)))
+    (get-scalar-value handle (:kw dtype))
+    (mk-tensor-ndarray handle ref-id dtype shape)))
 
 (defn create-ref-from-value ^TensorRef [v]
   (let [shape (sh/shape-of-seq v)
         shape-arr (long-array shape)
-        {:keys [kw native byte-size to-bytes-fn]} (dt/data-type-of-whatever v)
+        {:keys [kw native byte-size to-bytes-fn] :as dtype} (dt/data-type-of-whatever v)
         handle (cond (not= kw dt/string-kw)
                      (let [handle (tfnative.Tensor/allocate native
                                                             shape-arr
-                                                            (apply * (conj shape byte-size)))]
+                                                            (apply * byte-size shape))]
                        (tfnative.Tensor/setValue handle (dt/seq->md-array v)) ;; TODO more efficient?
                        handle)
 
@@ -152,9 +163,10 @@
                                                              (to-array
                                                               (map #(.getBytes % "UTF-8")
                                                                    v))))
-        value (mk-tensor-value handle kw shape)]
+        ref-id (gensym "tref")
+        value (mk-tensor-value handle ref-id dtype shape)]
     (TensorRef. handle
-                (gensym "tref")
+                ref-id
                 kw
                 shape
                 value)))
