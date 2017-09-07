@@ -4,19 +4,19 @@
             [re-com.core :as rc]))
 
 (defn cyto-state->cyto-gen-map
-  [state value #_{:keys [config elements]}]
+  [{:keys [id value]}]
   (println "cyto-state->cyto-gen-map")
   (println value)
+  (println id)
   (clj->js (merge value
                   {:container (.getElementById js/document 
-                                               (:id @state))})))
+                                               id)})))
 
 (defn cyto-comp-did-mount
-  [state value this]
-  (vreset! state
-           (assoc value
-                  :instance
-                  (js/cytoscape (cyto-state->cyto-gen-map state value)))))
+  [state this]
+  (vswap! state assoc 
+          :instance
+          (js/cytoscape (cyto-state->cyto-gen-map @state))))
 
 (defn cyto-reagent-render
   [state value]
@@ -27,20 +27,19 @@
 
 (defn cyto-comp-will-update
   [state this [_ new-value]]
-  (vreset! state
-           (assoc new-value
-                  :instance
-                  (:instance @state))))
+  (vswap! state
+          assoc :value new-value))
 
 (defn cyto-comp-did-update
   [state this [_ {:keys [config data highlighted selected] :as old-val}]]
-  (let [{:keys [instance] :as state'} @state]
-    (cond (not= config (:config state'))
+  (let [{:keys [value] :as state'} @state]
+    (cond #_(not= config (:config state'))
+          (not= value old-val)
           (do (println "generate")
               (vswap! state
                       assoc
                       :instance
-                       (js/cytoscape (cyto-state->cyto-gen-map state state'))))
+                       (js/cytoscape (cyto-state->cyto-gen-map state'))))
           #_ ((not= data (:data state'))
               (do (println "load")
                   (.load instance (clj->js (merge (:data state') {:unload true}))))
@@ -54,11 +53,40 @@
 (defn cytoscape
   [value]
   (println "cyto/cyto")
-  (let [state (volatile! {:id (str (gensym "cyto"))})]
-    (r/create-class {:component-did-mount (partial cyto-comp-did-mount state value)
+  (let [state (volatile! {:id (str (gensym "cyto"))
+                          :value value})]
+    (r/create-class {:component-did-mount (partial cyto-comp-did-mount state)
                      :component-did-update (partial cyto-comp-did-update state)
                      :component-will-update (partial cyto-comp-will-update state)
                      :reagent-render (partial cyto-reagent-render state)})))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

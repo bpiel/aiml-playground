@@ -144,7 +144,7 @@
                    :style {:content "data(name)"}}
                   {:selector "edge"
                    :style {"curve-style" "unbundled-bezier"
-                           :control-point-distances [20]
-                           :control-point-weights [0.75]}}]
+                           :control-point-distances [50]
+                           :control-point-weights [0.5]}}]
           :elements (select-keys (w-mk-graph-def2)
                                  [:nodes :edges])}])
