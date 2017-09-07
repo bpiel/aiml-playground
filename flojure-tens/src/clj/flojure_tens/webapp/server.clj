@@ -6,8 +6,10 @@
             [manifold.stream :as ms]
             [taoensso.timbre :as log]
             [cognitect.transit :as t]
-            [clojure.java.io :as io])
-  (:import [java.io ByteArrayInputStream ByteArrayOutputStream])
+            [clojure.java.io :as io]
+            [flojure-tens.tensor :as tsr])
+  (:import [java.io ByteArrayInputStream ByteArrayOutputStream]
+           [flojure_tens.tensor TensorNDArray])
   (:gen-class))
 
 (defonce server (atom nil))

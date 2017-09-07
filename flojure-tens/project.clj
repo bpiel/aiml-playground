@@ -25,6 +25,7 @@
                  [com.cognitect/transit-cljs "0.8.239"]
                  [reagent "0.7.0"]
                  [re-frame "0.10.1"]
+                 [re-com "0.9.0"]
                  [re-frisk "0.4.5"]
                  [com.taoensso/timbre "4.8.0"]
                  [cljsjs/c3 "0.4.14-0"]

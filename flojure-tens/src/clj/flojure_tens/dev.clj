@@ -129,3 +129,22 @@
            :data data}))
 
 #_(clojure.pprint/pprint  (w-mk-graph-def2))
+
+(w-push '[$/chart
+          {:config
+           {:transition {:duration 0}}
+           :data
+           {:columns [["data1" 100 20 2 5]]}
+           :highlighted nil
+           :selected nil}])
+
+(w-push ['$/graph
+         {:layout {:name "dagre"}
+          :style [{:selector "node"
+                   :style {:content "data(name)"}}
+                  {:selector "edge"
+                   :style {"curve-style" "unbundled-bezier"
+                           :control-point-distances [20]
+                           :control-point-weights [0.75]}}]
+          :elements (select-keys (w-mk-graph-def2)
+                                 [:nodes :edges])}])

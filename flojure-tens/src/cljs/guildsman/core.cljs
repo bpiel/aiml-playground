@@ -1,12 +1,15 @@
 (ns guildsman.core
   (:require [reagent.core :as r]
             [re-frame.core :as rf]
+            [re-com.core :as rc]
             [goog.events :as events]
             [goog.history.EventType :as HistoryEventType]
             [devtools.core :as devtools]
             [figwheel.client :as figwheel :include-macros true]
             [cognitect.transit :as t]
-            cljsjs.c3)
+            cljsjs.c3
+            [guildsman.chart :as ch]
+            [guildsman.cytoscape :as cy])
   (:import goog.History))
 
 (enable-console-print!)
@@ -39,11 +42,18 @@
                           :elements (select-keys m
                                                  [:nodes :edges])})))
 
+
+(def components
+  {'$/chart #'ch/chart
+   '$/graph #'cy/cytoscape
+   '$/v-box rc/v-box
+   '$/h-box rc/h-box})
+
 (defn dispatch-ws-msg
   [{:keys [cmd] :as msg}]
-  (case cmd
-    :graph (init-cyto msg)
-    :chart (chart msg)))
+  (r/render (clojure.walk/prewalk-replace components
+                                          msg)
+            (.getElementById js/document "app")))
 
 (defn ws-onmessage
   [data]
@@ -74,3 +84,11 @@
 
 (println "done loading.")
 
+(r/render [ch/chart
+           {:config
+            {:transition {:duration 0}}
+            :data
+            {:columns [["data1" 1 4 2 5]]}
+            :highlighted nil
+            :selected nil}]
+          (.getElementById js/document "app"))
