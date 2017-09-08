@@ -77,19 +77,24 @@
   (+ (Math/abs (- x1 x2))
      (Math/abs (- y1 y2))))
 
+(defn p
+  [x]
+  (when true
+    (println x)))
+
 (defn find-nearbys
   [x1 y1 x2 y2]
   
   (keep (fn [n]
           (let [[xp yp] (node->xy n)]
-            (println "------")
-             (println [(manhattan x1 y1 xp yp)
+            (p "------")
+             (p [(manhattan x1 y1 xp yp)
                          (manhattan x2 y2 xp yp)])
             (when (and (< 25 (Math/min (manhattan x1 y1 xp yp)
                                        (manhattan x2 y2 xp yp))))
               (let [pc (perp-coords x1 y1 x2 y2 xp yp)]
-                (println pc)
-                (println "------")
+                (p pc)
+                (p "------")
                 pc))))
         (.toArray (.$ @c1 "node"))))
 
@@ -115,25 +120,31 @@
 
 (defn route-edge
   [edge]
-  (let [[sx sy] (js->xy (.sourceEndpoint edge))
-        [dx dy] (js->xy (.targetEndpoint edge))
-        [cpd cpw] (mk-ctrl-styles
-                   (sort-by second
-                            (map mk-ctrl-point
-                                 (filter near-edge?
-                                         (find-nearbys sx sy dx dy)))))]
-    (println [cpd cpw])
-    (println "===========")
-    (-> edge
-#_        (.style "curveStyle" "unbundled-bezier")
-        (.style "controlPointDistances" cpd)
-        (.style "controlPointWeights" cpw))))
+  (try
+    (let [[sx sy] (js->xy (.sourceEndpoint edge))
+          [dx dy] (js->xy (.targetEndpoint edge))
+          [cpd cpw] (mk-ctrl-styles
+                     (sort-by second
+                              (map mk-ctrl-point
+                                   (filter near-edge?
+                                           (find-nearbys sx sy dx dy)))))]
+      (p [cpd cpw])
+      (p "===========")
+      (-> edge
+          #_        (.style "curveStyle" "unbundled-bezier")
+          (.style "controlPointDistances" cpd)
+          (.style "controlPointWeights" cpw)))
+    (catch Exception e
+      (println e))))
 
 (defn route-all-edges
   []
-  #_(println "route-all-edges")
-  (.map (.$ @c1 "edge")
-        route-edge))
+  #_(p "route-all-edges")
+  (try
+    (.map (.$ @c1 "edge")
+          route-edge)
+    (catch Exception e
+      (println e))))
 
 #_(route-all-edges)
 
@@ -165,23 +176,23 @@
       .first))
 
 #_(vreset! c1
-         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto8")
-                                 :style [{:selector "edge"
-                                          :style {"curve-style" "unbundled-bezier"
-                                                  "edge-distances" "node-position"
-                                                  :control-point-distances [0]
-                                                  :control-point-weights [0.5]}}]
-                                 :elements {:nodes [{:data {:id "a"}}
-                                                    {:data {:id "b"}}
-                                                    {:data {:id "c"}}
-                                                    {:data {:id "d"}}
-                                                    {:data {:id "e"}}
-                                                    {:data {:id "f"}}
-                                                    {:data {:id "g"}}]
-                                            :edges [{:data {:source "a"
-                                                            :target "b"}}
-                                                    {:data {:source "c"
-                                                            :target "d"}}]}})))
+           (js/cytoscape (clj->js {:container (.getElementById js/document "cyto12")
+                                   :style [{:selector "edge"
+                                            :style {"curve-style" "unbundled-bezier"
+                                                    "edge-distances" "node-position"
+                                                    :control-point-distances [0]
+                                                    :control-point-weights [0.5]}}]
+                                   :elements {:nodes [{:data {:id "a"}}
+                                                      {:data {:id "b"}}
+                                                      {:data {:id "c"}}
+                                                      {:data {:id "d"}}
+                                                      {:data {:id "e"}}
+                                                      {:data {:id "f"}}
+                                                      {:data {:id "g"}}]
+                                              :edges [{:data {:source "a"
+                                                              :target "b"}}
+                                                      {:data {:source "c"
+                                                              :target "d"}}]}})))
 
 #_(vreset! c1
          (js/cytoscape (clj->js {:container (.getElementById js/document "cyto6")
