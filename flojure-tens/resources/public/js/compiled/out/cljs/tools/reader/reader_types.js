@@ -630,8 +630,8 @@ return (new cljs.tools.reader.reader_types.StringReader(s,cljs.core.count.call(n
  * Creates a PushbackReader from a given string
  */
 cljs.tools.reader.reader_types.string_push_back_reader = (function cljs$tools$reader$reader_types$string_push_back_reader(var_args){
-var G__19581 = arguments.length;
-switch (G__19581) {
+var G__22128 = arguments.length;
+switch (G__22128) {
 case 1:
 return cljs.tools.reader.reader_types.string_push_back_reader.cljs$core$IFn$_invoke$arity$1((arguments[(0)]));
 
@@ -663,8 +663,8 @@ return (new cljs.tools.reader.reader_types.PushbackReader((new cljs.tools.reader
  * Creates an IndexingPushbackReader from a given string or PushbackReader
  */
 cljs.tools.reader.reader_types.indexing_push_back_reader = (function cljs$tools$reader$reader_types$indexing_push_back_reader(var_args){
-var G__19584 = arguments.length;
-switch (G__19584) {
+var G__22131 = arguments.length;
+switch (G__22131) {
 case 1:
 return cljs.tools.reader.reader_types.indexing_push_back_reader.cljs$core$IFn$_invoke$arity$1((arguments[(0)]));
 
@@ -701,8 +701,8 @@ cljs.tools.reader.reader_types.indexing_push_back_reader.cljs$lang$maxFixedArity
  * Creates a SourceLoggingPushbackReader from a given string or PushbackReader
  */
 cljs.tools.reader.reader_types.source_logging_push_back_reader = (function cljs$tools$reader$reader_types$source_logging_push_back_reader(var_args){
-var G__19587 = arguments.length;
-switch (G__19587) {
+var G__22134 = arguments.length;
+switch (G__22134) {
 case 1:
 return cljs.tools.reader.reader_types.source_logging_push_back_reader.cljs$core$IFn$_invoke$arity$1((arguments[(0)]));
 
@@ -745,10 +745,10 @@ while(true){
 if(cljs.tools.reader.impl.utils.newline_QMARK_.call(null,c)){
 return [cljs.core.str.cljs$core$IFn$_invoke$arity$1(s)].join('');
 } else {
-var G__19589 = cljs.tools.reader.reader_types.read_char.call(null,rdr);
-var G__19590 = s.append(c);
-c = G__19589;
-s = G__19590;
+var G__22136 = cljs.tools.reader.reader_types.read_char.call(null,rdr);
+var G__22137 = s.append(c);
+c = G__22136;
+s = G__22137;
 continue;
 }
 break;
@@ -760,14 +760,14 @@ break;
  */
 cljs.tools.reader.reader_types.reader_error = (function cljs$tools$reader$reader_types$reader_error(var_args){
 var args__11094__auto__ = [];
-var len__11087__auto___19593 = arguments.length;
-var i__11088__auto___19594 = (0);
+var len__11087__auto___22140 = arguments.length;
+var i__11088__auto___22141 = (0);
 while(true){
-if((i__11088__auto___19594 < len__11087__auto___19593)){
-args__11094__auto__.push((arguments[i__11088__auto___19594]));
+if((i__11088__auto___22141 < len__11087__auto___22140)){
+args__11094__auto__.push((arguments[i__11088__auto___22141]));
 
-var G__19595 = (i__11088__auto___19594 + (1));
-i__11088__auto___19594 = G__19595;
+var G__22142 = (i__11088__auto___22141 + (1));
+i__11088__auto___22141 = G__22142;
 continue;
 } else {
 }
@@ -791,10 +791,10 @@ return null;
 
 cljs.tools.reader.reader_types.reader_error.cljs$lang$maxFixedArity = (1);
 
-cljs.tools.reader.reader_types.reader_error.cljs$lang$applyTo = (function (seq19591){
-var G__19592 = cljs.core.first.call(null,seq19591);
-var seq19591__$1 = cljs.core.next.call(null,seq19591);
-return cljs.tools.reader.reader_types.reader_error.cljs$core$IFn$_invoke$arity$variadic(G__19592,seq19591__$1);
+cljs.tools.reader.reader_types.reader_error.cljs$lang$applyTo = (function (seq22138){
+var G__22139 = cljs.core.first.call(null,seq22138);
+var seq22138__$1 = cljs.core.next.call(null,seq22138);
+return cljs.tools.reader.reader_types.reader_error.cljs$core$IFn$_invoke$arity$variadic(G__22139,seq22138__$1);
 });
 
 cljs.tools.reader.reader_types.source_logging_reader_QMARK_ = (function cljs$tools$reader$reader_types$source_logging_reader_QMARK_(rdr){
@@ -823,4 +823,4 @@ return ret;
 }finally {cljs.core.swap_BANG_.call(null,reader.frames,cljs.core.update_in,new cljs.core.PersistentVector(null, 1, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword(null,"offset","offset",296498311)], null),cljs.core.rest);
 }});
 
-//# sourceMappingURL=reader_types.js.map?rel=1504285959818
+//# sourceMappingURL=reader_types.js.map?rel=1504894094838

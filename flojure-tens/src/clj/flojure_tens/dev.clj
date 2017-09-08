@@ -130,7 +130,7 @@
 
 #_(clojure.pprint/pprint  (w-mk-graph-def2))
 
-(w-push '[$/chart
+#_(w-push '[$/chart
           {:config
            {:transition {:duration 0}}
            :data
@@ -138,7 +138,7 @@
            :highlighted nil
            :selected nil}])
 
-(w-push ['$/graph
+#_(w-push ['$/graph
          {:layout {:name "dagre"}
           :style [{:selector "node"
                    :style {:content "data(name)"}}
@@ -149,6 +149,7 @@
           :elements (select-keys (w-mk-graph-def2)
                                  [:nodes :edges])}])
 
+#_
 (w-push ['$/h-box :children [['$/chart
                             {:config
                              {:transition {:duration 0}}
@@ -166,49 +167,3 @@
                                               :control-point-weights [0.5]}}]
                              :elements (select-keys (w-mk-graph-def2)
                                                     [:nodes :edges])}]]])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -79,20 +79,21 @@
 
 (defn find-nearbys
   [x1 y1 x2 y2]
+  
   (keep (fn [n]
           (let [[xp yp] (node->xy n)]
             (println "------")
-            (println [(manhattan x1 y1 xp yp)
-                      (manhattan x2 y2 xp yp)])
-            (when (< 25 (Math/min (manhattan x1 y1 xp yp)
-                                  (manhattan x2 y2 xp yp)))
+             (println [(manhattan x1 y1 xp yp)
+                         (manhattan x2 y2 xp yp)])
+            (when (and (< 25 (Math/min (manhattan x1 y1 xp yp)
+                                       (manhattan x2 y2 xp yp))))
               (let [pc (perp-coords x1 y1 x2 y2 xp yp)]
                 (println pc)
                 (println "------")
                 pc))))
         (.toArray (.$ @c1 "node"))))
 
-(def e1 (-> (.$ @c1 "edge[source = 'loss']")
+#_(def e1 (-> (.$ @c1 "edge[source = 'loss']")
             .first))
 
 (defn near-edge?
@@ -134,27 +135,27 @@
   (.map (.$ @c1 "edge")
         route-edge))
 
-(route-all-edges)
+#_(route-all-edges)
 
-(def in1 (.setInterval js/window
+#_(def in1 (.setInterval js/window
                        route-all-edges
                        300))
 
-(.clearInterval js/window in1)
+#_(.clearInterval js/window in1)
 
-(.map (.$ @c1 "edge[source = 'loss']")
+#_(.map (.$ @c1 "edge[source = 'loss']")
       route-edge)
 
-(route-edge e1)
+#_(route-edge e1)
 
-(-> (.$ @c1 "node[")
+#_(-> (.$ @c1 "node[")
     (.map node->xy)
     js->clj)
 
-(.fit @c1)
+#_(.fit @c1)
 
 
-(-> (.$ @c1 "edge[source = 'loss']")
+#_(-> (.$ @c1 "edge[source = 'loss']")
     (.style "curveStyle" "unbundled-bezier")
     (.style "controlPointStepSize" "10")
     (.style "controlPointWeight" "0.5"))
@@ -163,8 +164,8 @@
   (-> (.$ @c1 "edge[source = 'loss']")
       .first))
 
-(vreset! c1
-         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto26")
+#_(vreset! c1
+         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto8")
                                  :style [{:selector "edge"
                                           :style {"curve-style" "unbundled-bezier"
                                                   "edge-distances" "node-position"
@@ -173,14 +174,17 @@
                                  :elements {:nodes [{:data {:id "a"}}
                                                     {:data {:id "b"}}
                                                     {:data {:id "c"}}
-                                                    {:data {:id "d"}}]
+                                                    {:data {:id "d"}}
+                                                    {:data {:id "e"}}
+                                                    {:data {:id "f"}}
+                                                    {:data {:id "g"}}]
                                             :edges [{:data {:source "a"
                                                             :target "b"}}
                                                     {:data {:source "c"
                                                             :target "d"}}]}})))
 
-(vreset! c1
-         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto24")
+#_(vreset! c1
+         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto6")
                                  :style [{:selector "edge"
                                           :style {"curve-style" "unbundled-bezier"
                                                   "edge-distances" "node-position"

@@ -12,7 +12,7 @@
             [flojure-tens.tensor :as tsr]
             [flatland.protobuf.core :as pr])
   (:import [org.tensorflow.framework Summary]
-           [com.billpiel.flojure_tens Tensor]))
+           [flojure_tens.tensor TensorNDArray]))
 
 
 

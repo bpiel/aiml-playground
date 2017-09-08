@@ -18,14 +18,14 @@ return devtools.formatters.state._STAR_current_state_STAR_;
 });
 devtools.formatters.state.update_current_state_BANG_ = (function devtools$formatters$state$update_current_state_BANG_(var_args){
 var args__11094__auto__ = [];
-var len__11087__auto___24399 = arguments.length;
-var i__11088__auto___24400 = (0);
+var len__11087__auto___25883 = arguments.length;
+var i__11088__auto___25884 = (0);
 while(true){
-if((i__11088__auto___24400 < len__11087__auto___24399)){
-args__11094__auto__.push((arguments[i__11088__auto___24400]));
+if((i__11088__auto___25884 < len__11087__auto___25883)){
+args__11094__auto__.push((arguments[i__11088__auto___25884]));
 
-var G__24401 = (i__11088__auto___24400 + (1));
-i__11088__auto___24400 = G__24401;
+var G__25885 = (i__11088__auto___25884 + (1));
+i__11088__auto___25884 = G__25885;
 continue;
 } else {
 }
@@ -47,10 +47,10 @@ return devtools.formatters.state._STAR_current_state_STAR_ = cljs.core.apply.cal
 
 devtools.formatters.state.update_current_state_BANG_.cljs$lang$maxFixedArity = (1);
 
-devtools.formatters.state.update_current_state_BANG_.cljs$lang$applyTo = (function (seq24397){
-var G__24398 = cljs.core.first.call(null,seq24397);
-var seq24397__$1 = cljs.core.next.call(null,seq24397);
-return devtools.formatters.state.update_current_state_BANG_.cljs$core$IFn$_invoke$arity$variadic(G__24398,seq24397__$1);
+devtools.formatters.state.update_current_state_BANG_.cljs$lang$applyTo = (function (seq25881){
+var G__25882 = cljs.core.first.call(null,seq25881);
+var seq25881__$1 = cljs.core.next.call(null,seq25881);
+return devtools.formatters.state.update_current_state_BANG_.cljs$core$IFn$_invoke$arity$variadic(G__25882,seq25881__$1);
 });
 
 devtools.formatters.state.push_object_to_current_history_BANG_ = (function devtools$formatters$state$push_object_to_current_history_BANG_(object){
@@ -62,8 +62,8 @@ return new cljs.core.Keyword(null,"history","history",-247395220).cljs$core$IFn$
 devtools.formatters.state.is_circular_QMARK_ = (function devtools$formatters$state$is_circular_QMARK_(object){
 var history = devtools.formatters.state.get_current_history.call(null);
 return cljs.core.some.call(null,((function (history){
-return (function (p1__24402_SHARP_){
-return (p1__24402_SHARP_ === object);
+return (function (p1__25886_SHARP_){
+return (p1__25886_SHARP_ === object);
 });})(history))
 ,history);
 });
@@ -101,4 +101,4 @@ devtools.formatters.state.reset_depth_limits = (function devtools$formatters$sta
 return devtools.formatters.state.set_managed_print_level.call(null,devtools.formatters.state.set_depth_budget.call(null,state,null),null);
 });
 
-//# sourceMappingURL=state.js.map?rel=1504285966376
+//# sourceMappingURL=state.js.map?rel=1504894099106
