@@ -77,14 +77,14 @@
 
 (defn near-edge?
   [[xp yp]]
-  (and (< 0.05 yp .95)
-       (< -20. xp 20.)))
+  (and (< 0.03 yp .97)
+       (< -50. xp 50.)))
 
 (defn mk-ctrl-point
   [[x y]]
-  [(* 2 (if (<= x 0)
-          (+ 100 x)
-          (- x 100)))
+  [(if (<= x 0)
+     (- -50 x)
+     (- 50 x))
    y])
 
 (defn mk-ctrl-styles
@@ -101,13 +101,25 @@
                             (map mk-ctrl-point
                                  (filter near-edge?
                                          (find-nearbys sx sy dx dy)))))]
-    (println [cpd cpw])
+    #_(println [cpd cpw])
     (-> edge
+        (.style "curveStyle" "unbundled-bezier")
         (.style "controlPointDistances" cpd)
         (.style "controlPointWeights" cpw))))
 
-(.map (.$ @c1 "edge")
-      route-edge)
+(defn route-all-edges
+  []
+  #_(println "route-all-edges")
+  (.map (.$ @c1 "edge")
+        route-edge))
+
+(route-all-edges)
+
+(def in1 (.setInterval js/window
+                       route-all-edges
+                       1000))
+
+(.clearInterval js/window in1)
 
 (.map (.$ @c1 "edge[source = 'loss']")
       route-edge)
@@ -119,18 +131,27 @@
     js->clj)
 
 (.fit @c1)
-(->  e1 #_(.$ @c1 "edge[source = 'loss']")
-    (.style "controlPointDistances" "100 100")
-    (.style "controlPointWeights" "0.34 0.61"))
+
 
 (-> (.$ @c1 "edge[source = 'loss']")
     (.style "curveStyle" "unbundled-bezier")
     (.style "controlPointStepSize" "10")
     (.style "controlPointWeight" "0.5"))
 
-(-> (.$ @c1 "edge[source = 'loss']")
-    .first
-    .controlPoints)
+#_(def e1
+  (-> (.$ @c1 "edge[source = 'loss']")
+      .first))
+
+(vreset! c1
+         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto16")
+                                 :elements {:nodes [{:data {:id "a"}}
+                                                    {:data {:id "b"}}
+                                                    {:data {:id "c"}}
+                                                    {:data {:id "d"}}
+                                                    {:data {:id "e"}}]
+                                            :edges [{:data {:source "a"
+                                                            :target "b"}}]}})))
+
 
 (defn cyto-comp-did-mount
   [state this]
