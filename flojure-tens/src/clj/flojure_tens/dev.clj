@@ -148,3 +148,67 @@
                            :control-point-weights [0.5]}}]
           :elements (select-keys (w-mk-graph-def2)
                                  [:nodes :edges])}])
+
+(w-push ['$/h-box :children [['$/chart
+                            {:config
+                             {:transition {:duration 0}}
+                             :data
+                             {:columns [["data1" 100 20 2 5]]}
+                             :highlighted nil
+                             :selected nil}]
+                           ['$/graph
+                            {:layout {:name "dagre"}
+                             :style [{:selector "node"
+                                      :style {:content "data(name)"}}
+                                     {:selector "edge"
+                                      :style {"curve-style" "unbundled-bezier"
+                                              :control-point-distances [50]
+                                              :control-point-weights [0.5]}}]
+                             :elements (select-keys (w-mk-graph-def2)
+                                                    [:nodes :edges])}]]])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

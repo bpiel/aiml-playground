@@ -3,20 +3,140 @@
             [reagent.core :as r]
             [re-com.core :as rc]))
 
+(def c1 (volatile! nil))
+(def a1 (atom nil))
+
 (defn cyto-state->cyto-gen-map
   [{:keys [id value]}]
   (println "cyto-state->cyto-gen-map")
-  (println value)
   (println id)
   (clj->js (merge value
                   {:container (.getElementById js/document 
                                                id)})))
 
+(defn gen-cyto
+  [state']
+  (println "gen-cyto")
+  (let [c (js/cytoscape (cyto-state->cyto-gen-map state'))]
+    (vreset! c1 c)
+    (println  "gen-cyto POST vreset")
+    c))
+
+(defn dist
+  [x1 y1 x2 y2 xp yp]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)]
+    (-> (* dy xp)
+        (- (* dx yp))
+        (+ (* x2 y1))
+        (- (* y2 x1))
+        (/ (Math/sqrt (+ (* dy dy)
+                         (* dx dx)))))))
+
+(defn perp-coords
+  [x1 y1 x2 y2 xp yp]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)
+        k (/ (- (* dy (- xp x1))
+                (* dx (- yp y1)))
+             (+ (* dy dy)
+                (* dx dx)))
+        x4 (- xp (* k dy))
+        y4 (+ yp (* k dx))
+        d (Math/sqrt (+ (* (- y2 y1)
+                           (- y2 y1))
+                        (* (- x2 x1)
+                           (- x2 x1))))
+        ypt (Math/sqrt (+ (* (- y4 y1)
+                             (- y4 y1))
+                          (* (- x4 x1)
+                             (- x4 x1))))
+        xpt (dist x1 y1 x2 y2 xp yp)]
+    [xpt (/ ypt d)]))
+
+(defn js->xy
+  [xy]
+  ((juxt #(get % "x")
+         #(get % "y"))
+   (js->clj xy)))
+
+(defn node->xy
+  [n]
+  (-> (.position n)
+      js->xy))
+
+(defn find-nearbys
+  [x1 y1 x2 y2]
+  (map (fn [n]
+         (let [[xp yp] (node->xy n)]
+           (perp-coords x1 y1 x2 y2 xp yp)))
+       (.toArray (.$ @c1 "node"))))
+
+(def e1 (-> (.$ @c1 "edge[source = 'loss']")
+            .first))
+
+(defn near-edge?
+  [[xp yp]]
+  (and (< 0.05 yp .95)
+       (< -20. xp 20.)))
+
+(defn mk-ctrl-point
+  [[x y]]
+  [(* 2 (if (<= x 0)
+          (+ 100 x)
+          (- x 100)))
+   y])
+
+(defn mk-ctrl-styles
+  [ps]
+  [(clojure.string/join " " (map str (map first ps)))
+   (clojure.string/join " " (map str (map second ps)))])
+
+(defn route-edge
+  [edge]
+  (let [[sx sy] (js->xy (.sourceEndpoint edge))
+        [dx dy] (js->xy (.targetEndpoint edge))
+        [cpd cpw] (mk-ctrl-styles
+                   (sort-by second
+                            (map mk-ctrl-point
+                                 (filter near-edge?
+                                         (find-nearbys sx sy dx dy)))))]
+    (println [cpd cpw])
+    (-> edge
+        (.style "controlPointDistances" cpd)
+        (.style "controlPointWeights" cpw))))
+
+(.map (.$ @c1 "edge")
+      route-edge)
+
+(.map (.$ @c1 "edge[source = 'loss']")
+      route-edge)
+
+(route-edge e1)
+
+(-> (.$ @c1 "node[")
+    (.map node->xy)
+    js->clj)
+
+(.fit @c1)
+(->  e1 #_(.$ @c1 "edge[source = 'loss']")
+    (.style "controlPointDistances" "100 100")
+    (.style "controlPointWeights" "0.34 0.61"))
+
+(-> (.$ @c1 "edge[source = 'loss']")
+    (.style "curveStyle" "unbundled-bezier")
+    (.style "controlPointStepSize" "10")
+    (.style "controlPointWeight" "0.5"))
+
+(-> (.$ @c1 "edge[source = 'loss']")
+    .first
+    .controlPoints)
+
 (defn cyto-comp-did-mount
   [state this]
   (vswap! state assoc 
           :instance
-          (js/cytoscape (cyto-state->cyto-gen-map @state))))
+          (gen-cyto @state)))
 
 (defn cyto-reagent-render
   [state value]
@@ -39,14 +159,14 @@
               (vswap! state
                       assoc
                       :instance
-                       (js/cytoscape (cyto-state->cyto-gen-map state'))))
+                      (gen-cyto state')))
           #_ ((not= data (:data state'))
               (do (println "load")
                   (.load instance (clj->js (merge (:data state') {:unload true}))))
 
               (not= [highlighted selected] [(:highlighted state')
                                             (:selected state')])
-              (do ;(println "flush")
+              (do                       ;(println "flush")
                 (.flush instance))))))
 
 
@@ -59,39 +179,4 @@
                      :component-did-update (partial cyto-comp-did-update state)
                      :component-will-update (partial cyto-comp-will-update state)
                      :reagent-render (partial cyto-reagent-render state)})))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
