@@ -33,6 +33,11 @@
         (/ (Math/sqrt (+ (* dy dy)
                          (* dx dx)))))))
 
+(defn dir
+  [x]
+  (/ x (Math/abs x)))
+
+
 (defn perp-coords
   [x1 y1 x2 y2 xp yp]
   (let [dx (- x2 x1)
@@ -47,10 +52,12 @@
                            (- y2 y1))
                         (* (- x2 x1)
                            (- x2 x1))))
-        ypt (Math/sqrt (+ (* (- y4 y1)
-                             (- y4 y1))
-                          (* (- x4 x1)
-                             (- x4 x1))))
+        ypt (* (Math/sqrt (+ (* (- y4 y1)
+                                (- y4 y1))
+                             (* (- x4 x1)
+                                (- x4 x1))))
+               (dir (+ (- y4 y1)
+                       (- x4 x1))))
         xpt (dist x1 y1 x2 y2 xp yp)]
     [xpt (/ ypt d)]))
 
@@ -65,19 +72,32 @@
   (-> (.position n)
       js->xy))
 
+(defn manhattan
+  [x1 y1 x2 y2]
+  (+ (Math/abs (- x1 x2))
+     (Math/abs (- y1 y2))))
+
 (defn find-nearbys
   [x1 y1 x2 y2]
-  (map (fn [n]
-         (let [[xp yp] (node->xy n)]
-           (perp-coords x1 y1 x2 y2 xp yp)))
-       (.toArray (.$ @c1 "node"))))
+  (keep (fn [n]
+          (let [[xp yp] (node->xy n)]
+            (println "------")
+            (println [(manhattan x1 y1 xp yp)
+                      (manhattan x2 y2 xp yp)])
+            (when (< 25 (Math/min (manhattan x1 y1 xp yp)
+                                  (manhattan x2 y2 xp yp)))
+              (let [pc (perp-coords x1 y1 x2 y2 xp yp)]
+                (println pc)
+                (println "------")
+                pc))))
+        (.toArray (.$ @c1 "node"))))
 
 (def e1 (-> (.$ @c1 "edge[source = 'loss']")
             .first))
 
 (defn near-edge?
   [[xp yp]]
-  (and (< 0.03 yp .97)
+  (and (< 0.01 yp .99)
        (< -50. xp 50.)))
 
 (defn mk-ctrl-point
@@ -101,9 +121,10 @@
                             (map mk-ctrl-point
                                  (filter near-edge?
                                          (find-nearbys sx sy dx dy)))))]
-    #_(println [cpd cpw])
+    (println [cpd cpw])
+    (println "===========")
     (-> edge
-        (.style "curveStyle" "unbundled-bezier")
+#_        (.style "curveStyle" "unbundled-bezier")
         (.style "controlPointDistances" cpd)
         (.style "controlPointWeights" cpw))))
 
@@ -117,7 +138,7 @@
 
 (def in1 (.setInterval js/window
                        route-all-edges
-                       1000))
+                       300))
 
 (.clearInterval js/window in1)
 
@@ -143,12 +164,30 @@
       .first))
 
 (vreset! c1
-         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto16")
+         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto26")
+                                 :style [{:selector "edge"
+                                          :style {"curve-style" "unbundled-bezier"
+                                                  "edge-distances" "node-position"
+                                                  :control-point-distances [0]
+                                                  :control-point-weights [0.5]}}]
                                  :elements {:nodes [{:data {:id "a"}}
                                                     {:data {:id "b"}}
                                                     {:data {:id "c"}}
-                                                    {:data {:id "d"}}
-                                                    {:data {:id "e"}}]
+                                                    {:data {:id "d"}}]
+                                            :edges [{:data {:source "a"
+                                                            :target "b"}}
+                                                    {:data {:source "c"
+                                                            :target "d"}}]}})))
+
+(vreset! c1
+         (js/cytoscape (clj->js {:container (.getElementById js/document "cyto24")
+                                 :style [{:selector "edge"
+                                          :style {"curve-style" "unbundled-bezier"
+                                                  "edge-distances" "node-position"
+                                                  :control-point-distances [0]
+                                                  :control-point-weights [0.5]}}]
+                                 :elements {:nodes [{:data {:id "a"}}
+                                                    {:data {:id "b"}}]
                                             :edges [{:data {:source "a"
                                                             :target "b"}}]}})))
 
