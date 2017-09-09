@@ -23,22 +23,49 @@
     c))
 
 (defn dist
-  [x1 y1 x2 y2 xp yp]
+  [x1 y1 x2 y2]
   (let [dx (- x2 x1)
         dy (- y2 y1)]
-    (-> (* dy xp)
-        (- (* dx yp))
-        (+ (* x2 y1))
-        (- (* y2 x1))
-        (/ (Math/sqrt (+ (* dy dy)
-                         (* dx dx)))))))
+    (Math/sqrt (+ (* dy dy)
+                  (* dx dx)))))
 
-(defn dir
-  [x]
-  (/ x (Math/abs x)))
+(defn steeper?
+  [x1 y1 x2 y2 x3 y3]
+  (< (* (- x1 x3)
+        (- y1 y2))
+     (* (- x1 x2)
+        (- y1 y3))))
 
+(defn inside-box?
+  [x1 y1 x2 y2 xp yp]
+  (and (or (< x1 xp x2)
+           (> x1 xp x2))
+       (or (< y1 yp y2)
+           (> y1 yp y2))))
 
-(defn perp-coords
+(defn find-intersection
+  [x1 y1 x2 y2 x3 y3]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)
+        k (/ (- (* dy (- x3 x1))
+                (* dx (- y3 y1)))
+             (+ (* dy dy)
+                (* dx dx)))
+        x4 (- x3 (* k dy))
+        y4 (+ y3 (* k dx))]
+    [x4 y4]))
+
+(defn rel-coords
+  [x1 y1 x2 y2 x3 y3]
+  (let [[x4 y4] (find-intersection x1 y1 x2 y2 x3 y3)
+        d12 (dist x1 y1 x2 y2)
+        d14 (dist x1 y1 x4 y4)
+        d34 (dist x3 y3 x4 y4)
+        st (if (steeper? x1 y1 x2 y2 x3 y3) 1 -1)]
+    (when (inside-box? x1 y1 x2 y2 x4 y4)
+      [(* d34 st) (/ d14 d12)])))
+
+#_(defn perp-coords
   [x1 y1 x2 y2 xp yp]
   (let [dx (- x2 x1)
         dy (- y2 y1)
@@ -52,12 +79,10 @@
                            (- y2 y1))
                         (* (- x2 x1)
                            (- x2 x1))))
-        ypt (* (Math/sqrt (+ (* (- y4 y1)
-                                (- y4 y1))
-                             (* (- x4 x1)
-                                (- x4 x1))))
-               (dir (+ (- y4 y1)
-                       (- x4 x1))))
+        ypt (Math/sqrt (+ (* (- y4 y1)
+                             (- y4 y1))
+                          (* (- x4 x1)
+                             (- x4 x1))))
         xpt (dist x1 y1 x2 y2 xp yp)]
     [xpt (/ ypt d)]))
 
@@ -79,23 +104,18 @@
 
 (defn p
   [x]
-  (when true
+  (when false
     (println x)))
 
 (defn find-nearbys
   [x1 y1 x2 y2]
-  
   (keep (fn [n]
           (let [[xp yp] (node->xy n)]
             (p "------")
-             (p [(manhattan x1 y1 xp yp)
-                         (manhattan x2 y2 xp yp)])
-            (when (and (< 25 (Math/min (manhattan x1 y1 xp yp)
-                                       (manhattan x2 y2 xp yp))))
-              (let [pc (perp-coords x1 y1 x2 y2 xp yp)]
-                (p pc)
-                (p "------")
-                pc))))
+            (when-let [pc (rel-coords x1 y1 x2 y2 xp yp)]
+              (p pc)
+              (p "------")
+              pc)))
         (.toArray (.$ @c1 "node"))))
 
 #_(def e1 (-> (.$ @c1 "edge[source = 'loss']")
@@ -103,12 +123,16 @@
 
 (defn near-edge?
   [[xp yp]]
-  (and (< 0.01 yp .99)
-       (< -50. xp 50.)))
+  (< -50. xp 50.))
 
 (defn mk-ctrl-point
   [[x y]]
   [(if (<= x 0)
+     (+ 50 x)
+     (- x 50))
+#_   (if (<= x 0)
+    100 -100)
+   #_(if (<= x 0)
      (- -50 x)
      (- 50 x))
    y])
@@ -120,37 +144,31 @@
 
 (defn route-edge
   [edge]
-  (try
-    (let [[sx sy] (js->xy (.sourceEndpoint edge))
-          [dx dy] (js->xy (.targetEndpoint edge))
-          [cpd cpw] (mk-ctrl-styles
-                     (sort-by second
-                              (map mk-ctrl-point
-                                   (filter near-edge?
-                                           (find-nearbys sx sy dx dy)))))]
-      (p [cpd cpw])
-      (p "===========")
-      (-> edge
-          #_        (.style "curveStyle" "unbundled-bezier")
-          (.style "controlPointDistances" cpd)
-          (.style "controlPointWeights" cpw)))
-    (catch Exception e
-      (println e))))
+  (let [[sx sy] (js->xy (.sourceEndpoint edge))
+        [dx dy] (js->xy (.targetEndpoint edge))
+        [cpd cpw] (mk-ctrl-styles
+                   (sort-by second
+                            (map mk-ctrl-point
+                                 (filter near-edge?
+                                         (find-nearbys sx sy dx dy)))))]
+    (p [cpd cpw])
+    (p "===========")
+    (-> edge
+        #_        (.style "curveStyle" "unbundled-bezier")
+        (.style "controlPointDistances" cpd)
+        (.style "controlPointWeights" cpw))))
 
 (defn route-all-edges
   []
   #_(p "route-all-edges")
-  (try
-    (.map (.$ @c1 "edge")
-          route-edge)
-    (catch Exception e
-      (println e))))
+  (.map (.$ @c1 "edge")
+        route-edge))
 
 #_(route-all-edges)
 
 #_(def in1 (.setInterval js/window
                        route-all-edges
-                       300))
+                       100))
 
 #_(.clearInterval js/window in1)
 
@@ -176,7 +194,7 @@
       .first))
 
 #_(vreset! c1
-           (js/cytoscape (clj->js {:container (.getElementById js/document "cyto12")
+           (js/cytoscape (clj->js {:container (.getElementById js/document "cyto4")
                                    :style [{:selector "edge"
                                             :style {"curve-style" "unbundled-bezier"
                                                     "edge-distances" "node-position"
@@ -187,8 +205,7 @@
                                                       {:data {:id "c"}}
                                                       {:data {:id "d"}}
                                                       {:data {:id "e"}}
-                                                      {:data {:id "f"}}
-                                                      {:data {:id "g"}}]
+                                                      {:data {:id "f"}} ]
                                               :edges [{:data {:source "a"
                                                               :target "b"}}
                                                       {:data {:source "c"
