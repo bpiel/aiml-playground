@@ -159,7 +159,8 @@
            {:data {:id "f"}}
            {:data {:id "g"}}
            {:data {:id "h"}}
-           {:data {:id "i"}}]
+           {:data {:id "i"}}
+           {:data {:id "j"}}]
    :edges [{:data {:source "a"
                    :target "b"}}
            {:data {:source "c"
@@ -175,7 +176,9 @@
            {:data {:source "h"
                    :target "g"}}
            {:data {:source "i"
-                   :target "h"}}]})
+                   :target "h"}}
+           {:data {:source "j"
+                   :target "d"}}]})
 
 (defn cyto->nn
   [cyto]
@@ -254,8 +257,9 @@
                    {node [x nil]})
                  sorted
                  (range (- mean 0.5)
-                        (+ mean 0.5)
+                        (+ mean 0.51)
                         (/ 1.0 (dec (count edges)))))))))
+
 
 (defn center-x
   [nn id edges]
@@ -295,11 +299,6 @@
     [id
      (->> id nn ((juxt :outs :ins)) (apply concat) shuffle first :node)]))
 
-(defn edge-updates [nn]
-  (let [[a1 a2] (randomish-edge nn)
-        [b1 b2] (randomish-edge nn)]
-    )
-  )
 
 (defn inside-box?
   [x1 y1 x2 y2 xp yp]
@@ -314,26 +313,44 @@
                     (- y4 y3))
                  (* (- x4 x3)
                     (- y2 y1)))]
-    [(/ (- (* (- (* x2 y1)
-                 (* x1 y2))
-              (- x4 x3))
-           (* (- (* x4 y3)
-                 (* x3 y4))
-              (- x2 x1)))
-        denom)
-     (/ (- (* (- (* x2 y1)
-                 (* x1 y2))
-              (- y4 y3))
-           (* (- (* x4 y3)
-                 (* x3 y4))
-              (- y2 y1)))
-        denom)]))
+    (if (-> denom zero? not)
+      [(/ (- (* (- (* x2 y1)
+                   (* x1 y2))
+                (- x4 x3))
+             (* (- (* x4 y3)
+                   (* x3 y4))
+                (- x2 x1)))
+          denom)
+       (/ (- (* (- (* x2 y1)
+                   (* x1 y2))
+                (- y4 y3))
+             (* (- (* x4 y3)
+                   (* x3 y4))
+                (- y2 y1)))
+          denom)]
+      (clojure.pprint/pprint [x1 y1 x2 y2 x3 y3 x4 y4]))))
 
 (defn segments-intersect?
   [x1 y1 x2 y2 x3 y3 x4 y4]
   (let [[xi yi] (intersection-point x1 y1 x2 y2 x3 y3 x4 y4)]
-    (or (inside-box? x1 y1 x2 y2 xi yi)
-        (inside-box? x3 y3 x4 y4 xi yi))))
+    (when (and xi yi)
+      (or (inside-box? x1 y1 x2 y2 xi yi)
+          (inside-box? x3 y3 x4 y4 xi yi)))))
+
+(defn node->pos
+  [nn node]
+  (-> node nn :pos))
+
+(defn edge-updates [nn]
+  (let [[a1 a2] (randomish-edge nn)
+        [b1 b2] (randomish-edge nn)]
+    (when (apply segments-intersect? (concat (node->pos nn a1)
+                                             (node->pos nn a2)
+                                             (node->pos nn b1)
+                                             (node->pos nn b2)))
+      (clojure.pprint/pprint ["INTERSECTION!" a1 a2 b1 b2]))))
+
+
 
 (defn calc-updates
   [nn]
@@ -407,8 +424,8 @@
         {[x y] :pos} (nn id)]
     (assoc node
            :position
-           {:x (* 500 x)
-            :y (* 500 y)})))
+           {:x (* 750 x)
+            :y (* 750 y)})))
 
 (defn ->cyto [nn cyto]
   (update cyto :nodes
@@ -436,7 +453,7 @@
                    (apply-updates nn' (if (>= 0.9 (/ i
                                                      (double n)))
                                         1.
-                                        0.1)))
+                                        0.2)))
                (dec i))
         (->cyto nn' cyto)))))
 
@@ -497,3 +514,11 @@
                                               :control-point-weights [0.5]}}]
                              :elements (select-keys (w-mk-graph-def2)
                                                     [:nodes :edges])}]]])
+
+
+
+
+
+
+
+
