@@ -313,7 +313,7 @@
                     (- y4 y3))
                  (* (- x4 x3)
                     (- y2 y1)))]
-    (if (-> denom zero? not)
+    (when (-> denom zero? not)
       [(/ (- (* (- (* x2 y1)
                    (* x1 y2))
                 (- x4 x3))
@@ -327,28 +327,73 @@
              (* (- (* x4 y3)
                    (* x3 y4))
                 (- y2 y1)))
-          denom)]
-      (clojure.pprint/pprint [x1 y1 x2 y2 x3 y3 x4 y4]))))
+          denom)])))
 
 (defn segments-intersect?
   [x1 y1 x2 y2 x3 y3 x4 y4]
   (let [[xi yi] (intersection-point x1 y1 x2 y2 x3 y3 x4 y4)]
     (when (and xi yi)
-      (or (inside-box? x1 y1 x2 y2 xi yi)
+      (and (inside-box? x1 y1 x2 y2 xi yi)
           (inside-box? x3 y3 x4 y4 xi yi)))))
 
 (defn node->pos
   [nn node]
   (-> node nn :pos))
 
+(defn nn-decorator
+  [nn node]
+  (-> node
+      nn
+      (assoc :id node)))
+
+(defn uncross
+  [nn a1 a2 b1 b2]
+  (let [lower-two (drop 2
+                        (sort-by #(-> % :pos second)
+                                 (map (partial nn-decorator nn)
+                                      [a1 a2 b1 b2])))
+        new-x (/ (apply + (map #(-> % :pos first)
+                               lower-two))
+                 2.0)]
+    (println "UNCROSSING!")
+    [{(-> lower-two first :id) [new-x nil]}
+     {(-> lower-two second :id) [new-x nil]}]))
+
+(defn find-closest-outs*
+  [nn aa]
+  (distinct  
+   (mapcat #(->> % nn :outs (map :node))
+           aa)))
+
+(defn find-closest-outs
+  [nn aa n]
+  (loop [i (dec n)
+         outs (find-closest-outs* aa)]
+    (if (> i 0)
+      (recur (dec i)
+             (into outs
+                   (find-closest-outs* outs)))
+      outs)))
+
+(defn find-common-outs
+  [nodes]
+  (let [c (count nodes)]
+    (loop [i 0]
+))
+  )
+
 (defn edge-updates [nn]
   (let [[a1 a2] (randomish-edge nn)
         [b1 b2] (randomish-edge nn)]
-    (when (apply segments-intersect? (concat (node->pos nn a1)
-                                             (node->pos nn a2)
-                                             (node->pos nn b1)
-                                             (node->pos nn b2)))
-      (clojure.pprint/pprint ["INTERSECTION!" a1 a2 b1 b2]))))
+    (try 
+      (when (apply segments-intersect? (concat (node->pos nn a1)
+                                               (node->pos nn a2)
+                                               (node->pos nn b1)
+                                               (node->pos nn b2)))
+        (uncross nn a1 a2 b1 b2))
+      (catch Exception e
+        (edge-updates nn)))))
+
 
 
 
@@ -358,7 +403,8 @@
      "b" [[4 5]]}
   (concat (mapcat (partial calc-update nn)
                   (keys nn))
-          (edge-updates nn)))
+          (mapcat (fn [_] (edge-updates nn))
+                  (range 100))))
 
 (defn avg-tuple-row
   [f tuples]
@@ -461,7 +507,7 @@
 
 (defn bill1
   []
-  (do-billy-rep nodes1 100))
+  (do-billy-rep nodes1 10))
 
 (clojure.pprint/pprint  (bill1))
 
