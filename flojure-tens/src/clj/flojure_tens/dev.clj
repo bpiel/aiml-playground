@@ -98,7 +98,7 @@
   [opnode]
   (let [id-src (drop-output-idx (:id opnode))]
     (map (fn [id-target]
-           {:data {:source id-src :target (drop-output-idx id-target)}})
+           {:data {:source (drop-output-idx id-target) :target id-src }})
           (:inputs opnode))))
 
 
@@ -148,6 +148,336 @@
                            :control-point-weights [0.5]}}]
           :elements (select-keys (w-mk-graph-def2)
                                  [:nodes :edges])}])
+;; ===================================================
+
+(def nodes1
+  {:nodes [{:data {:id "a"}}
+           {:data {:id "b"}}
+           {:data {:id "c"}}
+           {:data {:id "d"}}
+           {:data {:id "e"}}
+           {:data {:id "f"}}
+           {:data {:id "g"}}
+           {:data {:id "h"}}
+           {:data {:id "i"}}]
+   :edges [{:data {:source "a"
+                   :target "b"}}
+           {:data {:source "c"
+                   :target "b"}}
+           {:data {:source "b"
+                   :target "d"}}
+           {:data {:source "d"
+                   :target "e"}}
+           {:data {:source "f"
+                   :target "d"}}
+           {:data {:source "g"
+                   :target "e"}}
+           {:data {:source "h"
+                   :target "g"}}
+           {:data {:source "i"
+                   :target "h"}}]})
+
+(defn cyto->nn
+  [cyto]
+  #_  {"a" {:pos [0. 0.]
+            :spreads [1. 1.] ;; ins outs
+            :outs [{:node "b" :data nil}]
+            :ins []}
+       "b" {:pos [0. 0.]
+            :spreads [1. 1.] ;; ins outs
+            :outs []
+            :ins [{:node "a" :data nil}]}}
+  (reduce (fn [agg [path v]]
+            (update-in agg
+                       path
+                       conj
+                       v))
+          (into {}
+                (map (fn [node]
+                       (let [id (-> node :data :id)]
+                         [id {:pos [(Math/random)
+                                    (Math/random)]
+                              :spreads [1. 1.]
+                              :outs []
+                              :ins []}]))
+                     (:nodes cyto)))
+          (mapcat (fn [edge]
+                    (let [{:keys [source target]} (:data edge)]
+                      [[[source :outs] {:node target}]
+                       [[target :ins] {:node source}]]))
+                  (:edges cyto))))
+
+(defn edge->pos
+  [nn {:keys [node]}]
+  (-> node nn :pos))
+
+(defn edges->pos
+  [nn edges]
+  (map (partial edge->pos nn)
+       edges))
+
+(defn avg-edges
+  [nn edges f]
+  (let [c (count edges)]
+    (->> edges
+         (edges->pos nn)
+         (map f)
+         (map #(/ % c))
+         (apply +))))
+
+(defn level-ys
+  [nn edges]
+  (let [y-avg (avg-edges nn edges second)]
+    (into {}
+          (for [k (map :node edges)]
+            [k [nil y-avg]]))))
+
+(defn center-y
+  [nn id edges]
+  {id [nil (avg-edges nn edges second)]})
+
+(defn spread-xs
+  [nn [x y] edges spread]
+  (when (< 1 (count edges))
+    (let [[left :as sorted] (sort-by :x
+                                     (map (fn [{:keys [node]}]
+                                            (let [a (nn node)]
+                                              {:node node
+                                               :x (-> a :pos first)}))
+                                          edges))
+          right (last sorted)
+          xleft (:x left)
+          xright (:x right)
+          mean x]
+      (into {}
+            (map (fn [{:keys [node]} x]
+                   {node [x nil]})
+                 sorted
+                 (range (- mean 0.5)
+                        (+ mean 0.5)
+                        (/ 1.0 (dec (count edges)))))))))
+
+(defn center-x
+  [nn id edges]
+  {id [(avg-edges nn edges first) nil]})
+
+(defn y-dists
+  [nn [x y] edges lo hi]
+  (map (fn [node]
+         {node [nil
+                (let [y' (-> node nn :pos second)
+                      d (- y' y)]
+                  (cond (<= lo d hi) nil
+                        (> d hi) (+ y hi)
+                        (< d lo) (+ y lo)))]})
+       (map :node edges)))
+
+(defn dummy
+  [k]
+  {k [0 0]})
+
+(defn calc-update
+  [nn k]
+  (let [{:keys [pos outs ins spreads]} (get nn k)]
+    (flatten
+     [(level-ys nn outs)
+      (level-ys nn ins)
+      (center-y nn k (concat outs ins))
+      (spread-xs nn pos ins (first spreads))
+      (spread-xs nn pos outs (second spreads))
+      (center-x nn k (concat outs ins))
+      (y-dists nn pos ins 1. 2.)
+      (y-dists nn pos outs -2. -1.)])))
+
+(defn randomish-edge
+  [nn]
+  (let [id (->> nn keys shuffle first)]
+    [id
+     (->> id nn ((juxt :outs :ins)) (apply concat) shuffle first :node)]))
+
+(defn edge-updates [nn]
+  (let [[a1 a2] (randomish-edge nn)
+        [b1 b2] (randomish-edge nn)]
+    )
+  )
+
+(defn inside-box?
+  [x1 y1 x2 y2 xp yp]
+  (and (or (< x1 xp x2)
+           (> x1 xp x2))
+       (or (< y1 yp y2)
+           (> y1 yp y2))))
+
+(defn intersection-point
+  [x1 y1 x2 y2 x3 y3 x4 y4]
+  (let [denom (- (* (- x2 x1)
+                    (- y4 y3))
+                 (* (- x4 x3)
+                    (- y2 y1)))]
+    [(/ (- (* (- (* x2 y1)
+                 (* x1 y2))
+              (- x4 x3))
+           (* (- (* x4 y3)
+                 (* x3 y4))
+              (- x2 x1)))
+        denom)
+     (/ (- (* (- (* x2 y1)
+                 (* x1 y2))
+              (- y4 y3))
+           (* (- (* x4 y3)
+                 (* x3 y4))
+              (- y2 y1)))
+        denom)]))
+
+(defn segments-intersect?
+  [x1 y1 x2 y2 x3 y3 x4 y4]
+  (let [[xi yi] (intersection-point x1 y1 x2 y2 x3 y3 x4 y4)]
+    (or (inside-box? x1 y1 x2 y2 xi yi)
+        (inside-box? x3 y3 x4 y4 xi yi))))
+
+(defn calc-updates
+  [nn]
+  #_{"a" [[0 1] [1 -2]]
+     "b" [[4 5]]}
+  (concat (mapcat (partial calc-update nn)
+                  (keys nn))
+          (edge-updates nn)))
+
+(defn avg-tuple-row
+  [f tuples]
+  (when-let [a (not-empty (keep f tuples))]
+    (let [c (float (count a))]
+      (apply + (map #(/ % c) a)))))
+
+(defn sum-tuple-row
+  [f tuples]
+  (when-let [a (not-empty (keep f tuples))]
+    (apply + a)))
+
+(defn combine-tuples [pos spreads tuples]
+  [(or (avg-tuple-row first tuples)
+       (first pos))
+   (or (avg-tuple-row second tuples)
+       (second pos))
+   (or (sum-tuple-row #(nth % 2 nil) tuples)
+       0.)
+   (or (sum-tuple-row #(nth % 3 nil) tuples)
+       0.)])
+
+(defn double-wrap-all
+  [ms]
+  (map (fn [m]
+         (into {}
+               (for [[k v] m]
+                 [k [v]])))
+       ms))
+
+(defn merge-updates
+  [u nn]
+  (let [u' (apply merge-with into (double-wrap-all u))]
+    (into {}
+          (for [[k v] u']
+            (let [{:keys [pos spreads]} (nn k)]
+              [k (combine-tuples pos spreads v)])))))
+
+(defn adjust
+  [orig new-val alpha]
+  (let [w alpha]
+    (+ (* new-val w)
+       (* orig (- 1 w)))))
+
+(defn apply-update
+  [[dx dy dsi dso] v alpha]
+  (-> v
+      (update-in [:pos 0] adjust dx alpha)
+      (update-in [:pos 1] adjust dy alpha)
+      (update-in [:spreads 0] + dsi)
+      (update-in [:spreads 1] + dso)))
+
+(defn apply-updates [u nn alpha]
+  (into {}
+        (for [[k v] nn]
+          (if-let [unode (u k)]
+            [k (apply-update unode v alpha)]
+            [k v]))))
+
+(defn ->cyto*
+  [nn node]
+  (let [id (-> node :data :id)
+        {[x y] :pos} (nn id)]
+    (assoc node
+           :position
+           {:x (* 500 x)
+            :y (* 500 y)})))
+
+(defn ->cyto [nn cyto]
+  (update cyto :nodes
+          (partial mapv
+                   (partial ->cyto* nn))))
+
+(defn do-billy
+  [cyto]
+  (let [nn (cyto->nn cyto)]
+    (-> nn
+        calc-updates
+        (merge-updates nn)
+        (apply-updates nn 0.2)
+        (->cyto cyto))))
+
+(defn do-billy-rep
+  [cyto n]
+  (let [nn (cyto->nn cyto)]
+    (loop [nn' nn
+           i n]
+      (if (< 0 i)
+        (recur (-> nn'
+                   calc-updates
+                   (merge-updates nn')
+                   (apply-updates nn' (if (>= 0.9 (/ i
+                                                     (double n)))
+                                        1.
+                                        0.1)))
+               (dec i))
+        (->cyto nn' cyto)))))
+
+#_(clojure.pprint/pprint  (do-billy nil))
+
+(defn bill1
+  []
+  (do-billy-rep nodes1 100))
+
+(clojure.pprint/pprint  (bill1))
+
+;; ===================================================
+
+
+#_(w-push ['$/graph
+         {:layout {:name "preset"}
+          :style [{:selector "node"
+                   :style {:content "data(id)"}}
+                  {:selector "edge"
+                   :style {"curve-style" "unbundled-bezier"
+                           :control-point-distances [0]
+                           :control-point-weights [0.5]
+                           :target-arrow-color "#f00"
+                           :target-arrow-shape "triangle"}}]
+          :elements (select-keys (bill1)
+                                 [:nodes :edges])}])
+
+#_(w-push ['$/graph
+           {:layout {:name "preset"}
+            :style [{:selector "node"
+                     :style {:content "data(id)"}}
+                    {:selector "edge"
+                     :style {"curve-style" "unbundled-bezier"
+                             :control-point-distances [0]
+                             :control-point-weights [0.5]
+                             :target-arrow-color "#f00"
+                             :target-arrow-shape "triangle"}}]
+            :elements (select-keys (do-billy-rep (select-keys (w-mk-graph-def2)
+                                                              [:nodes :edges])
+                                                 100)
+                                   [:nodes :edges])}])
 
 #_
 (w-push ['$/h-box :children [['$/chart

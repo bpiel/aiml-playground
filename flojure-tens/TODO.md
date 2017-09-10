@@ -138,6 +138,12 @@ random search
 ================
 
 
+vvvvvvvvvvvvvvvvvvv
+- view graph in tensorboard!!!!!!!!!!!!!!1
+^^^^^^^^^^^^^^^^^^^
+
+
+
 ========================================
 
 Dev MNIST

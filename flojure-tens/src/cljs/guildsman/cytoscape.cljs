@@ -194,14 +194,17 @@
       .first))
 
 #_(vreset! c1
-           (js/cytoscape (clj->js {:container (.getElementById js/document "cyto4")
+           (js/cytoscape (clj->js {:container (.getElementById js/document "cyto2")
+                                   :layout {:name "preset"}
                                    :style [{:selector "edge"
                                             :style {"curve-style" "unbundled-bezier"
                                                     "edge-distances" "node-position"
                                                     :control-point-distances [0]
                                                     :control-point-weights [0.5]}}]
-                                   :elements {:nodes [{:data {:id "a"}}
-                                                      {:data {:id "b"}}
+                                   :elements {:nodes [{:data {:id "a"}
+                                                       :position {:x 0 :y 0}}
+                                                      {:data {:id "b"}
+                                                       :position {:x 100 :y 100}}
                                                       {:data {:id "c"}}
                                                       {:data {:id "d"}}
                                                       {:data {:id "e"}}
