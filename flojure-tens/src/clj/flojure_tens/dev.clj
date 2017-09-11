@@ -178,7 +178,11 @@
            {:data {:source "i"
                    :target "h"}}
            {:data {:source "j"
-                   :target "d"}}]})
+                   :target "d"}}
+           {:data {:source "j"
+                   :target "a"}}
+           {:data {:source "i"
+                   :target "j"}}]})
 
 (defn cyto->nn
   [cyto]
@@ -251,14 +255,16 @@
           right (last sorted)
           xleft (:x left)
           xright (:x right)
-          mean x]
+          mean x
+          width (* 2. (max 1.0 (Math/abs (- xleft xright))))
+          half-width (/ width 2.)]
       (into {}
             (map (fn [{:keys [node]} x]
                    {node [x nil]})
                  sorted
-                 (range (- mean 0.5)
-                        (+ mean 0.51)
-                        (/ 1.0 (dec (count edges)))))))))
+                 (range (- mean half-width)
+                        (+ mean half-width 0.01)
+                        (/ width (dec (count edges)))))))))
 
 
 (defn center-x
@@ -347,53 +353,46 @@
       (assoc :id node)))
 
 (defn uncross
-  [nn a1 a2 b1 b2]
-  (let [lower-two (drop 2
-                        (sort-by #(-> % :pos second)
-                                 (map (partial nn-decorator nn)
-                                      [a1 a2 b1 b2])))
-        new-x (/ (apply + (map #(-> % :pos first)
-                               lower-two))
-                 2.0)]
-    (println "UNCROSSING!")
-    [{(-> lower-two first :id) [new-x nil]}
-     {(-> lower-two second :id) [new-x nil]}]))
+  [nn a1 a2 b1 b2 xp yp]
+  (let [->x (fn [n] (-> n :pos first))
+        ax (first (shuffle (map ->x [a1 a2])))
+        bx (first (shuffle (map ->x [b1 b2])))]
+    {(:id a1) [ax nil]
+     (:id a2) [ax nil]
+     (:id b1) [bx nil]
+     (:id b2) [bx nil]}))
 
-(defn find-closest-outs*
-  [nn aa]
-  (distinct  
-   (mapcat #(->> % nn :outs (map :node))
-           aa)))
-
-(defn find-closest-outs
-  [nn aa n]
-  (loop [i (dec n)
-         outs (find-closest-outs* aa)]
-    (if (> i 0)
-      (recur (dec i)
-             (into outs
-                   (find-closest-outs* outs)))
-      outs)))
-
-(defn find-common-outs
-  [nodes]
-  (let [c (count nodes)]
-    (loop [i 0]
-))
-  )
 
 (defn edge-updates [nn]
   (let [[a1 a2] (randomish-edge nn)
-        [b1 b2] (randomish-edge nn)]
-    (try 
-      (when (apply segments-intersect? (concat (node->pos nn a1)
-                                               (node->pos nn a2)
-                                               (node->pos nn b1)
-                                               (node->pos nn b2)))
-        (uncross nn a1 a2 b1 b2))
-      (catch Exception e
-        (edge-updates nn)))))
+        [b1 b2] (randomish-edge nn)
+        nodes (mapv (partial nn-decorator nn)
+                    [a1 a2 b1 b2])
+        poses (mapcat :pos nodes)
+        icoords (when (= (count poses) 8)
+                  (apply intersection-point poses))]
+    (when (and icoords
+               (apply segments-intersect? poses))
+      (apply uncross nn (into nodes icoords)))))
 
+(defn edge-update2 [nn [a1 a2] [b1 b2]]
+  (when (= 4 (count (distinct [a1 a2 b1 b2])))
+      (let [nodes (mapv (partial nn-decorator nn)
+                        [a1 a2 b1 b2])
+            poses (mapcat :pos nodes)
+            icoords (when (= (count poses) 8)
+                      (apply intersection-point poses))]
+        (when (and icoords
+                   (apply segments-intersect? poses))
+          (apply uncross nn (into nodes icoords))))))
+
+(defn edge-update-all
+  [nn edges]
+  (flatten (mapv (partial edge-update2 nn)
+                 (shuffle edges)
+                 (shuffle edges))))
+
+#_(edge-update-all $s/nn4 $s/edges3)
 
 
 
@@ -404,7 +403,7 @@
   (concat (mapcat (partial calc-update nn)
                   (keys nn))
           (mapcat (fn [_] (edge-updates nn))
-                  (range 100))))
+                  (range 10))))
 
 (defn avg-tuple-row
   [f tuples]
@@ -503,11 +502,57 @@
                (dec i))
         (->cyto nn' cyto)))))
 
-#_(clojure.pprint/pprint  (do-billy nil))
+
+(defn do-it
+  [nn f alpha]
+  (-> (f nn)
+      (merge-updates nn)
+      (apply-updates nn alpha)))
+
+(defn do-one-rep
+  [nn edges alpha]
+  (let [ks (-> nn keys shuffle)]
+    (loop [nn' nn
+           [head & tail] ks]
+      (if head
+        (recur (-> nn'
+                   (do-it #(edge-update-all % edges)
+                          alpha)
+                   (do-it #(calc-update % head)
+                          alpha))
+               tail)
+        nn'))))
+
+(defn cyto->edges
+  [cyto]
+  (mapv #((juxt :source :target) (:data %))
+        (:edges cyto)))
+
+(defn do-reps
+  [cyto n]
+  (let [nn (cyto->nn cyto)
+        _ (reset! aorig (->cyto nn cyto)) 
+        edges (cyto->edges cyto)
+        nn'' (loop [i n
+                    nn' nn]
+               (if (> i 0)
+                 (recur (dec i)
+                        (do-one-rep nn' edges
+                                    (/ (double i) n)))
+                 nn'))]
+    (->cyto nn'' cyto)))
+
+#_(clojure.pprint/pprint  nodes1)
+
+(def aorig (atom nil))
+(def afinal (atom nil))
 
 (defn bill1
-  []
-  (do-billy-rep nodes1 10))
+  [& [cyto]]
+  (let [r (do-reps (or cyto nodes1)
+           10)]
+    (reset! afinal r)
+    r))
 
 (clojure.pprint/pprint  (bill1))
 
@@ -528,6 +573,33 @@
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
+         {:layout {:name "preset"}
+          :style [{:selector "node"
+                   :style {:content "data(id)"}}
+                  {:selector "edge"
+                   :style {"curve-style" "unbundled-bezier"
+                           :control-point-distances [0]
+                           :control-point-weights [0.5]
+                           :target-arrow-color "#f00"
+                           :target-arrow-shape "triangle"}}]
+          :elements (select-keys @aorig
+                                 [:nodes :edges])}])
+
+
+#_(w-push ['$/graph
+         {:layout {:name "preset"}
+          :style [{:selector "node"
+                   :style {:content "data(id)"}}
+                  {:selector "edge"
+                   :style {"curve-style" "unbundled-bezier"
+                           :control-point-distances [0]
+                           :control-point-weights [0.5]
+                           :target-arrow-color "#f00"
+                           :target-arrow-shape "triangle"}}]
+          :elements (select-keys @afinal
+                                 [:nodes :edges])}])
+
+#_(w-push ['$/graph
            {:layout {:name "preset"}
             :style [{:selector "node"
                      :style {:content "data(id)"}}
@@ -537,9 +609,8 @@
                              :control-point-weights [0.5]
                              :target-arrow-color "#f00"
                              :target-arrow-shape "triangle"}}]
-            :elements (select-keys (do-billy-rep (select-keys (w-mk-graph-def2)
-                                                              [:nodes :edges])
-                                                 100)
+            :elements (select-keys (bill1 (select-keys (w-mk-graph-def2)
+                                                              [:nodes :edges]))
                                    [:nodes :edges])}])
 
 #_
