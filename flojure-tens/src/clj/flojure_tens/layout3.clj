@@ -654,6 +654,172 @@
           (partial mapv
                    (partial ->cyto* id->lvl id->pos))))
 
+(defn mk-id->xy
+  [id->lvl id->pos]
+  (into {}
+        (for [id (keys id->lvl)]
+          (let [lvl (id->lvl id)
+                pos (id->pos id)]
+            (when (and lvl pos)
+              [id [(int (* 600 pos))
+                   (int (* 200 lvl))]])))))
+
+(defn mk-edge-paths-inits
+  [eps]
+  (into {}
+        (for [[s] eps]
+          {[s s] [s]})))
+
+(defn split-map
+  [m k-fn]
+  (map (partial apply merge)
+       (transpose
+        (for [[k v] m]
+          (if (k-fn k)
+            [{k v} {}]
+            [{} {k v}])))))
+
+(defn advance-paths*
+  [s->t [[s c] path]]
+  (into {}
+        (for [t (s->t c)]
+          [[s t] (conj path t)])))
+
+(defn advance-paths
+  [s->t paths]
+  (apply merge
+         (map (partial advance-paths* s->t)
+              (map vec paths))))
+
+(defn mk-edge-paths
+  [s->t edge-pair-set]
+  (let [init (mk-edge-paths-inits edge-pair-set)
+        ceps (count edge-pair-set)]
+    (loop [paths init]
+      (let [[done todo] (split-map paths edge-pair-set)
+            done? (= (count done) ceps)]
+        (if (or done? (-> todo count zero?))
+          paths
+          (recur (merge done
+                        (advance-paths s->t todo))))))))
+
+(defn mk-edge-pairs
+  [edges]
+  (vec (for [{:keys [data]} edges]
+         [(:source data)
+          (:target data)])))
+
+
+(defn dist
+  [x1 y1 x2 y2]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)]
+    (Math/sqrt (+ (* dy dy)
+                  (* dx dx)))))
+
+(defn steeper?
+  [x1 y1 x2 y2 x3 y3]
+  (< (* (- x1 x3)
+        (- y1 y2))
+     (* (- x1 x2)
+        (- y1 y3))))
+
+(defn inside-box?
+  [x1 y1 x2 y2 xp yp]
+  (and (or (< x1 xp x2)
+           (> x1 xp x2))
+       (or (< y1 yp y2)
+           (> y1 yp y2))))
+
+(defn find-intersection
+  [x1 y1 x2 y2 x3 y3]
+  (let [dx (- x2 x1)
+        dy (- y2 y1)
+        k (/ (- (* dy (- x3 x1))
+                (* dx (- y3 y1)))
+             (+ (* dy dy)
+                (* dx dx)))
+        x4 (- x3 (* k dy))
+        y4 (+ y3 (* k dx))]
+    [x4 y4]))
+
+(defn rel-coords
+  [x1 y1 x2 y2 x3 y3]
+  (let [[x4 y4] (find-intersection x1 y1 x2 y2 x3 y3)
+        d12 (dist x1 y1 x2 y2)
+        d14 (dist x1 y1 x4 y4)
+        d34 (dist x3 y3 x4 y4)
+        st (if (steeper? x1 y1 x2 y2 x3 y3) 1 -1)]
+    (when (inside-box? x1 y1 x2 y2 x4 y4)
+      [(* d34 st) (/ d14 d12)])))
+
+
+(defn translate-points-to-bezier
+  [[sx sy] [tx ty] middle]
+  (keep (fn [[x3 y3]]
+          (rel-coords sx sy tx ty x3 y3))
+        middle))
+
+(translate-points-to-bezier $s/s $s/t $s/middle)
+
+(defn mk-edge-route
+  [id->xy path]
+  (let [xys (map id->xy path)
+        [s & tail] xys
+        middle (not-empty (drop-last tail))
+        t (last xys)]
+    (if middle    
+      (translate-points-to-bezier s t middle)
+      [])))
+
+(defn mk-edge-routes
+  [id->xy edge-paths]
+  (fmap (partial mk-edge-route id->xy)
+        edge-paths))
+
+(defn mk-ctrl-pt-styles-for-pair
+  [edge-route]
+  (let [[cpd cpw] (transpose edge-route)
+        f (fn [ns]
+            (clojure.string/join " "
+                                 (map #(format "%.3f" %)
+                                      ns)))]
+    {:control-point-distances (f cpd)
+     :control-point-weights (f cpw)}))
+
+(defn mk-ctrl-pt-styles
+  [edge-routes]
+  (fmap mk-ctrl-pt-styles-for-pair
+        edge-routes))
+
+(defn assoc-pos-to-node
+  [id->xy {:keys [data] :as node}]
+  (let [[x y] (id->xy (:id data))]
+    (or (when (and x y)
+          (assoc node
+                 :position
+                 {:x x
+                  :y y}))
+        node)))
+
+(defn assoc-styles-to-edge
+  [ctrl-pt-styles {:keys [data] :as edge}]
+  (let [{:keys [source target]} data
+        style (ctrl-pt-styles [source target])]
+    (assoc edge
+           :style
+           style)))
+
+(defn ->cyto3
+  [{:keys [id->lvl id->pos s->t]} {:keys [nodes edges]}]
+  (let [id->xy (mk-id->xy id->lvl id->pos)
+        edge-pairs (mk-edge-pairs edges)
+        edge-paths (mk-edge-paths s->t (set edge-pairs))
+        edge-routes (mk-edge-routes id->xy edge-paths)
+        ctrl-pt-styles (mk-ctrl-pt-styles edge-routes)]
+    {:nodes (mapv (partial assoc-pos-to-node id->xy) nodes)
+     :edges (mapv (partial assoc-styles-to-edge ctrl-pt-styles) edges)}))
+
 (defn ->cyto2*
   [id->lvl id->slot id]
   (let [y (id->lvl id)
@@ -686,6 +852,15 @@
   (let [cyto' (update cyto :edges filter-cyto-edges)]
     (let [mm (mk-maps cyto')]
       (->cyto2 (do-iters mm 20)))))
+
+(defn do-layout
+  [cyto]
+  (let [cyto' (update cyto :edges filter-cyto-edges)]
+    (let [mm (mk-maps cyto')]
+      (->cyto3 (do-iters mm 20)
+               cyto'))))
+
+#_(do-layout nodes2)
 
 ;; ===================================================
 
