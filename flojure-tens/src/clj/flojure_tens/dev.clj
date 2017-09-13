@@ -531,7 +531,6 @@
 (defn do-reps
   [cyto n]
   (let [nn (cyto->nn cyto)
-        _ (reset! aorig (->cyto nn cyto)) 
         edges (cyto->edges cyto)
         nn'' (loop [i n
                     nn' nn]
