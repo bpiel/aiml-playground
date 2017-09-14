@@ -361,11 +361,16 @@
       (when (not= rs-prev rs')
         rs'))))
 
+(def em1 $s/*)
+
+(def grp-map1 $s/*)
+
+(clojure.pprint/pprint  (get-ranges-for-nodes em1 grp-map1 stacked))
 
 (defn get-ranges-for-nodes
-  [{:keys [id->adj s->t] :as em} grp-map]
+  [{:keys [id->adj s->t] :as em} grp-map & [node-ranges]]
   (let [grps (vals grp-map)
-        rs (mk-node-ranges em)
+        rs (or node-ranges (mk-node-ranges em))
         ids (keys id->adj)]
     (loop [[id & ids'] (keys id->adj)
            rs' rs
@@ -401,6 +406,66 @@
                            capped?)
                     rs')))))
 
+#_(def grp-map1 $s/*)
+
+#_(def lvl-rngs $s/*)
+
+(defn get-grp
+  [id & [depth]]
+  (clojure.string/join "/"
+                       (take (or depth 100)
+                             (drop-last
+                              (clojure.string/split id #"/")))))
+
+
+(defn inspect-group-levels
+  [lvl-rngs & [depth]]
+  (sort-by second
+           (map vec
+                (fmap (partial apply max)
+                      (apply merge-with into
+                             (for [[id lvl] lvl-rngs ]
+                               {(get-grp id depth)
+                                [lvl]}))))))
+
+(defn calc-level-stacks*
+  [[total m] [id height]]
+  [(+ total height 8)
+   (if (= id "")
+     m
+     (assoc m id total))])
+
+(calc-level-stacks assigned-lvls)
+
+(defn apply-level-stacking*
+  [lvl-stacks lvls-map k]
+  (let [offset (some-> k (get-grp 1) lvl-stacks)
+        v (lvls-map k)
+        v' (if offset
+             [(+ v offset -1)(+ v offset 5)]
+             [nil nil])]
+    (assoc lvls-map
+           k
+           v')))
+
+(defn apply-level-stacking
+  [lvls-map]
+  (let [lvl-stacks (calc-level-stacks lvls-map)]
+    (reduce (partial apply-level-stacking*
+                     lvl-stacks)
+            lvls-map
+            (keys lvls-map))))
+
+(clojure.pprint/pprint  (inspect-group-levels assigned-lvls 1))
+
+(clojure.pprint/pprint  (apply-level-stacking assigned-lvls))
+
+(clojure.pprint/pprint assigned-lvls)
+
+(def stacked (apply-level-stacking assigned-lvls))
+
+#_ (def assigned-lvls $s/*)
+
 #_(def em1 (mk-edge-maps1 nodes2))
 
 #_ (clojure.pprint/pprint  (get-ranges-for-nodes em1
@@ -408,16 +473,25 @@
 
 (defn choose-level
   [[mn mx]]
-  (if (or (zero? mn)
-          (nil? mn))
-    (or mx 0)
-    mn))
+  (int (if (or (zero? mn)
+               (nil? mn))
+         (or mx 0)
+         (Math/floor (/ (+ mn mn) 2)))))
 
 
 (defn assign-levels
   [edge-maps1 groups]
   (fmap choose-level
    (get-ranges-for-nodes edge-maps1 groups)))
+
+(defn assign-levels-stacked
+  [edge-maps1 groups]
+  (let [alvls1 (assign-levels edge-maps1 groups)
+        stacked (apply-level-stacking alvls1)]
+    (fmap choose-level
+          (get-ranges-for-nodes edge-maps1
+                                groups
+                                stacked))))
 
 
 (defn mk-node-kw
@@ -495,16 +569,23 @@
                       (mapcat segs->t-s segs'))}))
 
 
+(defn mk-temp-map
+  [ids]
+  (into {}
+        (for [id ids]
+          [id 0.])))
+
 (defn mk-maps
   [cyto]
   (let [edge-maps1 (mk-edge-maps1 cyto)
         grp->ids (dissoc (mk-groups cyto)
                          "gradients") ;; TODO
-        id->lvl (assign-levels edge-maps1 grp->ids)
+        id->lvl (assign-levels-stacked edge-maps1 grp->ids)
         segs (mk-segments id->lvl edge-maps1)
         id->lvl' (segs->id-lvl segs)
         lvl->id (map-group-invert id->lvl')
         id->pos (lvl-id->id-pos lvl->id)
+        id->temp (mk-temp-map (keys id->pos))
         {:keys [s->t t->s]} (segs->edge-maps segs)]
     {:id->lvl id->lvl'
      :lvl->id lvl->id
@@ -537,17 +618,21 @@
             (concat (range 0 clvl)
                     (range clvl 0 -1)))))
 
+(defn pusher
+  [id pos id' pos' pos-left pos-right]
+  (when (not= id id')
+    (if (<= pos' pos)
+      pos-left
+      pos-right)))
 
-;; TODO groups!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 (defn mk-scopes-for-node
   [mm id->pos id]
-  (let [pos (id->pos id)
-        pos-left (- pos 0.5)
-        pos-right (+ pos 0.5)
-        f (fn [id' pos'] (when (not= id id')
-                           (if (<= pos' pos)
-                             pos-left
-                             pos-right)))]
+  (let [width 5.
+        pos (id->pos id)
+        pos-left (- pos width)
+        pos-right (+ pos width)
+        f (fn [id' pos']
+            (pusher id pos id' pos' pos-left pos-right))]
     [[pos-left f]
      [pos-right f]]))
 
@@ -650,7 +735,7 @@
 (defn mk-grp-scope-fns
   [ids lmx lmn {:keys [avg spread]}]
   (let [outer-limit  (* 2.5 (/ spread 2.))
-        inner-limit  (* 0.99 (/ spread 2.))
+        inner-limit  (* 0.9 (/ spread 2.))
         pos-left (- avg outer-limit)
         pos-right (+ avg outer-limit)
         pos-left' (- avg inner-limit)
@@ -689,7 +774,7 @@
 (defn adjust-lvls-scopes
   [id->pos {:keys [id->lvl lvl->id grp->ids] :as mm}]
   (let [clvl (apply max (keys lvl->id))
-        grp-scopes (mk-grp-scopes id->lvl id->pos grp->ids)]
+        grp-scopes  (mk-grp-scopes id->lvl id->pos grp->ids)]
     (reduce (partial adjust-lvl-scopes mm grp-scopes)
             id->pos
             (range 0 clvl))))
@@ -706,24 +791,157 @@
                 id->pos
                 id->pos')))
 
-(defn do-iter
-  [mm]
-  (-> mm
-      (update :id->pos adjust-lvls-avg mm)
-      (update :id->pos adjust-lvls-scopes mm)))
+(defn find-crossings1-bottoms
+  [id->pos t->s ids]
+  (sort-by id->pos (filter t->s ids)))
+
+(defn find-crossings1-tops
+  [id->pos t->s ids]
+  (map second
+       (sort-by first (mapcat (fn [id]
+                                (map #(vector (+ (id->pos %)
+                                                 (/ (id->pos id)
+                                                    10000.))
+                                              id)
+                                     (t->s id)))
+                              ids))))
+(defn interleave*
+  [a b]
+  (let [c (+ (count a) (count b))
+        r (repeat ::stupid)]
+    (take c (remove #{::stupid}
+                    (mapcat vector
+                            (concat a r)
+                            (concat b r))))))
+
+(defn find-crossings1
+  [id->pos t->s ids]
+  (interleave*
+   (dedupe (find-crossings1-bottoms id->pos t->s ids))
+   (dedupe (find-crossings1-tops id->pos t->s ids))))
+
+(find-crossings1 $s/id->pos2 $s/t->s2 $s/ids1)
+
+  (interleave
+   (dedupe (find-crossings1-bottoms $s/id->pos2 $s/t->s2 $s/ids1))
+   (dedupe (find-crossings1-tops $s/id->pos2 $s/t->s2 $s/ids1)))
+
+(defn update-crossings-map
+  [m past id]
+  (loop [m' m
+         [head & tail] past]
+    (if head
+      (recur (if-not (= head id)
+               (update m' head
+                       (fnil conj #{})
+                       id)
+               m')
+             tail)
+      m')))
+
+(defn find-crossings2
+  [ids]
+  (loop [[head & tail] ids
+         m {}
+         past #{}
+         x #{}]
+    (if head
+      (let [past' (conj past head)
+            m' (update-crossings-map m past head)
+            mhead (m' head)
+            x' (if (not-empty mhead)
+                 (clojure.set/union x mhead #{head})
+                 x)]
+        (recur tail
+               m'
+               past'
+               x'))
+      x)))
+
+(defn find-crossings
+  [id->pos t->s lvl->id]
+  (mapcat (fn [ids]
+         (find-crossings2
+          (find-crossings1 id->pos t->s ids)))
+       (vals lvl->id)))
+
+#_(find-crossings $s/id->pos $s/t->s $s/lvl->id)
+
+(defn inc-temp
+  [n]
+  (min 100.
+       (max 1.
+            (* (or n 0.)
+               4.))))
+
+(defn dec-temp
+  [n]
+  (if (< n 0.1)
+    0.
+    (/ n 3.)))
+
+(defn adjust-temperature
+  [{:keys [id->temp id->pos lvl->id s->t t->s] :as mm}]
+  (let [cooled (fmap dec-temp id->temp)
+        crossed (find-crossings id->pos t->s lvl->id)]
+    (assoc mm
+           :id->temp
+           (reduce (fn [agg item]
+                     (update agg item
+                             inc-temp))
+                   cooled
+                   crossed)
+           :crossed crossed)))
+
+(defn adjust-lvls-temperature
+  [id->pos {:keys [id->temp crossed] :as mm}]
+  (loop [[head & tail] crossed
+         id->pos' id->pos]
+    (if head
+      (update id->pos'
+              head
+              (fn [pos]
+                (-> (Math/random)
+                    (- 0.5)
+                    (* (id->temp head))
+                    (+ pos))))
+      id->pos')))
+
+(defn adjust-lvls-horiz-scale
+  [id->pos {:keys [lvl->id] :as mm}]
+  (let [{:keys [avg spread]} (get-grp-stats (vals id->pos))
+        widest (apply max (map count (vals lvl->id)))]
+    (if (> spread (* widest 3.))
+      (fmap (fn [x]
+              (/ (* widest 2.5
+                    (- x avg))
+                 spread))
+            id->pos)
+      id->pos)))
 
 (defn do-iter
   [mm alpha]
   (-> mm
+      adjust-temperature
       (update :id->pos
               update-with-alpha
               alpha
+              adjust-lvls-temperature
+              mm)
+      (update :id->pos
+              update-with-alpha
+              (min 1. (* alpha 3.))
               adjust-lvls-avg
               mm)
       (update :id->pos
               update-with-alpha
               alpha
               adjust-lvls-scopes
+              mm)
+      (update :id->pos
+              update-with-alpha
+              alpha
+              adjust-lvls-horiz-scale
               mm)))
 
 (defn do-iters
@@ -742,6 +960,18 @@
             (= (nil? (re-find #"gradient" (:source data)))
                (nil? (re-find #"gradient" (:target data)))))
           edges))
+
+(defn filter-cyto-nodes
+  [nodes]
+  (remove (fn [{:keys [data]}]
+            (re-find #"gradient" (:id data)))
+          nodes))
+
+(defn filter-cyto
+  [cyto]
+  (-> cyto
+      (update :edges filter-cyto-edges)
+      (update :nodes filter-cyto-nodes)))
 
 (defn ->cyto*
   [id->lvl id->slot node]
@@ -769,7 +999,7 @@
           (let [lvl (id->lvl id)
                 pos (id->pos id)]
             (when (and lvl pos)
-              [id [(int (* 1000 pos))
+              [id [(int (* 200 pos))
                    (int (* 200 lvl))]])))))
 
 (defn mk-edge-paths-inits
@@ -932,8 +1162,8 @@
         x (id->slot id)]
     {:data {:id id}
      :position
-           {:x (* 500 x)
-            :y (* 200 y)}}))
+     {:x (* 200 x)
+      :y (* 200 y)}}))
 
 (defn ->cyto2
   [{:keys [id->lvl lvl->id id->pos s->t] :as mm}]
@@ -946,32 +1176,12 @@
                          outs))
                   s->t)})
 
-#_(defn do-layout
-  [cyto]
-  (let [cyto' (update cyto :edges filter-cyto-edges)]
-    (let [mm (mk-maps cyto')]
-      (->cyto (do-iters mm 20)
-              cyto'))))
-
-(defn do-layout
-  [cyto]
-  (let [cyto' (update cyto :edges filter-cyto-edges)]
-    (let [mm (mk-maps cyto')]
-      (->cyto2 (do-iters mm 20)))))
-
-(defn do-layout
-  [cyto]
-  (let [cyto' (update cyto :edges filter-cyto-edges)]
-    (let [mm (mk-maps cyto')]
-      (->cyto3 (do-iters mm 100)
-               cyto'))))
-
 (def astate (atom nil))
 
 (defn init-or-inc-state
   [state cyto n]
   (if (nil? state)
-    (let [cyto' (update cyto :edges filter-cyto-edges)]
+    (let [cyto' (filter-cyto cyto)]
       {:n n
        :i n
        :cyto cyto'
@@ -987,12 +1197,33 @@
   [cyto n]
   (let [{:keys [mm cyto n i]} (swap! astate init-or-inc-state cyto n)]
     (clojure.pprint/pprint  [i n])
-    (->cyto3 mm cyto)))
+#_    (->cyto2 mm #_ cyto)
+        (->cyto3 mm cyto)))
+
+(defn do-layout
+  [cyto]
+  (let [cyto' (filter-cyto cyto)]
+    (let [mm (mk-maps cyto')]
+      (->cyto3 (do-iters mm 30)
+               cyto'))))
 
 #_(do-layout2 nodes2 10)
 
 ;; ===================================================
 
+
+#_(w-push ['$/graph
+         {:layout {:name "preset"}
+          :style [{:selector "node"
+                   :style {:content "data(id)"}}
+                  {:selector "edge"
+                   :style {"curve-style" "unbundled-bezier"
+                           :control-point-distances [0]
+                           :control-point-weights [0.5]
+                           :target-arrow-color "#f00"
+                           :target-arrow-shape "triangle"}}]
+          :elements (select-keys (do-layout nodes2)
+                                 [:nodes :edges])}])
 
 #_(w-push ['$/graph
          {:layout {:name "preset"}
@@ -1038,7 +1269,8 @@
            {:layout {:name "preset"}
             :style [{:selector "node"
                      :style {:content "data(id)"
-                             :border-width 10}}
+                             :border-width 10
+                             :font-size 50}}
                     {:selector "edge"
                      :style {:width 3
                              "curve-style" "unbundled-bezier"
@@ -1067,11 +1299,3 @@
                                                             [:nodes :edges])
                                                20)
                                    [:nodes :edges])}])
-
-
-
-
-
-
-
-
