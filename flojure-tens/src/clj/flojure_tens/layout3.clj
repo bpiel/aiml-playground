@@ -252,6 +252,13 @@
            (when-let [parent (:parent data)]
              {parent #{(:id data)}}))))
 
+(defn get-grp
+  [id & [depth]]
+  (clojure.string/join "/"
+                       (take (or depth 100)
+                             (drop-last
+                              (clojure.string/split id #"/")))))
+
 (defn mk-edge-maps1**
   [ms]
   (apply merge-with into ms))
@@ -262,6 +269,28 @@
     [{source #{target}}
      {target #{source}}]))
 
+(defn mk-st-weights*
+  [s t]
+  (let [[g1 g2] (map get-grp [s t])]
+    (cond (= g1 g2) 1.
+          
+          (apply = (map (partial take 2)
+                       [g1 g2]))
+          0.25
+          
+          (apply = (map (partial take 1)
+                       [g1 g2]))
+          0.1
+          
+          :else 0.05)))
+
+(defn mk-st-weights
+  [s->t]
+  (into {}
+        (for [[s ts] s->t
+              t ts]
+          {[s t] (mk-st-weights* s t)})))
+
 (defn mk-edge-maps1
   [{:keys [edges]}]
   (let [[s->t t->s]
@@ -270,14 +299,14 @@
                      (map mk-edge-maps1* edges)))]
     {:s->t s->t
      :t->s t->s
-     :id->adj (mk-edge-maps1** [s->t t->s])}))
+     :id->adj (mk-edge-maps1** [s->t t->s])
+     :st->w (mk-st-weights s->t)}))
 
 (defn mk-node-init-ranges
   [edge-map1]
   (into {}
         (for [k (->> edge-map1
-                     vals
-                     (apply merge)
+                     :id->adj
                      keys)]
           {k [nil nil]})))
 
@@ -403,12 +432,7 @@
 
 #_(def lvl-rngs $s/*)
 
-(defn get-grp
-  [id & [depth]]
-  (clojure.string/join "/"
-                       (take (or depth 100)
-                             (drop-last
-                              (clojure.string/split id #"/")))))
+
 
 (defn inspect-group-levels*
   [glvls]
@@ -497,8 +521,8 @@
   (format "__%s-%s-%s" s t lvl))
 
 (defn mk-segment
-  [s t lvl lvl2]
-  [lvl
+  [s t w lvl lvl2]
+  [lvl w
    (concat
     [s]
     (map (partial mk-node-kw s t)
@@ -506,19 +530,20 @@
     [t])])
 
 (defn mk-inter-nodes*
-  [id->lvl s->t t->s [id lvl]]
+  [id->lvl s->t st->w [id lvl]]
   (let [ts (s->t id)]
     (for [t ts]
-      (let [lvl2 (id->lvl t)]
-        (mk-segment id t lvl lvl2)))))
+      (let [lvl2 (id->lvl t)
+            w (st->w [id t])]
+        (mk-segment id t w lvl lvl2)))))
 
 (defn mk-segments
-  [id->lvl {:keys [s->t t->s]}]
-  (mapcat (partial mk-inter-nodes* id->lvl s->t t->s)
+  [id->lvl {:keys [s->t st->w]}]
+  (mapcat (partial mk-inter-nodes* id->lvl s->t st->w)
           (map vec id->lvl)))
 
 (defn segs->id-lvl*
-  [[lvl ids]]
+  [[lvl _ ids]]
   (into {}
         (map vector
              ids
@@ -530,14 +555,6 @@
   (apply merge
          (map segs->id-lvl*
               segs)))
-
-
-#_(defn lvl-id->id-pos*
-  [nodes]
-  (map vector
-       (shuffle nodes)
-       (map #(* % 2.)
-            (range))))
 
 (defn lvl-id->id-pos*
   [nodes]
@@ -551,25 +568,33 @@
         (mapcat lvl-id->id-pos*
                 (vals lvl->id))))
 
-(defn segs->t-s
-  [segs]
+(defn seg->t-s
+  [seg]
   (map (fn [a b] {a #{b}})
-       (drop 1 segs)
-       (drop-last segs)))
+       (drop 1 seg)
+       (drop-last seg)))
 
-(defn segs->s-t
-  [segs]
+(defn seg->s-t
+  [seg]
   (map (fn [a b] {a #{b}})
-       (drop-last segs)
-       (drop 1 segs)))
+       (drop-last seg)
+       (drop 1 seg)))
+
+(defn seg->st-w
+  [[_ w seg]]
+  (map (fn [a b] {[a b] w})
+       (drop-last seg)
+       (drop 1 seg)))
 
 (defn segs->edge-maps
   [segs]
-  (let [segs' (map second segs)]
+  (let [segs' (map #(nth % 2) segs)]
     {:s->t (apply merge-with into
-                      (mapcat segs->s-t segs'))
+                  (mapcat seg->s-t segs'))
      :t->s  (apply merge-with into
-                      (mapcat segs->t-s segs'))}))
+                   (mapcat seg->t-s segs'))
+     :st->w (apply merge-with into
+                   (mapcat seg->st-w segs))}))
 
 
 (defn mk-temp-map
@@ -589,23 +614,39 @@
         lvl->id (map-group-invert id->lvl')
         id->pos (lvl-id->id-pos lvl->id)
         id->temp (mk-temp-map (keys id->pos))
-        {:keys [s->t t->s]} (segs->edge-maps segs)]
+        {:keys [s->t t->s st->w]} (segs->edge-maps segs)]
     {:id->lvl id->lvl'
      :lvl->id lvl->id
      :id->pos id->pos
      :s->t s->t
      :t->s t->s
+     :st->w st->w
      :grp->ids grp->ids}))
 
-#_ (clojure.pprint/pprint (mk-maps nodes2))
-
-(defn adjust-lvl-avg*
+#_(defn adjust-lvl-avg*
   [{:keys [lvl->id s->t t->s] :as mm} id->pos id]
   (let [xs (map id->pos (concat (s->t id)
                                 (t->s id)))]
     (assoc id->pos id
            (/ (apply + xs)
               (count xs)))))
+
+(defn ->xw-pairs
+  [id->pos st->w id ids dir]
+  (for [id2 ids]
+    (let [x (id->pos id2)
+          w (-> (if dir [id id2] [id2 id])
+                st->w)]
+      [(* x w) w])))
+
+(defn adjust-lvl-avg*
+  [{:keys [s->t t->s st->w] :as mm} id->pos id]
+  (let [xw-pairs (concat (->xw-pairs id->pos st->w id (s->t id) true)
+                         (->xw-pairs id->pos st->w id (t->s id) false))
+        [xs ws] (transpose xw-pairs)]
+    (assoc id->pos id
+           (/ (apply + xs)
+              (apply + ws)))))
 
 (defn adjust-lvl-avg
   [{:keys [lvl->id] :as mm} id->pos lvl]
@@ -735,25 +776,32 @@
   [id]
   (.startsWith id "__"))
 
+(defn const-node?
+  [id]
+  (.startsWith id "Const"))
+
 (defn id-in-group?
   [grp id]
   (.startsWith id grp))
 
 (defn mk-grp-scope-fns
   [grp ids lmx lmn {:keys [avg spread]}]
-  (let [outer-limit  (* 100. (/ spread 2.))
+  (let [outer-limit  (* 1. (/ spread 2.))
         inner-limit  0. #_(* 0.5 (/ spread 2.))
         pos-left (- avg outer-limit)
         pos-right (+ avg outer-limit)
         pos-left' (- avg inner-limit)
         pos-right' (+ avg inner-limit)
         grp? (partial id-in-group? grp)
-        f (fn [id' pos'] (when-not (or (grp? id') (inter-node? id'))
+        f (fn [id' pos'] (when-not (or (grp? id')
+                                       (inter-node? id')
+                                       (const-node? id'))
                            (if (<= pos' avg)
                              pos-left
                              pos-right)))
         f2 (fn [id' pos'] (when (grp? id')
-                            (cond (< pos' pos-left')
+                            avg
+                            #_(cond (< pos' pos-left')
                                   pos-left'
                                   (> pos' pos-right')
                                   pos-right')))]
@@ -925,29 +973,29 @@
   [mm alpha]
   (-> mm
       adjust-temperature
-      (update :id->pos
+#_      (update :id->pos
               update-with-alpha
-              1. #_alpha
+              alpha
               adjust-lvls-temperature
               mm)
       (update :id->pos
               update-with-alpha
-              1. #_(min 1. (* alpha 3.))
+              0.
               adjust-lvls-avg
               mm)
       (update :id->pos
               update-with-alpha
-              1. #_alpha
+              alpha
               adjust-lvls-scopes
               mm)
       (update :id->pos
               update-with-alpha
-              1. #_alpha
+              1.
               adjust-lvls-horiz-scale
               mm)
       (update :id->pos
               update-with-alpha
-              (max 0.15 alpha)
+              alpha
               adjust-lvls-avg
               mm)))
 
@@ -1241,7 +1289,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2)
+          :elements (select-keys (do-layout nodes2 10)
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph

@@ -553,7 +553,7 @@
     (reset! afinal r)
     r))
 
-(clojure.pprint/pprint  (bill1))
+#_(clojure.pprint/pprint  (bill1))
 
 ;; ===================================================
 
