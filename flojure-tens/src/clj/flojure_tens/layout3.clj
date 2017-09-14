@@ -310,7 +310,6 @@
               (safe-fn inc smn))
      (safe-fn min
               mx
-              #_(when (nil? t) mn)
               (safe-fn dec tmx))]))
 
 (defn cap-end
@@ -360,12 +359,6 @@
              rs-prev)
       (when (not= rs-prev rs')
         rs'))))
-
-(def em1 $s/*)
-
-(def grp-map1 $s/*)
-
-(clojure.pprint/pprint  (get-ranges-for-nodes em1 grp-map1 stacked))
 
 (defn get-ranges-for-nodes
   [{:keys [id->adj s->t] :as em} grp-map & [node-ranges]]
@@ -428,6 +421,7 @@
                                {(get-grp id depth)
                                 [lvl]}))))))
 
+
 (defn calc-level-stacks*
   [[total m] [id height]]
   [(+ total height 8)
@@ -435,7 +429,12 @@
      m
      (assoc m id total))])
 
-(calc-level-stacks assigned-lvls)
+(defn calc-level-stacks
+  [lvls-map]
+  (second
+   (reduce calc-level-stacks*
+           [10 {}]
+           (inspect-group-levels lvls-map 1))))
 
 (defn apply-level-stacking*
   [lvl-stacks lvls-map k]
@@ -456,21 +455,6 @@
             lvls-map
             (keys lvls-map))))
 
-(clojure.pprint/pprint  (inspect-group-levels assigned-lvls 1))
-
-(clojure.pprint/pprint  (apply-level-stacking assigned-lvls))
-
-(clojure.pprint/pprint assigned-lvls)
-
-(def stacked (apply-level-stacking assigned-lvls))
-
-#_ (def assigned-lvls $s/*)
-
-#_(def em1 (mk-edge-maps1 nodes2))
-
-#_ (clojure.pprint/pprint  (get-ranges-for-nodes em1
-                                                 (mk-groups nodes2)))
-
 (defn choose-level
   [[mn mx]]
   (int (if (or (zero? mn)
@@ -481,7 +465,7 @@
 
 (defn assign-levels
   [edge-maps1 groups]
-  (fmap choose-level
+  (fmap (partial apply safe-fn max) #_choose-level
    (get-ranges-for-nodes edge-maps1 groups)))
 
 (defn assign-levels-stacked
@@ -492,7 +476,6 @@
           (get-ranges-for-nodes edge-maps1
                                 groups
                                 stacked))))
-
 
 (defn mk-node-kw
   [s t lvl]
@@ -535,12 +518,18 @@
               segs)))
 
 
+#_(defn lvl-id->id-pos*
+  [nodes]
+  (map vector
+       (shuffle nodes)
+       (map #(* % 2.)
+            (range))))
+
 (defn lvl-id->id-pos*
   [nodes]
   (map vector
        (shuffle nodes)
-       (map (comp #(* % 2.))
-            (range))))
+       (repeat 0.)))
 
 (defn lvl-id->id-pos
   [lvl->id]
@@ -627,7 +616,7 @@
 
 (defn mk-scopes-for-node
   [mm id->pos id]
-  (let [width 5.
+  (let [width 100.
         pos (id->pos id)
         pos-left (- pos width)
         pos-right (+ pos width)
@@ -732,19 +721,24 @@
   [id]
   (.startsWith id "__"))
 
+(defn id-in-group?
+  [grp id]
+  (.startsWith id grp))
+
 (defn mk-grp-scope-fns
-  [ids lmx lmn {:keys [avg spread]}]
-  (let [outer-limit  (* 2.5 (/ spread 2.))
-        inner-limit  (* 0.9 (/ spread 2.))
+  [grp ids lmx lmn {:keys [avg spread]}]
+  (let [outer-limit  (* 100. (/ spread 2.))
+        inner-limit  0. #_(* 0.5 (/ spread 2.))
         pos-left (- avg outer-limit)
         pos-right (+ avg outer-limit)
         pos-left' (- avg inner-limit)
         pos-right' (+ avg inner-limit)
-        f (fn [id' pos'] (when-not (or (ids id') (inter-node? id'))
+        grp? (partial id-in-group? grp)
+        f (fn [id' pos'] (when-not (or (grp? id') (inter-node? id'))
                            (if (<= pos' avg)
                              pos-left
                              pos-right)))
-        f2 (fn [id' pos'] (when (ids id')
+        f2 (fn [id' pos'] (when (grp? id')
                             (cond (< pos' pos-left')
                                   pos-left'
                                   (> pos' pos-right')
@@ -755,7 +749,7 @@
      [lmn lmx Float/MAX_VALUE f2]]))
 
 (defn mk-grp-scopes*
-  [id->lvl id->pos ids]
+  [id->lvl id->pos [grp ids]]
   (let [lvls (keep id->lvl ids)
         lmx (apply safe-fn max lvls)
         lmn (apply safe-fn min lvls)]
@@ -763,13 +757,13 @@
       (->> ids
            (keep id->pos)
            get-grp-stats
-           (mk-grp-scope-fns ids lmx lmn))
+           (mk-grp-scope-fns grp ids lmx lmn))
       [])))
 
 (defn mk-grp-scopes
   [id->lvl id->pos grp->ids]
   (mapcat (partial mk-grp-scopes* id->lvl id->pos)
-          (vals grp->ids)))
+          grp->ids))
 
 (defn adjust-lvls-scopes
   [id->pos {:keys [id->lvl lvl->id grp->ids] :as mm}]
@@ -819,12 +813,6 @@
   (interleave*
    (dedupe (find-crossings1-bottoms id->pos t->s ids))
    (dedupe (find-crossings1-tops id->pos t->s ids))))
-
-(find-crossings1 $s/id->pos2 $s/t->s2 $s/ids1)
-
-  (interleave
-   (dedupe (find-crossings1-bottoms $s/id->pos2 $s/t->s2 $s/ids1))
-   (dedupe (find-crossings1-tops $s/id->pos2 $s/t->s2 $s/ids1)))
 
 (defn update-crossings-map
   [m past id]
@@ -925,23 +913,28 @@
       adjust-temperature
       (update :id->pos
               update-with-alpha
-              alpha
+              1. #_alpha
               adjust-lvls-temperature
               mm)
       (update :id->pos
               update-with-alpha
-              (min 1. (* alpha 3.))
+              1. #_(min 1. (* alpha 3.))
               adjust-lvls-avg
               mm)
       (update :id->pos
               update-with-alpha
-              alpha
+              1. #_alpha
               adjust-lvls-scopes
               mm)
       (update :id->pos
               update-with-alpha
-              alpha
+              1. #_alpha
               adjust-lvls-horiz-scale
+              mm)
+      (update :id->pos
+              update-with-alpha
+              (max 0.15 alpha)
+              adjust-lvls-avg
               mm)))
 
 (defn do-iters
@@ -971,7 +964,12 @@
   [cyto]
   (-> cyto
       (update :edges filter-cyto-edges)
-      (update :nodes filter-cyto-nodes)))
+#_      (update :nodes filter-cyto-nodes)))
+
+(defn id->name
+  [id]
+  (last (clojure.string/split id
+                              #"/")))
 
 (defn ->cyto*
   [id->lvl id->slot node]
@@ -980,6 +978,7 @@
         x (id->slot id)]
     (try
       (assoc node
+             :name (id->name id)
              :position
              {:x (* 600 x)
               :y (* 200 y)})
@@ -1201,11 +1200,17 @@
         (->cyto3 mm cyto)))
 
 (defn do-layout
+  [cyto & [n]]
+  (let [cyto' (filter-cyto cyto)]
+    (let [mm (mk-maps cyto')]
+      (->cyto3 (do-iters mm (or n 1))
+              cyto'))))
+
+(defn do-layoutX
   [cyto]
   (let [cyto' (filter-cyto cyto)]
     (let [mm (mk-maps cyto')]
-      (->cyto3 (do-iters mm 30)
-               cyto'))))
+      (->cyto2 (do-iters mm 3)))))
 
 #_(do-layout2 nodes2 10)
 
@@ -1239,36 +1244,9 @@
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
-         {:layout {:name "preset"}
-          :style [{:selector "node"
-                   :style {:content "data(id)"}}
-                  {:selector "edge"
-                   :style {"curve-style" "unbundled-bezier"
-                           :control-point-distances [0]
-                           :control-point-weights [0.5]
-                           :target-arrow-color "#f00"
-                           :target-arrow-shape "triangle"}}]
-          :elements (select-keys @aorig
-                                 [:nodes :edges])}])
-
-
-#_(w-push ['$/graph
-         {:layout {:name "preset"}
-          :style [{:selector "node"
-                   :style {:content "data(id)"}}
-                  {:selector "edge"
-                   :style {"curve-style" "unbundled-bezier"
-                           :control-point-distances [0]
-                           :control-point-weights [0.5]
-                           :target-arrow-color "#f00"
-                           :target-arrow-shape "triangle"}}]
-          :elements (select-keys @afinal
-                                 [:nodes :edges])}])
-
-#_(w-push ['$/graph
            {:layout {:name "preset"}
             :style [{:selector "node"
-                     :style {:content "data(id)"
+                     :style {:content "data(name)"
                              :border-width 10
                              :font-size 50}}
                     {:selector "edge"
@@ -1279,6 +1257,24 @@
                              :target-arrow-color "#f00"
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
+                                                           [:nodes :edges])
+                                              20)
+                                   [:nodes :edges])}])
+
+#_(w-push ['$/graph
+           {:layout {:name "preset"}
+            :style [{:selector "node"
+                     :style {:content "data(name)"
+                             :border-width 10
+                             :font-size 50}}
+                    {:selector "edge"
+                     :style {:width 3
+                             "curve-style" "unbundled-bezier"
+                             :control-point-distances [0]
+                             :control-point-weights [0.5]
+                             :target-arrow-color "#f00"
+                             :target-arrow-shape "triangle"}}]
+            :elements (select-keys (do-layoutX (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges]))
                                    [:nodes :edges])}])
 
