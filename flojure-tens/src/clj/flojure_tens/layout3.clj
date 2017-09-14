@@ -272,7 +272,7 @@
      :t->s t->s
      :id->adj (mk-edge-maps1** [s->t t->s])}))
 
-(defn mk-node-ranges
+(defn mk-node-init-ranges
   [edge-map1]
   (into {}
         (for [k (->> edge-map1
@@ -363,7 +363,7 @@
 (defn get-ranges-for-nodes
   [{:keys [id->adj s->t] :as em} grp-map & [node-ranges]]
   (let [grps (vals grp-map)
-        rs (or node-ranges (mk-node-ranges em))
+        rs (or node-ranges (mk-node-init-ranges em))
         ids (keys id->adj)]
     (loop [[id & ids'] (keys id->adj)
            rs' rs
@@ -410,38 +410,43 @@
                              (drop-last
                               (clojure.string/split id #"/")))))
 
+(defn inspect-group-levels*
+  [glvls]
+  (let [mx (apply max glvls)
+        mn (apply min glvls)]
+    [mx (- mx mn)]))
 
 (defn inspect-group-levels
   [lvl-rngs & [depth]]
-  (sort-by second
+  (sort-by #(-> % second first)
            (map vec
-                (fmap (partial apply max)
+                (fmap inspect-group-levels*
                       (apply merge-with into
                              (for [[id lvl] lvl-rngs ]
                                {(get-grp id depth)
                                 [lvl]}))))))
 
-
 (defn calc-level-stacks*
-  [[total m] [id height]]
-  [(+ total height 8)
+  [[total m] [id [mx height]]]
+  [(+ total height 3)
    (if (= id "")
      m
-     (assoc m id total))])
+     (assoc m id [total (+ total height)]))])
 
 (defn calc-level-stacks
   [lvls-map]
   (second
    (reduce calc-level-stacks*
-           [10 {}]
+           [1 {}]
            (inspect-group-levels lvls-map 1))))
 
 (defn apply-level-stacking*
   [lvl-stacks lvls-map k]
-  (let [offset (some-> k (get-grp 1) lvl-stacks)
+  (let [lvl-rng (some-> k (get-grp 1) lvl-stacks)
         v (lvls-map k)
-        v' (if offset
-             [(+ v offset -1)(+ v offset 5)]
+        v' (if lvl-rng
+             lvl-rng
+             #_[(+ v offset -1)(+ v offset 5)]
              [nil nil])]
     (assoc lvls-map
            k
@@ -457,8 +462,8 @@
 
 (defn choose-level
   [[mn mx]]
-  (int (if (or (zero? mn)
-               (nil? mn))
+  (int (if (or (nil? mn)
+               (zero? mn))
          (or mx 0)
          (Math/floor (/ (+ mn mn) 2)))))
 
@@ -471,6 +476,15 @@
 (defn assign-levels-stacked
   [edge-maps1 groups]
   (let [alvls1 (assign-levels edge-maps1 groups)
+        stacked (apply-level-stacking alvls1)]
+    (fmap choose-level
+          (get-ranges-for-nodes edge-maps1
+                                groups
+                                stacked))))
+
+(defn assign-levels-stacked2
+  [edge-maps1 groups]
+  (let [alvls1 (assign-levels-stacked edge-maps1 groups)
         stacked (apply-level-stacking alvls1)]
     (fmap choose-level
           (get-ranges-for-nodes edge-maps1
@@ -569,7 +583,7 @@
   (let [edge-maps1 (mk-edge-maps1 cyto)
         grp->ids (dissoc (mk-groups cyto)
                          "gradients") ;; TODO
-        id->lvl (assign-levels-stacked edge-maps1 grp->ids)
+        id->lvl (assign-levels-stacked2 edge-maps1 grp->ids)
         segs (mk-segments id->lvl edge-maps1)
         id->lvl' (segs->id-lvl segs)
         lvl->id (map-group-invert id->lvl')
@@ -964,7 +978,7 @@
   [cyto]
   (-> cyto
       (update :edges filter-cyto-edges)
-#_      (update :nodes filter-cyto-nodes)))
+      (update :nodes filter-cyto-nodes)))
 
 (defn id->name
   [id]
