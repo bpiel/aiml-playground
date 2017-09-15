@@ -7,7 +7,8 @@
             [flojure-tens.layers :as l]
             [flojure-tens.util :as ut]
             [flojure-tens.data-type :as dt]
-            [flojure-tens.webapp.server :as wsvr])
+            [flojure-tens.webapp.server :as wsvr]
+            clojure.data)
   (:import [flojure_tens.common Graph Op]
            [flojure_tens.session Session]))
 
@@ -367,6 +368,12 @@
                (apply f))
       nil))
 
+(defn safe-fn2
+  [f & args]
+  (when (every? (comp not nil?)
+                args)
+    (apply f args)))
+
 (defn get-mins-maxes
   [id id->set rs]
   (let [[mns mxs :as x] (some->> id
@@ -376,29 +383,67 @@
                                  (apply map vector))]
     (when x
       [(apply safe-fn max mns)
-       (apply safe-fn min mxs)])))
+       (apply safe-fn min mxs)
+       (apply safe-fn2 max mns)
+       (apply safe-fn2 min mxs)])))
 
 (defn update-ranges-for-id
   [[mn mx] id {:keys [s->t t->s]} rs]
   (let [[smn _ :as s] (get-mins-maxes id t->s rs)
-        [_ tmx :as t] (get-mins-maxes id s->t rs)]
-    [(safe-fn max
-              mn
-              (when (nil? s) 0)
-              (safe-fn inc smn))
-     (safe-fn min
-              mx
-              (safe-fn dec tmx))]))
+        [tmn tmx tmn2 tmx2 :as t] (get-mins-maxes id s->t rs)        
+        new-mx (safe-fn min
+                        mx
+                        (safe-fn dec tmx))
+        new-mn (safe-fn max
+                        mn
+                        (when (nil? s) (or
+                                        (when tmn2
+                                          (dec tmn2))
+                                        0))
+                        (safe-fn inc smn))]
+#_    (when (= id "Const_37")
+      (clojure.pprint/pprint
+       {:mn mn
+        :mx mx
+        :rs rs
+        :s s
+        :t t}))
+    [(when new-mn
+       (safe-fn min new-mn new-mx))
+     (when new-mx
+       (safe-fn max new-mx new-mn))]))
+
+(defn reduce-uncertainty1
+  [rs]
+  (let [[id [mn mx]] (->> rs
+                          (remove (fn [[id [mn mx]]]
+                                    (or (nil? mn)
+                                        (nil? mx))))
+                          (sort-by (fn [[id [mn mx]]]
+                                     (- mx mn)))
+                          #_reverse
+                          first)]
+    (cond (< mn mx)
+          (assoc rs id [mx mx])
+          :else nil)))
+
+(defn reduce-uncertainty2
+  [rs]
+  (let [[id [mn mx]] (->> rs
+                          (filter (fn [[id [mn mx]]]
+                                    (nil? mx)))
+                          (sort-by (fn [[id [mn mx]]]
+                                     mn))
+                          reverse
+                          first)]
+    (when id
+      (assoc rs id [mn mn]))))
 
 (defn reduce-uncertainty
   [rs]
-  (let [[id [mn mx]] (->> rs
-                          (sort-by (fn [[id [mn mx]]]
-                                     (- mx mn)))
-                          reverse
-                          first)]
-    (when (< mn mx)
-      (assoc rs id [mx mx]))))
+  (or (reduce-uncertainty2 rs)
+      (reduce-uncertainty1 rs)))
+
 
 (defn get-ranges-for-nodes
   [{:keys [id->adj s->t] :as em} longest-info & [node-ranges]]
@@ -407,41 +452,53 @@
         ids (keys id->adj)]
     (loop [[id & ids'] (keys id->adj)
            rs' rs
-           rs-prev rs]
-      (cond id
+           rs-prev rs
+           n 0]
+      #_      (clojure.pprint/pprint n)
+      (cond (> n 1000000) 
+            (do (println "get-ranges-for-nodes LIMITED!")
+                (def rs1 rs') #_ (clojure.pprint/pprint rs1)
+                (def rs-prev1 rs-prev) #_ (clojure.pprint/pprint rs-prev1)
+                rs')
+#_            (clojure.pprint/pprint  (clojure.data/diff rs1 rs-prev1))
+            id
             (recur ids'
                    (update rs' id
                            update-ranges-for-id
                            id em rs')
-                   rs-prev)
+                   rs-prev
+                   (inc n))
 
             (not= rs' rs-prev)
             (recur ids
                    rs'
-                   rs')
+                   rs'
+                   (inc n))
             
             :else (if-let [rs'' (reduce-uncertainty rs')]
                     (recur ids
                            rs''
-                           rs-prev)
+                           rs-prev
+                           (inc n))
                     rs')))))
 
 (defn assign-levels
   [{:keys [id->adj s->t] :as em} longest-info & [node-ranges]]
-  (fmap first
-        (get-ranges-for-nodes em
-                              longest-info
-                              node-ranges)))
-
+  (let [rngs (get-ranges-for-nodes em
+                                   longest-info
+                                   node-ranges)]
+    (def rngs1 rngs)
+    (fmap second rngs)))
 
 (defn inspect-group-levels*
   [glvls]
   (let [mx (apply max glvls)
         mn (apply min glvls)]
-    [mx (inc (- mx mn))]))
+    [mn (inc (- mx mn))]))
 
 (defn inspect-group-levels
   [lvl-rngs & [depth]]
+  (def lvl-rngs1 lvl-rngs)
   (sort-by #(-> % second first)
            (map vec
                 (fmap inspect-group-levels*
@@ -451,11 +508,11 @@
                                 [lvl]}))))))
 
 (defn calc-level-stacks*
-  [[total m] [id [mx height]]]
-  [(+ total height 1)
-   (if (= id "")
-     m
-     (assoc m id [total (dec (+ total height))]))])
+  [[total m] [id [mn height]]]
+  (if (= id "")
+    [total m]
+    [(+ total height 1)
+     (assoc m id [total (dec (+ total height))])]))
 
 (defn calc-level-stacks
   [lvls-map]
@@ -470,7 +527,7 @@
         v (lvls-map k)
         v' (if lvl-rng
              lvl-rng
-             [nil max-lvl])]
+             [nil nil])]
     (assoc lvls-map
            k
            v')))
@@ -484,25 +541,26 @@
                      (apply max))]
     (reduce (partial apply-level-stacking*
                      lvl-stacks
-                     (* 2. max-lvl)
-                     1)
+                     1
+                     max-lvl)
             id->lvl
             (keys id->lvl))))
 
 (defn assign-levels-stack-groups
   [em longest-info]
-  (loop [node-ranges nil
-         id->lvl nil
-         c 0]
-    (cond (< c 3)
-          (let [id->lvl' (assign-levels em
-                                        longest-info
-                                        node-ranges)]
-            (recur (stack-groups id->lvl' em)
-                   id->lvl'
-                   (inc c)))
+  (let [stack-reps 5]
+    (loop [node-ranges nil
+           id->lvl nil
+           c 0]
+      (cond (< c stack-reps)
+            (let [id->lvl' (assign-levels em
+                                          longest-info
+                                          node-ranges)]
+              (recur (stack-groups id->lvl' em)
+                     id->lvl'
+                     (inc c)))
 
-          :else id->lvl)))
+            :else id->lvl))))
 
 
 (defn mk-node-kw
@@ -554,8 +612,8 @@
 (defn filter-cyto-edges
   [edges]
   (filter (fn [{:keys [data]}]
-            (= (nil? (re-find #"gradient" (:source data)))
-               (nil? (re-find #"gradient" (:target data)))))
+            (and (nil? (re-find #"gradient" (:source data)))
+                (nil? (re-find #"gradient" (:target data)))))
           edges))
 
 (defn filter-cyto-nodes
@@ -980,8 +1038,8 @@
 (defn apply-force-points
   [fps alpha id->pos id]
   (assoc id->pos id
-         (apply-force-points* fps (id->pos id))
-         #_(->> fps
+         #_(apply-force-points* fps (id->pos id))
+         (->> fps
                 find-attractive-center
                 (apply-force-points* fps))))
 
@@ -1254,7 +1312,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout2 nodes2 10)
+          :elements (select-keys (do-layout2 nodes2 20)
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
@@ -1272,8 +1330,10 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              20)
+                                              30)
                                    [:nodes :edges])}])
+
+#_ ffffffffff
 
 #_(w-push ['$/graph
            {:layout {:name "preset"}
