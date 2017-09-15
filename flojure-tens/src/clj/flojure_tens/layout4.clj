@@ -842,7 +842,7 @@
     (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
                 st->w
-                (or (min 3. alt-w)))
+                (or (min 5. alt-w)))
           temp (id->temp id)]
       [pos2
        (* -1. w #_(min (max 1. temp)
@@ -1154,7 +1154,7 @@
           Math/abs)])
 
 (defn find-force-range
-  [fps x1 x2]
+  [alpha fps x1 x2]
   (let [xs (->> fps
                 (filter #(-> % first number?))
                 (map first)
@@ -1164,11 +1164,13 @@
         width (max 2. (- mx mn))]
     (range (- mn width)
            (+ mx width 0.1)
-           0.5)))
+           (cond (> alpha 0.9) 1.
+                 (> alpha 0.5) 0.5
+                 :else 0.25))))
 
 (defn apply-force-points*2
-  [fps x1 x2]
-  (let [r (find-force-range fps x1 x2)]
+  [alpha fps x1 x2]
+  (let [r (find-force-range alpha fps x1 x2)]
     (->> r
          (map (partial apply-force-points**2 fps))
          (sort-by second)
@@ -1185,7 +1187,7 @@
 #_  (println id)
   (let [new-x (->> fps
                    find-attractive-center
-                   (apply-force-points*2 fps (id->pos id)))]
+                   (apply-force-points*2 alpha fps (id->pos id)))]
     (update id->pos id update-with-alpha new-x 1.0 #_alpha)))
 
 (defn mk-grp-range
@@ -1488,7 +1490,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2 4)
+          :elements (select-keys (do-layout nodes2 5)
                                  [:nodes :edges])}])
 
 #_aaaaaaaaaaaaaaaaaaaa
@@ -1521,7 +1523,7 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              7)
+                                              6)
                                    [:nodes :edges])}])
 
 #_ ffffffffff
