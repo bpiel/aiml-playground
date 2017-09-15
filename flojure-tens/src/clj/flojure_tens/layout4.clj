@@ -699,21 +699,6 @@
      :st->w st->w
      :id->temp id->temp}))
 
-(defn weight-force
-  [[id frc w]]
-  (* frc w))
-
-(defn reduce-forces*
-  [fs]
-  (let [weighted (->> fs
-                      (map weight-force)
-                      (apply +))
-        weights (map #(nth % 2) fs)
-        w-factor (mean (apply + weights)
-                       (apply max weights))]
-    (/ weighted
-       w-factor)))
-
 (defn calc-forces-rnd
   [{:keys [id->pos]}]
   (for [id (keys id->pos)]
@@ -816,12 +801,29 @@
                    crossed)
            :crossed crossed)))
 
+(defn climb-tree
+  [id m]
+  (let [max-steps 10]
+    (loop [n 0
+           id' id]
+      (if (>= n max-steps)
+        #{id'}
+        (let [ids (m id')]
+          (if (and ids
+                   (= (count ids) 1))
+            (recur (inc n)
+                   (first ids))
+            (when (> n 1)
+              #{id'})))))))
+
+
 (defn ->xw-pairs
   [pos id->pos st->w id->temp id ids dir]
   (for [id2 ids]
     (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
-                st->w)
+                st->w
+                (or 0.1))
           temp (id->temp id)]
       [pos2
        (* -1. w #_(min (max 1. temp)
@@ -830,10 +832,16 @@
                pos id2
                pos2)])))
 
+
+
 (defn calc-forces-avg-neighbor*
   [id  {:keys [s->t t->s st->w id->temp ] :as mm} id->pos]
-  (concat (->xw-pairs (id->pos id) id->pos st->w id->temp id (s->t id) true)
-          (->xw-pairs (id->pos id) id->pos st->w id->temp id (t->s id) false)))
+  (let [pos (id->pos id)
+        f (partial ->xw-pairs pos id->pos st->w id->temp id)]
+    (concat (f (s->t id) true)
+            (f (t->s id) false)
+            (f (climb-tree id s->t) true)
+            (f (climb-tree id t->s) false))))
 
 (defn calc-forces-avg-neighbor
   [{:keys [ s->t t->s st->w lvl->id] :as mm} alpha id->pos id _]
@@ -1330,7 +1338,7 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              30)
+                                              20)
                                    [:nodes :edges])}])
 
 #_ ffffffffff
