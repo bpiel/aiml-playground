@@ -803,7 +803,7 @@
 
 (defn climb-tree
   [id m]
-  (let [max-steps 10]
+  (let [max-steps 30]
     (loop [n 0
            id' id]
       (if (>= n max-steps)
