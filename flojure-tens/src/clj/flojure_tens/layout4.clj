@@ -1020,15 +1020,19 @@
                             (.startsWith id "Const")))
                    [[[(- x-mn 1.0)
                       (+ x-mx  1.0)]
-                     (* 30. alpha')
+                     (* 1000. alpha')
                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
                              grp x-mn x-mx)]
-                    [(mean x-mn x-mx)
+                    #_[(mean x-mn x-mx)
                      (* 30. alpha')
                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
                              grp x-mn x-mx)]]
                    (.startsWith id grp)
-                   [[(mean x-mn x-mx)
+                   [[[x-mn x-mx]
+                      (* -1000. alpha')
+                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                              grp x-mn x-mx)]]
+                   #_[[(mean x-mn x-mx)
                      -3.
                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
                              grp x-mn x-mx)]])))))
@@ -1050,7 +1054,10 @@
                           (apply +))]
         (/ (->> attractors             
                 (map (fn [[x w]]
-                       (* x w)))
+                       (if (number? x)
+                         (* x w)
+                         (* (apply mean x)
+                            w))))
                 (apply +))
            w-factor)))))
 
@@ -1118,13 +1125,15 @@
          (/ frc
             (max (Math/abs d) 0.01)
             #_(max 1.
-                 (* d d)))
+                   (* d d)))
          (* d d d frc)))
      (let [[left right] pos
            mid (mean left right)]
-       (cond (<= left x mid)
+       (cond (and (> frc 0)
+                  (< left x right))
              frc
-             (<= mid x right)
+             (and (< frc 0)
+                  (not (< left x right)))
              frc
              :else 0.)))))
 
@@ -1146,7 +1155,7 @@
         width (max 2. (- mx mn))]
     (range (- mn width)
            (+ mx width 0.1)
-           (cond (> alpha 0.9) 1.
+           (cond 
                  (> alpha 0.5) 0.5
                  :else 0.25))))
 
@@ -1170,7 +1179,7 @@
   (let [new-x (->> fps
                    find-attractive-center
                    (apply-force-points*2 alpha fps (id->pos id)))]
-    (update id->pos id update-with-alpha new-x 1.0 #_alpha)))
+    (update id->pos id update-with-alpha new-x 0.95 #_alpha)))
 
 (defn mk-grp-range
   [{:keys [id->lvl id->pos] :as mm} grp]
@@ -1241,10 +1250,19 @@
                     (concat (range 0 mx-lvl)
                             (range mx-lvl 0 -1)))))))
 
+(defn order-groups
+  [{:keys [id->pos] :as mm}]
+  (assoc mm :id->pos
+         (for->map [[id _] id->pos]
+                   [id (-> (id->grp id)
+                           hash
+                           (mod 20)
+                           (- 10.))])))
+
 (defn do-iters
   [mm n & [alpha-i alpha-n]]
   (loop [i n
-         mm' mm]
+         mm' (order-groups mm)]
     (if (> i 0)
       (recur (dec i)
              (-> mm'
@@ -1472,7 +1490,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2 4)
+          :elements (select-keys (do-layout nodes2 5)
                                  [:nodes :edges])}])
 
 #_aaaaaaaaaaaaaaaaaaaa
@@ -1505,7 +1523,7 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              5)
+                                              3)
                                    [:nodes :edges])}])
 
 #_ ffffffffff
@@ -1542,5 +1560,5 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout2 (select-keys (w-mk-graph-def2)
                                                             [:nodes :edges])
-                                               5)
+                                               10)
                                    [:nodes :edges])}])
