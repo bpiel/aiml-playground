@@ -515,11 +515,11 @@
      (assoc m id [total (+ total height)])]))
 
 (defn calc-level-stacks
-  [lvls-map]
+  [lvls-map depth]
   (second
    (reduce calc-level-stacks*
            [3 {}]
-           (inspect-group-levels lvls-map 1))))
+           (inspect-group-levels lvls-map depth))))
 
 (defn apply-level-stacking*
   [lvl-stacks ldepth max-lvl lvls-map k]
@@ -533,15 +533,15 @@
            v')))
 
 (defn stack-groups
-  [id->lvl em]
-  (let [lvl-stacks (calc-level-stacks id->lvl)
+  [id->lvl em grp-depth]
+  (let [lvl-stacks (calc-level-stacks id->lvl grp-depth)
         max-lvl (->> lvl-stacks
                      vals
                      (map second)
                      (apply max))]
     (reduce (partial apply-level-stacking*
                      lvl-stacks
-                     1
+                     grp-depth
                      max-lvl)
             id->lvl
             (keys id->lvl))))
@@ -550,13 +550,12 @@
   [id->lvl]
   (let [lvl->ids (map-group-invert id->lvl)
         lvl-mx (apply max (keys lvl->ids))
-        _ (clojure.pprint/pprint lvl->ids)
-        new-lvls (map-indexed
+          new-lvls (map-indexed
                   vector
                   (dedupe
                    (map lvl->ids
                         (range 0 (inc lvl-mx)))))]
-    (clojure.pprint/pprint  new-lvls)
+#_    (clojure.pprint/pprint  new-lvls)
     (for->map [[lvl ids] new-lvls
                id ids]
               [id lvl])))
@@ -571,7 +570,7 @@
             (let [id->lvl' (assign-levels em
                                           longest-info
                                           node-ranges)]
-              (recur (stack-groups id->lvl' em)
+              (recur (stack-groups id->lvl' em 1)
                      id->lvl'
                      (inc c)))
 
@@ -821,28 +820,29 @@
            :crossed crossed)))
 
 (defn climb-tree
-  [id m]
+  [id m mn-steps]
   (let [max-steps 30]
     (loop [n 0
            id' id]
       (if (>= n max-steps)
-        #{id'}
+        [#{id'} (double m)]
         (let [ids (m id')]
           (if (and ids
-                   (= (count ids) 1))
+                   (= (count ids) 1)
+                   (.startsWith (first ids) "__"))
             (recur (inc n)
                    (first ids))
-            (when (> n 1)
-              #{id'})))))))
+            (when (> n mn-steps)
+              [#{id'} (double n)])))))))
 
 
 (defn ->xw-pairs
-  [pos id->pos st->w id->temp id ids dir]
+  [pos id->pos st->w id->temp id ids alt-w dir]
   (for [id2 ids]
     (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
                 st->w
-                (or 0.15))
+                (or (min 3. alt-w)))
           temp (id->temp id)]
       [pos2
        (* -1. w #_(min (max 1. temp)
@@ -856,11 +856,13 @@
 (defn calc-forces-avg-neighbor*
   [id  {:keys [s->t t->s st->w id->temp ] :as mm} id->pos]
   (let [pos (id->pos id)
-        f (partial ->xw-pairs pos id->pos st->w id->temp id)]
-    (concat (f (s->t id) true)
-            (f (t->s id) false)
-            (f (climb-tree id s->t) true)
-            (f (climb-tree id t->s) false))))
+        f (partial ->xw-pairs pos id->pos st->w id->temp id)
+        [ct-ids1 ct-w1] (climb-tree id s->t 2)
+        [ct-ids2 ct-w2] (climb-tree id s->t 2)]
+    (concat (f (s->t id) 1. true)
+            (f (t->s id) 1. false)
+            (f ct-ids1 ct-w1 true)
+            (f ct-ids2 ct-w2 false))))
 
 (defn calc-forces-avg-neighbor
   [{:keys [ s->t t->s st->w lvl->id] :as mm} _ alpha id->pos id _]
@@ -988,9 +990,11 @@
 
 (defn wacky-alpha
   [alpha]
-  (max 0.01
-   (* 2.
-      (Math/abs (- alpha 0.9)))))
+  1.
+  #_
+  (if (< 0.3 alpha 0.5)
+    0.01
+    1.))
 
 
 (defn calc-fp-repel
@@ -1000,7 +1004,9 @@
             (for [id2 lvl-ids]
               (let [pos2 (id->pos id2)]
                 (when-not (= id id2)
-                  [pos2 (* 10. alpha')
+                  [[(- pos2 0.5)
+                    (+ pos2 0.5)]
+                   (* 10. alpha')
                    (format "calc-fp-repel id2 %s| pos2 %s"
                            id2 pos2)]))))))
 
@@ -1009,21 +1015,22 @@
   [mm {:keys [grp-ranges]} alpha id->pos id lvl-ids]
   #_  (when (not-empty grp-ranges)
         (def grp-ranges1 grp-ranges))
-  (apply concat
-         (for [{:keys [grp x-mn x-mx spread]} grp-ranges]
-           (cond (not (or (.startsWith id grp)
-                          (.startsWith id "__")
-                          (.startsWith id "Const")))
-                 [[[(- x-mn (/ spread 3.) 0.7)
-                    (+ x-mx (/ spread 3.) 0.7)]
-                   5.
-                   (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
-                           grp x-mn x-mx)]]
-                 (.startsWith id grp)
-                 [[(mean x-mn x-mx)
-                   -1.
-                   (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
-                           grp x-mn x-mx)]]))))
+  (let [alpha' (wacky-alpha alpha)]
+    (apply concat
+           (for [{:keys [grp x-mn x-mx spread]} grp-ranges]
+             (cond (not (or (.startsWith id grp)
+                            (.startsWith id "__")
+                            (.startsWith id "Const")))
+                   [[[(- x-mn (/ spread 3.) 0.5)
+                      (+ x-mx (/ spread 3.) 0.5)]
+                     (* 10. alpha')
+                     (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                             grp x-mn x-mx)]]
+                   (.startsWith id grp)
+                   [[(mean x-mn x-mx)
+                     -1.5
+                     (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                             grp x-mn x-mx)]])))))
 
 (defn calc-force-points
   [mm global-stuff alpha lvl-ids id->pos id]
@@ -1041,21 +1048,18 @@
                           (map second)
                           (apply +))]
         (/ (->> attractors             
-                       (map (fn [[x w]]
-                              (* x w)))
-                       (apply +)
-                       )
+                (map (fn [[x w]]
+                       (* x w)))
+                (apply +))
            w-factor)))))
 
 (defn polarity
   [n rando]
   (cond (zero? n)
         (-> rando
-            hash
             (mod 2)
             (- 0.5)
             (polarity nil))
-
         (> n 0.) 1.
         :else -1.))
 
@@ -1104,6 +1108,86 @@
                 find-attractive-center
                 (apply-force-points* fps))))
 
+#_(defn apply-force-points***2
+  [hsh x [pos frc]]
+  (Math/abs
+   (if (number? pos)
+     (let [d (- x pos)]
+       (if (> frc 0.)
+         (/ frc
+            (max 1.
+                 (* d d)))
+         (* d frc)))
+     (let [[left right] pos
+           mid (mean left right)]
+       (cond (< left x mid)
+             (* frc (- x left))
+             (< mid x right)
+             (* frc (- right x))
+             :else 0.)))))
+
+(defn apply-force-points***2
+  [hsh x [pos frc]]
+  (Math/abs
+   (if (number? pos)
+     (let [d (- x pos)
+           pol (polarity d hsh)]
+       (if (> frc 0.)
+         (/ frc
+            pol
+            (max 1.
+                 (* d d)))
+         (* d frc)))
+     (let [[left right] pos
+           mid (mean left right)]
+       (cond (<= left x mid)
+             (* -1. frc)
+             (<= mid x right)
+             frc
+             :else 0.)))))
+
+(defn apply-force-points**2
+  [fps x]
+  [x (->> fps
+          (map (partial apply-force-points***2 (hash fps) x))
+          (apply +)
+          Math/abs)])
+
+(defn find-force-range
+  [fps x1 x2]
+  (let [xs (->> fps
+                (filter #(-> % first number?))
+                (map first)
+                (into [x1 x2]))
+        mn (Math/floor (apply min xs))
+        mx (Math/ceil (apply max xs))
+        width (max 2. (- mx mn))]
+    (range (- mn width)
+           (+ mx width 0.1)
+           0.5)))
+
+(defn apply-force-points*2
+  [fps x1 x2]
+  (let [r (find-force-range fps x1 x2)]
+    (->> r
+         (map (partial apply-force-points**2 fps))
+         (sort-by second)
+         first
+         first)))
+
+(defn update-with-alpha
+  [x1 x2 alpha]
+  (+ (* x1 (- 1. alpha))
+     (* x2 alpha)))
+
+(defn apply-force-points2
+  [fps alpha id->pos id]
+#_  (println id)
+  (let [new-x (->> fps
+                   find-attractive-center
+                   (apply-force-points*2 fps (id->pos id)))]
+    (update id->pos id update-with-alpha new-x 1.0 #_alpha)))
+
 (defn mk-grp-range
   [{:keys [id->lvl id->pos] :as mm} grp]
   (let [lvls (keep (fn [[id v]]
@@ -1144,14 +1228,22 @@
 (defn do-iter-lvl-node
   [mm global-stuff alpha lvl-ids id->pos id]
   (-> (calc-force-points mm global-stuff alpha lvl-ids id->pos id)
-      (apply-force-points alpha id->pos id)))
+      (apply-force-points2 alpha id->pos id)))
+
+(defn xxx
+  [ids]
+  ids
+#_  (when ids
+    (->> ids
+         shuffle
+         (take 1))))
 
 (defn do-iter-lvl
   [{:keys [lvl->id] :as mm} global-stuff alpha id->pos lvl]
   (let [lvl-stuff (filter-global-stuff-by-lvl global-stuff lvl)]
     (reduce (partial do-iter-lvl-node mm lvl-stuff alpha (lvl->id lvl))
             id->pos
-            (lvl->id lvl))))
+            (xxx (lvl->id lvl)))))
 
 (defn do-iter
   [{:keys [id->pos lvl->id] :as mm} alpha]
@@ -1161,8 +1253,9 @@
            :id->pos
            (reduce (partial do-iter-lvl mm global-stuff alpha)
                    id->pos
-                   (concat (range 0 mx-lvl)
-                           (range mx-lvl 0 -1))))))
+                   (xxx
+                    (concat (range 0 mx-lvl)
+                            (range mx-lvl 0 -1)))))))
 
 (defn do-iters
   [mm n & [alpha-i alpha-n]]
@@ -1203,7 +1296,7 @@
           (let [lvl (id->lvl id)
                 pos (id->pos id)]
             (when (and lvl pos)
-              [id [(int (* 200 pos))
+              [id [(int (* 300 pos))
                    (int (* 200 lvl))]])))))
 
 (defn mk-edge-paths-inits
@@ -1395,7 +1488,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2 20)
+          :elements (select-keys (do-layout nodes2 4)
                                  [:nodes :edges])}])
 
 #_aaaaaaaaaaaaaaaaaaaa
@@ -1410,7 +1503,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout2 nodes2 20)
+          :elements (select-keys (do-layout2 nodes2 4)
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
@@ -1428,7 +1521,7 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              20)
+                                              7)
                                    [:nodes :edges])}])
 
 #_ ffffffffff
@@ -1465,5 +1558,5 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout2 (select-keys (w-mk-graph-def2)
                                                             [:nodes :edges])
-                                               30)
+                                               5)
                                    [:nodes :edges])}])
