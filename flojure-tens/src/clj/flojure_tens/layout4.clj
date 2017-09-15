@@ -638,7 +638,8 @@
      :id->pos id->pos
      :s->t s->t
      :t->s t->s
-     :st->w st->w}))
+     :st->w st->w
+     :id->temp id->temp}))
 
 (defn weight-force
   [[id frc w]]
@@ -661,25 +662,123 @@
     [id (Math/random) 1.]))
 
 
+(defn find-crossings1-bottoms
+  [id->pos t->s ids]
+  (sort-by id->pos (filter t->s ids)))
+
+(defn find-crossings1-tops
+  [id->pos t->s ids]
+  (map second
+       (sort-by first (mapcat (fn [id]
+                                (map #(vector (+ (id->pos %)
+                                                 (/ (id->pos id)
+                                                    10000.))
+                                              id)
+                                     (t->s id)))
+                              ids))))
+(defn interleave*
+  [a b]
+  (let [c (+ (count a) (count b))
+        r (repeat ::stupid)]
+    (take c (remove #{::stupid}
+                    (mapcat vector
+                            (concat a r)
+                            (concat b r))))))
+
+(defn find-crossings1
+  [id->pos t->s ids]
+  (interleave*
+   (dedupe (find-crossings1-bottoms id->pos t->s ids))
+   (dedupe (find-crossings1-tops id->pos t->s ids))))
+
+(defn update-crossings-map
+  [m past id]
+  (loop [m' m
+         [head & tail] past]
+    (if head
+      (recur (if-not (= head id)
+               (update m' head
+                       (fnil conj #{})
+                       id)
+               m')
+             tail)
+      m')))
+
+(defn find-crossings2
+  [ids]
+  (loop [[head & tail] ids
+         m {}
+         past #{}
+         x #{}]
+    (if head
+      (let [past' (conj past head)
+            m' (update-crossings-map m past head)
+            mhead (m' head)
+            x' (if (not-empty mhead)
+                 (clojure.set/union x mhead #{head})
+                 x)]
+        (recur tail
+               m'
+               past'
+               x'))
+      x)))
+
+(defn find-crossings
+  [id->pos t->s lvl->id]
+  (mapcat (fn [ids]
+         (find-crossings2
+          (find-crossings1 id->pos t->s ids)))
+       (vals lvl->id)))
+
+#_(find-crossings $s/id->pos $s/t->s $s/lvl->id)
+
+(defn inc-temp
+  [n]
+  (min 100.
+       (max 1.
+            (* (or n 0.)
+               4.))))
+
+(defn dec-temp
+  [n]
+  (if (< n 0.1)
+    0.
+    (/ n 3.)))
+
+(defn adjust-temperature
+  [{:keys [id->temp id->pos lvl->id s->t t->s] :as mm}]
+  (let [cooled (fmap dec-temp id->temp)
+        crossed (find-crossings id->pos t->s lvl->id)]
+    (assoc mm
+           :id->temp
+           (reduce (fn [agg item]
+                     (update agg item
+                             inc-temp))
+                   cooled
+                   crossed)
+           :crossed crossed)))
+
 (defn ->xw-pairs
-  [pos id->pos st->w id ids dir]
+  [pos id->pos st->w id->temp id ids dir]
   (for [id2 ids]
     (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
-                st->w)]
+                st->w)
+          temp (id->temp id)]
       [pos2
-       (* -1. w)
+       (* -1. w #_(min (max 1. temp)
+                     5.))
        (format "->xw-pairs pos %s| id2 %s| pos2 %s"
                pos id2
                pos2)])))
 
 (defn calc-forces-avg-neighbor*
-  [id  {:keys [s->t t->s st->w] :as mm} id->pos]
-  (concat (->xw-pairs (id->pos id) id->pos st->w id (s->t id) true)
-          (->xw-pairs (id->pos id) id->pos st->w id (t->s id) false)))
+  [id  {:keys [s->t t->s st->w id->temp ] :as mm} id->pos]
+  (concat (->xw-pairs (id->pos id) id->pos st->w id->temp id (s->t id) true)
+          (->xw-pairs (id->pos id) id->pos st->w id->temp id (t->s id) false)))
 
 (defn calc-forces-avg-neighbor
-  [{:keys [ s->t t->s st->w lvl->id] :as mm} id->pos id _]
+  [{:keys [ s->t t->s st->w lvl->id] :as mm} alpha id->pos id _]
   (calc-forces-avg-neighbor* id mm id->pos))
 
 
@@ -802,19 +901,27 @@
     (mapcat (partial adjust-lvl-scopes mm grp-scopes)
             (range 0 clvl))))
 
+(defn wacky-alpha
+  [alpha]
+  (max 0.01
+   (* 2.
+      (Math/abs (- alpha 0.5)))))
+
 (defn calc-fp-repel
-  [mm id->pos id lvl-ids]
-  (remove nil?
-          (for [id2 lvl-ids]
-            (let [pos2 (id->pos id2)]
-              (when-not (= id id2)
-                [pos2 2. (format "calc-fp-repel id2 %s| pos2 %s"
-                                  id2 pos2)])))))
+  [mm alpha id->pos id lvl-ids]
+  (let [alpha' (wacky-alpha alpha)]
+    (remove nil?
+            (for [id2 lvl-ids]
+              (let [pos2 (id->pos id2)]
+                (when-not (= id id2)
+                  [pos2 (* 3. alpha')
+                   (format "calc-fp-repel id2 %s| pos2 %s"
+                           id2 pos2)]))))))
 
 
 (defn calc-force-points
-  [mm lvl-ids id->pos id]
-  (mapcat #(% mm id->pos id lvl-ids)
+  [mm alpha lvl-ids id->pos id]
+  (mapcat #(% mm alpha id->pos id lvl-ids)
           [calc-forces-avg-neighbor
            calc-fp-repel]))
 
@@ -833,15 +940,28 @@
                        )
            w-factor)))))
 
+(defn polarity
+  [n rando]
+  (cond (zero? n)
+        (-> rando
+            hash
+            (mod 2)
+            (- 0.5)
+            (polarity nil))
+
+        (> n 0.) 1.
+        :else -1.))
+
 (defn apply-force-points**
   [fps x alpha]
   (let [frc (apply + (map (fn [[pos frc]]
                             (let [d (- x pos)
-                                  dabs (Math/abs d)]
+                                  pol (polarity d fps)]
                               (if (> frc 0.)
                                 (/ frc
+                                   pol
                                    (max 1.
-                                        (* dabs dabs dabs)))
+                                        (* d d)))
                                 (* d frc ))))
                           fps))]
     (+ (* x (- 1 alpha))
@@ -849,30 +969,32 @@
 
 (defn apply-force-points*
   [fps x]
-  (loop [n 4.
-         x' x]
-    (if (> n 0)
-      (recur (dec n)
-             (apply-force-points** fps x' (/ n 6.)))
-      x')))
+  (let [init 10]
+    (loop [n init
+           x' x]
+      (if (> n 0)
+        (recur (dec n)
+               (apply-force-points** fps x' (/ n init 2.)))
+        x'))))
 
 (defn apply-force-points
   [fps alpha id->pos id]
   (assoc id->pos id
-         (->> fps
-              find-attractive-center
-              (apply-force-points* fps))))
+         (apply-force-points* fps (id->pos id))
+         #_(->> fps
+                find-attractive-center
+                (apply-force-points* fps))))
 
 
 
-(defn do-iter-lvl-reducer
+(defn do-iter-lvl-node
   [mm alpha lvl-ids id->pos id]
-  (-> (calc-force-points mm lvl-ids id->pos id)
+  (-> (calc-force-points mm alpha lvl-ids id->pos id)
       (apply-force-points alpha id->pos id)))
 
 (defn do-iter-lvl
   [{:keys [lvl->id] :as mm} alpha id->pos lvl]
-  (reduce (partial do-iter-lvl-reducer mm alpha (lvl->id lvl))
+  (reduce (partial do-iter-lvl-node mm alpha (lvl->id lvl))
           id->pos
           (lvl->id lvl)))
 
@@ -892,8 +1014,10 @@
          mm' mm]
     (if (> i 0)
       (recur (dec i)
-             (do-iter mm' (double (/ (or alpha-i i)
-                                     (or alpha-n n)))))
+             (-> mm'
+                 adjust-temperature
+                 (do-iter (double (/ (or alpha-i i)
+                                     (or alpha-n n))))))
       mm')))
 
 (defn init-or-inc-state
@@ -1115,7 +1239,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2 10)
+          :elements (select-keys (do-layout nodes2 20)
                                  [:nodes :edges])}])
 
 #_aaaaaaaaaaaaaaaaaaaa
