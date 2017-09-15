@@ -511,8 +511,8 @@
   [[total m] [id [mn height]]]
   (if (= id "")
     [total m]
-    [(+ total height 1)
-     (assoc m id [total (dec (+ total height))])]))
+    [(+ total height 3)
+     (assoc m id [total (+ total height)])]))
 
 (defn calc-level-stacks
   [lvls-map]
@@ -546,6 +546,21 @@
             id->lvl
             (keys id->lvl))))
 
+(defn drop-empty-levels
+  [id->lvl]
+  (let [lvl->ids (map-group-invert id->lvl)
+        lvl-mx (apply max (keys lvl->ids))
+        _ (clojure.pprint/pprint lvl->ids)
+        new-lvls (map-indexed
+                  vector
+                  (dedupe
+                   (map lvl->ids
+                        (range 0 (inc lvl-mx)))))]
+    (clojure.pprint/pprint  new-lvls)
+    (for->map [[lvl ids] new-lvls
+               id ids]
+              [id lvl])))
+
 (defn assign-levels-stack-groups
   [em longest-info]
   (let [stack-reps 5]
@@ -560,7 +575,7 @@
                      id->lvl'
                      (inc c)))
 
-            :else id->lvl))))
+            :else (drop-empty-levels id->lvl)))))
 
 
 (defn mk-node-kw
@@ -619,7 +634,8 @@
 (defn filter-cyto-nodes
   [nodes]
   (remove (fn [{:keys [data]}]
-            (re-find #"gradient" (:id data)))
+            (or (re-find #"gradient" (:id data))
+                (re-find #"Const" (:id data))))
           nodes))
 
 (defn filter-cyto
@@ -677,6 +693,8 @@
         (for [id ids]
           [id 0.])))
 
+
+
 (defn mk-maps
   [cyto]
   (let [edge-maps1 (cyto->edge-maps cyto)
@@ -697,7 +715,8 @@
      :s->t s->t
      :t->s t->s
      :st->w st->w
-     :id->temp id->temp}))
+     :id->temp id->temp
+     :grps (cyto->parents cyto)}))
 
 (defn calc-forces-rnd
   [{:keys [id->pos]}]
@@ -823,7 +842,7 @@
     (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
                 st->w
-                (or 0.1))
+                (or 0.15))
           temp (id->temp id)]
       [pos2
        (* -1. w #_(min (max 1. temp)
@@ -844,7 +863,7 @@
             (f (climb-tree id t->s) false))))
 
 (defn calc-forces-avg-neighbor
-  [{:keys [ s->t t->s st->w lvl->id] :as mm} alpha id->pos id _]
+  [{:keys [ s->t t->s st->w lvl->id] :as mm} _ alpha id->pos id _]
   (calc-forces-avg-neighbor* id mm id->pos))
 
 
@@ -971,25 +990,47 @@
   [alpha]
   (max 0.01
    (* 2.
-      (Math/abs (- alpha 0.5)))))
+      (Math/abs (- alpha 0.9)))))
+
 
 (defn calc-fp-repel
-  [mm alpha id->pos id lvl-ids]
+  [mm global-stuff alpha id->pos id lvl-ids]
   (let [alpha' (wacky-alpha alpha)]
     (remove nil?
             (for [id2 lvl-ids]
               (let [pos2 (id->pos id2)]
                 (when-not (= id id2)
-                  [pos2 (* 3. alpha')
+                  [pos2 (* 10. alpha')
                    (format "calc-fp-repel id2 %s| pos2 %s"
                            id2 pos2)]))))))
 
 
+(defn calc-fp-groups
+  [mm {:keys [grp-ranges]} alpha id->pos id lvl-ids]
+  #_  (when (not-empty grp-ranges)
+        (def grp-ranges1 grp-ranges))
+  (apply concat
+         (for [{:keys [grp x-mn x-mx spread]} grp-ranges]
+           (cond (not (or (.startsWith id grp)
+                          (.startsWith id "__")
+                          (.startsWith id "Const")))
+                 [[[(- x-mn (/ spread 3.) 0.7)
+                    (+ x-mx (/ spread 3.) 0.7)]
+                   5.
+                   (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                           grp x-mn x-mx)]]
+                 (.startsWith id grp)
+                 [[(mean x-mn x-mx)
+                   -1.
+                   (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                           grp x-mn x-mx)]]))))
+
 (defn calc-force-points
-  [mm alpha lvl-ids id->pos id]
-  (mapcat #(% mm alpha id->pos id lvl-ids)
+  [mm global-stuff alpha lvl-ids id->pos id]
+  (mapcat #(% mm global-stuff alpha id->pos id lvl-ids)
           [calc-forces-avg-neighbor
-           calc-fp-repel]))
+           calc-fp-repel
+           calc-fp-groups]))
 
 (defn find-attractive-center
   [fps]
@@ -1018,29 +1059,41 @@
         (> n 0.) 1.
         :else -1.))
 
+(defn apply-force-points***
+  [fps x [pos frc]]
+  (if (number? pos)
+    (let [d (- x pos)
+          pol (polarity d fps)]
+      (if (> frc 0.)
+        (/ frc
+           pol
+           (max 1.
+                (* d d)))
+        (* d frc)))
+    (let [[left right] pos
+          mid (mean left right)]
+      (cond (< left x mid)
+            (* -1. frc (- x left))
+            (< mid x right)
+            (* frc (- right x))
+            :else 0.))))
+
 (defn apply-force-points**
   [fps x alpha]
-  (let [frc (apply + (map (fn [[pos frc]]
-                            (let [d (- x pos)
-                                  pol (polarity d fps)]
-                              (if (> frc 0.)
-                                (/ frc
-                                   pol
-                                   (max 1.
-                                        (* d d)))
-                                (* d frc ))))
+  (let [frc (apply + (map (partial apply-force-points***
+                                   fps x)
                           fps))]
     (+ (* x (- 1 alpha))
        (* frc alpha))))
 
 (defn apply-force-points*
   [fps x]
-  (let [init 10]
+  (let [init 20]
     (loop [n init
            x' x]
       (if (> n 0)
         (recur (dec n)
-               (apply-force-points** fps x' (/ n init 2.)))
+               (apply-force-points** fps x' (/ n init 10.)))
         x'))))
 
 (defn apply-force-points
@@ -1051,25 +1104,62 @@
                 find-attractive-center
                 (apply-force-points* fps))))
 
+(defn mk-grp-range
+  [{:keys [id->lvl id->pos] :as mm} grp]
+  (let [lvls (keep (fn [[id v]]
+                     (when (.startsWith id grp)
+                       v))
+                   id->lvl)
+        xs (keep (fn [[id v]]
+                   (when (.startsWith id grp)
+                     v))
+                 id->pos)
+        x-mn (apply min xs)
+        x-mx (apply max xs)]
+    {:grp grp
+     :lvl-mn (apply min lvls)
+     :lvl-mx (apply max lvls)
+     :x-mn x-mn
+     :x-mx x-mx
+     :spread (- x-mx x-mn)}))
 
+(defn mk-grp-ranges
+  [{:keys [grps] :as mm}]
+  (map (partial mk-grp-range mm)
+       grps))
+
+(defn mk-global-stuff
+  [mm]
+  {:grp-ranges (mk-grp-ranges mm)})
+
+(defn filter-global-stuff-by-lvl
+  [global-stuff lvl]
+  (update global-stuff
+          :grp-ranges
+          (fn [grp-ranges]
+            (filter (fn [{:keys [lvl-mx lvl-mn]}]
+                      (<= lvl-mn lvl lvl-mx))
+                    grp-ranges))))
 
 (defn do-iter-lvl-node
-  [mm alpha lvl-ids id->pos id]
-  (-> (calc-force-points mm alpha lvl-ids id->pos id)
+  [mm global-stuff alpha lvl-ids id->pos id]
+  (-> (calc-force-points mm global-stuff alpha lvl-ids id->pos id)
       (apply-force-points alpha id->pos id)))
 
 (defn do-iter-lvl
-  [{:keys [lvl->id] :as mm} alpha id->pos lvl]
-  (reduce (partial do-iter-lvl-node mm alpha (lvl->id lvl))
-          id->pos
-          (lvl->id lvl)))
+  [{:keys [lvl->id] :as mm} global-stuff alpha id->pos lvl]
+  (let [lvl-stuff (filter-global-stuff-by-lvl global-stuff lvl)]
+    (reduce (partial do-iter-lvl-node mm lvl-stuff alpha (lvl->id lvl))
+            id->pos
+            (lvl->id lvl))))
 
 (defn do-iter
   [{:keys [id->pos lvl->id] :as mm} alpha]
-  (let [mx-lvl (->> lvl->id keys (apply max))]
+  (let [mx-lvl (->> lvl->id keys (apply max))
+        global-stuff (mk-global-stuff mm)]
     (assoc mm
            :id->pos
-           (reduce (partial do-iter-lvl mm alpha)
+           (reduce (partial do-iter-lvl mm global-stuff alpha)
                    id->pos
                    (concat (range 0 mx-lvl)
                            (range mx-lvl 0 -1))))))
@@ -1375,5 +1465,5 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout2 (select-keys (w-mk-graph-def2)
                                                             [:nodes :edges])
-                                               20)
+                                               30)
                                    [:nodes :edges])}])
