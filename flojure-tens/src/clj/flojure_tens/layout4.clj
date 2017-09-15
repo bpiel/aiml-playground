@@ -320,27 +320,6 @@
     [{source #{target}}
      {target #{source}}]))
 
-(defn mk-st-weights*
-  [s t]
-  (let [[g1 g2] (map id->grp [s t])]
-    (cond (= g1 g2) 1.
-          
-          (apply = (map (partial take 2)
-                       [g1 g2]))
-          0.25
-          
-          (apply = (map (partial take 1)
-                       [g1 g2]))
-          0.1
-          
-          :else 0.05)))
-
-(defn mk-st-weights
-  [s->t]
-  (for->map [[s ts] s->t
-             t ts]
-            {[s t] (mk-st-weights* s t)}))
-
 (defn cyto->edge-maps
   [{:keys [edges]}]
   (let [[s->t t->s]
@@ -349,8 +328,7 @@
                      (map mk-edge-maps1* edges)))]
     {:s->t s->t
      :t->s t->s
-     :id->adj (mk-edge-maps1** [s->t t->s])
-     :st->w (mk-st-weights s->t)}))
+     :id->adj (mk-edge-maps1** [s->t t->s])}))
 
 (defn mk-node-init-ranges
   [id->adj {:keys [lo hi depth]}]
@@ -571,7 +549,7 @@
                                           longest-info
                                           node-ranges)]
               (recur (stack-groups id->lvl' em 1)
-                     id->lvl'
+                      id->lvl'
                      (inc c)))
 
             :else (drop-empty-levels id->lvl)))))
@@ -583,8 +561,8 @@
   (format "__%s-%s-%s" s t lvl))
 
 (defn mk-segment
-  [s t w lvl lvl2]
-  [lvl w
+  [s t lvl lvl2]
+  [lvl
    (concat
     [s]
     (map (partial mk-node-kw s t)
@@ -592,21 +570,20 @@
     [t])])
 
 (defn mk-inter-nodes*
-  [id->lvl s->t st->w [id lvl]]
+  [id->lvl s->t [id lvl]]
   (let [ts (s->t id)]
     (for [t ts]
-      (let [lvl2 (id->lvl t)
-            w (st->w [id t])]
-        (mk-segment id t w lvl lvl2)))))
+      (let [lvl2 (id->lvl t)]
+        (mk-segment id t lvl lvl2)))))
 
 (defn mk-segments
-  [id->lvl {:keys [s->t st->w]}]
-  (mapcat (partial mk-inter-nodes* id->lvl s->t st->w)
+  [id->lvl {:keys [s->t]}]
+  (mapcat (partial mk-inter-nodes* id->lvl s->t)
           (map vec id->lvl)))
 
 
 (defn segs->id-lvl*
-  [[lvl _ ids]]
+  [[lvl ids]]
   (into {}
         (map vector
              ids
@@ -670,20 +647,46 @@
        (drop 1 seg)))
 
 (defn seg->st-w
-  [[_ w seg]]
+  [[_ seg]]
   (map (fn [a b] {[a b] (mk-st-weights* a b)})
        (drop-last seg)
        (drop 1 seg)))
 
+(defn mk-st-w**
+  [id edges]
+  (loop [n 10
+         agg #{}
+         todo #{id}]
+    (if (and (> n 0) (not-empty todo))
+      (let [todo' (set (mapcat edges todo))]
+        (recur (dec n)
+               (into agg todo')
+               todo'))
+      agg)))
+
+(defn mk-st-w*
+  [edges dir]
+  (for->map [[k vs] edges
+             v vs]
+            [[k v]
+             (count (mk-st-w** v edges))]))
+
+(defn mk-st-w
+  [s->t t->s]
+  (fmap #(-> % inc #_Math/sqrt)
+        (merge (mk-st-w* s->t true)
+               (mk-st-w* t->s false))))
+
 (defn segs->edge-maps
   [segs]
-  (let [segs' (map #(nth % 2) segs)]
-    {:s->t (apply merge-with into
-                  (mapcat seg->s-t segs'))
-     :t->s  (apply merge-with into
-                   (mapcat seg->t-s segs'))
-     :st->w (apply merge-with into
-                   (mapcat seg->st-w segs))}))
+  (let [segs' (map second segs)
+        s->t (apply merge-with into
+                    (mapcat seg->s-t segs'))
+        t->s (apply merge-with into
+                   (mapcat seg->t-s segs'))]
+    {:s->t s->t
+     :t->s t->s
+     :st->w (mk-st-w s->t t->s)}))
 
 
 (defn mk-temp-map
@@ -837,12 +840,12 @@
 
 
 (defn ->xw-pairs
-  [pos id->pos st->w id->temp id ids alt-w dir]
+  [pos id->pos st->w id->temp id ids dir]
   (for [id2 ids]
     (let [pos2 (id->pos id2)
-          w (-> (if dir [id id2] [id2 id])
-                st->w
-                (or (min 5. alt-w)))
+          w (-> [id id2]
+                #_(if dir [id id2] [id2 id])
+                st->w)
           temp (id->temp id)]
       [pos2
        (* -1. w #_(min (max 1. temp)
@@ -851,21 +854,15 @@
                pos id2
                pos2)])))
 
-
-
 (defn calc-forces-avg-neighbor*
   [id  {:keys [s->t t->s st->w id->temp ] :as mm} id->pos]
   (let [pos (id->pos id)
-        f (partial ->xw-pairs pos id->pos st->w id->temp id)
-        [ct-ids1 ct-w1] (climb-tree id s->t 2)
-        [ct-ids2 ct-w2] (climb-tree id s->t 2)]
-    (concat (f (s->t id) 1. true)
-            (f (t->s id) 1. false)
-            (f ct-ids1 ct-w1 true)
-            (f ct-ids2 ct-w2 false))))
+        f (partial ->xw-pairs pos id->pos st->w id->temp id)]
+    (concat (f (s->t id) true)
+            (f (t->s id) false))))
 
 (defn calc-forces-avg-neighbor
-  [{:keys [ s->t t->s st->w lvl->id] :as mm} _ alpha id->pos id _]
+  [mm _ alpha id->pos id _]
   (calc-forces-avg-neighbor* id mm id->pos))
 
 
@@ -1006,7 +1003,7 @@
                 (when-not (= id id2)
                   [[(- pos2 0.5)
                     (+ pos2 0.5)]
-                   (* 10. alpha')
+                   (* 100. alpha')
                    (format "calc-fp-repel id2 %s| pos2 %s"
                            id2 pos2)]))))))
 
@@ -1021,14 +1018,18 @@
              (cond (not (or (.startsWith id grp)
                             (.startsWith id "__")
                             (.startsWith id "Const")))
-                   [[[(- x-mn (/ spread 3.) 0.5)
-                      (+ x-mx (/ spread 3.) 0.5)]
-                     (* 10. alpha')
+                   [[[(- x-mn 1.0)
+                      (+ x-mx  1.0)]
+                     (* 30. alpha')
+                     (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
+                             grp x-mn x-mx)]
+                    [(mean x-mn x-mx)
+                     (* 30. alpha')
                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
                              grp x-mn x-mx)]]
                    (.startsWith id grp)
                    [[(mean x-mn x-mx)
-                     -1.5
+                     -3.
                      (format "calc-fp-groups grp %s| x-mn %s| x-mx %s"
                              grp x-mn x-mx)]])))))
 
@@ -1108,40 +1109,21 @@
                 find-attractive-center
                 (apply-force-points* fps))))
 
-#_(defn apply-force-points***2
+(defn apply-force-points***2
   [hsh x [pos frc]]
   (Math/abs
    (if (number? pos)
      (let [d (- x pos)]
        (if (> frc 0.)
          (/ frc
-            (max 1.
+            (max (Math/abs d) 0.01)
+            #_(max 1.
                  (* d d)))
-         (* d frc)))
-     (let [[left right] pos
-           mid (mean left right)]
-       (cond (< left x mid)
-             (* frc (- x left))
-             (< mid x right)
-             (* frc (- right x))
-             :else 0.)))))
-
-(defn apply-force-points***2
-  [hsh x [pos frc]]
-  (Math/abs
-   (if (number? pos)
-     (let [d (- x pos)
-           pol (polarity d hsh)]
-       (if (> frc 0.)
-         (/ frc
-            pol
-            (max 1.
-                 (* d d)))
-         (* d frc)))
+         (* d d d frc)))
      (let [[left right] pos
            mid (mean left right)]
        (cond (<= left x mid)
-             (* -1. frc)
+             frc
              (<= mid x right)
              frc
              :else 0.)))))
@@ -1490,7 +1472,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout nodes2 5)
+          :elements (select-keys (do-layout nodes2 4)
                                  [:nodes :edges])}])
 
 #_aaaaaaaaaaaaaaaaaaaa
@@ -1505,7 +1487,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout2 nodes2 4)
+          :elements (select-keys (do-layout2 nodes2 3)
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
@@ -1523,7 +1505,7 @@
                              :target-arrow-shape "triangle"}}]
             :elements (select-keys (do-layout (select-keys (w-mk-graph-def2)
                                                            [:nodes :edges])
-                                              6)
+                                              5)
                                    [:nodes :edges])}])
 
 #_ ffffffffff
