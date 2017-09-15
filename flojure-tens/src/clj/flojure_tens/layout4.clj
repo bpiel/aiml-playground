@@ -1526,6 +1526,24 @@
                                               3)
                                    [:nodes :edges])}])
 
+
+#_(w-push ['$/graph
+           {:layout {:name "dagre"}
+            :style [{:selector "node"
+                     :style {:content "data(name)"
+                             :border-width 10
+                             :font-size 50}}
+                    {:selector "edge"
+                     :style {:width 3
+                             "curve-style" "unbundled-bezier"
+                             :control-point-distances [0]
+                             :control-point-weights [0.5]
+                             :target-arrow-color "#f00"
+                             :target-arrow-shape "triangle"}}]
+            :elements (filter-cyto (select-keys (w-mk-graph-def2)
+                                                [:nodes :edges]))}])
+
+
 #_ ffffffffff
 
 #_(w-push ['$/graph
