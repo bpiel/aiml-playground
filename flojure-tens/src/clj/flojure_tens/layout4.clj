@@ -1,4 +1,4 @@
-(ns flojure-tens.layout3
+(ns flojure-tens.layout4
   (:require [flojure-tens.core :as ft]
             [flojure-tens.scope :as sc]
             [flojure-tens.ops :as o]
@@ -187,33 +187,34 @@
                    :target "j"}}]})
 
 (def nodes2
-  {:nodes [{:data {:id "$1"}}
+  {:nodes [{:data {:id "grp1"}}
+           {:data {:id "grp2"}}
            {:data {:id "a" }}
            {:data {:id "b"}}
-           {:data {:id "c"}}
+           {:data {:id "grp2/c" :parent "grp2"}}
            {:data {:id "d"}}
            {:data {:id "e"}}
-           {:data {:id "f" :parent "$1"}}
-           {:data {:id "g" :parent "$1"}}
-           {:data {:id "h" :parent "$1"}}
+           {:data {:id "grp1/f" :parent "grp1"}}
+           {:data {:id "grp1/g" :parent "grp1"}}
+           {:data {:id "grp1/h" :parent "grp1"}}
            {:data {:id "i"}}
            {:data {:id "j"}}]
    :edges [{:data {:source "a"
                    :target "b"}}
-           {:data {:source "c"
-                   :target "b"}}
+           {:data {:source "grp2/c"
+                   :target "grp1/g"}}
            {:data {:source "b"
                    :target "d"}}
            {:data {:source "d"
                    :target "e"}}
-           {:data {:source "f"
+           {:data {:source "grp1/f"
                    :target "d"}}
-           {:data {:source "g"
+           {:data {:source "grp1/g"
                    :target "e"}}
-           {:data {:source "h"
-                   :target "g"}}
+           {:data {:source "grp1/h"
+                   :target "grp1/g"}}
            {:data {:source "i"
-                   :target "h"}}
+                   :target "grp1/h"}}
            {:data {:source "j"
                    :target "d"}}
            {:data {:source "j"
@@ -221,17 +222,23 @@
            {:data {:source "i"
                    :target "j"}}]})
 
+
+(defn mean
+  [& args]
+  (/ (apply + args)
+     (count args)))
+
 (defn fmap
   [f m]
   (into {}
         (for [[k v] m]
           [k (f v)])))
 
-(defn fmap-kv
-  [f m]
-  (into {}
-        (for [[k v] m]
-          (f k v))))
+(defmacro for->map
+  [bindings & body]
+  `(into {}
+         (for ~bindings
+           ~@body)))
 
 (defn transpose
   [v]
@@ -245,19 +252,62 @@
          (for [[k v] m]
            {v [k]})))
 
-(defn mk-groups
-  [{:keys [nodes]}]
-  (apply merge-with into
-         (for [{:keys [data]} nodes]
-           (when-let [parent (:parent data)]
-             {parent #{(:id data)}}))))
-
-(defn get-grp
+(defn id->grp
   [id & [depth]]
   (clojure.string/join "/"
                        (take (or depth 100)
                              (drop-last
                               (clojure.string/split id #"/")))))
+
+(defn cyto->parents
+  [{:keys [nodes]}]
+  (->> nodes
+       (keep #(-> % :data :parent))
+       set))
+
+(defn cyto->ids
+  [{:keys [nodes] :as cyto}]
+  (->> nodes
+       (mapv #(-> % :data :id))
+       (remove (cyto->parents cyto))))
+
+(defn bottoms
+  [nodes edge-map]
+  (clojure.set/difference (set nodes)
+                          (-> edge-map vals flatten set)))
+
+(defn find-paths*
+  [edges id]
+  (if-let [nodes (edges id)]
+    (for [p (mapcat (partial find-paths*
+                             edges)
+                    nodes)]
+      (into [id] p))
+    [[id]]))
+
+(defn find-paths
+  [ids {:keys [s->t]}]
+  (mapcat (partial find-paths* s->t)
+          (bottoms ids s->t)))
+
+
+
+#_(find-paths (cyto->ids nodes2)
+              (mk-edge-maps1 nodes2))
+
+(defn find-longest-path-info
+  [paths]
+  (let [longest (->> paths
+                     (sort-by count)
+                     reverse
+                     first)]
+    {:lo (first longest)
+     :hi (last  longest)
+     :depth (count longest)}))
+
+#_ (find-longest-path-info
+    (find-paths (cyto->ids nodes2)
+                (mk-edge-maps1 nodes2)))
 
 (defn mk-edge-maps1**
   [ms]
@@ -271,7 +321,7 @@
 
 (defn mk-st-weights*
   [s t]
-  (let [[g1 g2] (map get-grp [s t])]
+  (let [[g1 g2] (map id->grp [s t])]
     (cond (= g1 g2) 1.
           
           (apply = (map (partial take 2)
@@ -286,12 +336,11 @@
 
 (defn mk-st-weights
   [s->t]
-  (into {}
-        (for [[s ts] s->t
-              t ts]
-          {[s t] (mk-st-weights* s t)})))
+  (for->map [[s ts] s->t
+             t ts]
+            {[s t] (mk-st-weights* s t)}))
 
-(defn mk-edge-maps1
+(defn cyto->edge-maps
   [{:keys [edges]}]
   (let [[s->t t->s]
         (mapv mk-edge-maps1**
@@ -303,12 +352,12 @@
      :st->w (mk-st-weights s->t)}))
 
 (defn mk-node-init-ranges
-  [edge-map1]
-  (into {}
-        (for [k (->> edge-map1
-                     :id->adj
-                     keys)]
-          {k [nil nil]})))
+  [id->adj {:keys [lo hi depth]}]
+  (for->map [k (keys id->adj)]
+            (cond (= k lo) [k [0 0]]
+                  (= k hi) [k [depth depth]]
+                  :else [k [0 depth]])))
+
 
 (defn safe-fn
   [f & args]
@@ -341,104 +390,55 @@
               mx
               (safe-fn dec tmx))]))
 
-(defn cap-end
-  [agg item]
-  (update agg
-          item
-          (fn [[a]]
-            [a a])))
-
-(defn cap-ends
-  [rs s->t]
-  (reduce cap-end
-          rs
-          (clojure.set/difference (-> rs keys set)
-                                  (-> s->t keys set))))
-
-
-(defn apply-groups-to-ranges*
-  [rs grp]
-  (let [[mns mxs] (transpose (keep rs grp))
-        mn (apply safe-fn max mns)
-        mx (apply safe-fn min mxs)]
-    (if (and mns mxs)
-      (let [[least-certain [a b]] (last (sort-by
-                                         (fn [[_ [a b]]] (safe-fn - b a))
-                                         (map vec
-                                              (select-keys rs
-                                                           grp))))
-            avg (Math/round (/ (+ mn mx) 2.))
-            [cmn cmx] (rs least-certain)
-            new-val (safe-fn min cmx
-                             (safe-fn max cmn avg))]
-        (if (= a b)
-          rs
-          (assoc rs least-certain [new-val new-val]))
-        rs))))
-
-(defn apply-groups-to-ranges
-  [rs grps]
-  (loop [[head & tail] grps
-         rs' rs
-         rs-prev rs]
-    (if (and head
-             (= rs-prev rs'))
-      (recur tail
-             (apply-groups-to-ranges* rs head)
-             rs-prev)
-      (when (not= rs-prev rs')
-        rs'))))
+(defn reduce-uncertainty
+  [rs]
+  (let [[id [mn mx]] (->> rs
+                          (sort-by (fn [[id [mn mx]]]
+                                     (- mx mn)))
+                          reverse
+                          first)]
+    (when (< mn mx)
+      (assoc rs id [mx mx]))))
 
 (defn get-ranges-for-nodes
-  [{:keys [id->adj s->t] :as em} grp-map & [node-ranges]]
-  (let [grps (vals grp-map)
-        rs (or node-ranges (mk-node-init-ranges em))
+  [{:keys [id->adj s->t] :as em} longest-info & [node-ranges]]
+  (let [rs (or node-ranges (mk-node-init-ranges id->adj
+                                                longest-info))
         ids (keys id->adj)]
     (loop [[id & ids'] (keys id->adj)
            rs' rs
-           rs-prev rs
-           capped? false]
+           rs-prev rs]
       (cond id
             (recur ids'
                    (update rs' id
                            update-ranges-for-id
-                           id
-                           em
-                           rs')
-                   rs-prev
-                   capped?)
+                           id em rs')
+                   rs-prev)
 
             (not= rs' rs-prev)
             (recur ids
                    rs'
-                   rs'
-                   capped?)
+                   rs')
             
-            (not capped?)
-            (let [rs'' (cap-ends rs' s->t)]
-              (recur ids
-                     rs''
-                     rs-prev
-                     true))
-
-            :else (if-let [rs'' (apply-groups-to-ranges rs' grps)]
+            :else (if-let [rs'' (reduce-uncertainty rs')]
                     (recur ids
                            rs''
-                           rs-prev
-                           capped?)
+                           rs-prev)
                     rs')))))
 
-#_(def grp-map1 $s/*)
-
-#_(def lvl-rngs $s/*)
-
+(defn assign-levels
+  [{:keys [id->adj s->t] :as em} longest-info & [node-ranges]]
+  (fmap first
+        (get-ranges-for-nodes em
+                              longest-info
+                              node-ranges)))
 
 
 (defn inspect-group-levels*
   [glvls]
   (let [mx (apply max glvls)
         mn (apply min glvls)]
-    [mx (- mx mn)]))
+    [mx (inc (- mx mn))]))
 
 (defn inspect-group-levels
   [lvl-rngs & [depth]]
@@ -447,74 +447,62 @@
                 (fmap inspect-group-levels*
                       (apply merge-with into
                              (for [[id lvl] lvl-rngs ]
-                               {(get-grp id depth)
+                               {(id->grp id depth)
                                 [lvl]}))))))
 
 (defn calc-level-stacks*
   [[total m] [id [mx height]]]
-  [(+ total height 3)
+  [(+ total height 1)
    (if (= id "")
      m
-     (assoc m id [total (+ total height)]))])
+     (assoc m id [total (dec (+ total height))]))])
 
 (defn calc-level-stacks
   [lvls-map]
   (second
    (reduce calc-level-stacks*
-           [1 {}]
+           [3 {}]
            (inspect-group-levels lvls-map 1))))
 
 (defn apply-level-stacking*
-  [lvl-stacks ldepth lvls-map k]
-  (let [lvl-rng (some-> k (get-grp ldepth) lvl-stacks)
+  [lvl-stacks ldepth max-lvl lvls-map k]
+  (let [lvl-rng (some-> k (id->grp ldepth) lvl-stacks)
         v (lvls-map k)
         v' (if lvl-rng
              lvl-rng
-             #_[(+ v offset -1)(+ v offset 5)]
-             [nil nil])]
+             [nil max-lvl])]
     (assoc lvls-map
            k
            v')))
 
-(defn apply-level-stacking
-  [lvls-map ldepth]
-  (let [lvl-stacks (calc-level-stacks lvls-map)]
+(defn stack-groups
+  [id->lvl em]
+  (let [lvl-stacks (calc-level-stacks id->lvl)
+        max-lvl (->> lvl-stacks
+                     vals
+                     (map second)
+                     (apply max))]
     (reduce (partial apply-level-stacking*
                      lvl-stacks
-                     ldepth)
-            lvls-map
-            (keys lvls-map))))
+                     (* 2. max-lvl)
+                     1)
+            id->lvl
+            (keys id->lvl))))
 
-(defn choose-level
-  [[mn mx]]
-  (int (if (or (nil? mn)
-               (zero? mn))
-         (or mx 0)
-         (Math/floor (/ (+ mn mn) 2)))))
+(defn assign-levels-stack-groups
+  [em longest-info]
+  (loop [node-ranges nil
+         id->lvl nil
+         c 0]
+    (cond (< c 3)
+          (let [id->lvl' (assign-levels em
+                                        longest-info
+                                        node-ranges)]
+            (recur (stack-groups id->lvl' em)
+                   id->lvl'
+                   (inc c)))
 
-
-(defn assign-levels
-  [edge-maps1 groups]
-  (fmap (partial apply safe-fn max) #_choose-level
-   (get-ranges-for-nodes edge-maps1 groups)))
-
-(defn assign-levels-stacked
-  [edge-maps1 groups ldepth]
-  (let [alvls1 (assign-levels edge-maps1 groups)
-        stacked (apply-level-stacking alvls1 ldepth)]
-    (fmap choose-level
-          (get-ranges-for-nodes edge-maps1
-                                groups
-                                stacked))))
-
-(defn assign-levels-stacked2
-  [edge-maps1 groups ldepth]
-  (let [alvls1 (assign-levels-stacked edge-maps1 groups ldepth)
-        stacked (apply-level-stacking alvls1 ldepth)]
-    (fmap choose-level
-          (get-ranges-for-nodes edge-maps1
-                                groups
-                                stacked))))
+          :else id->lvl)))
 
 
 (defn mk-node-kw
@@ -544,6 +532,7 @@
   (mapcat (partial mk-inter-nodes* id->lvl s->t st->w)
           (map vec id->lvl)))
 
+
 (defn segs->id-lvl*
   [[lvl _ ids]]
   (into {}
@@ -558,6 +547,30 @@
          (map segs->id-lvl*
               segs)))
 
+
+(def astate (atom nil))
+
+
+(defn filter-cyto-edges
+  [edges]
+  (filter (fn [{:keys [data]}]
+            (= (nil? (re-find #"gradient" (:source data)))
+               (nil? (re-find #"gradient" (:target data)))))
+          edges))
+
+(defn filter-cyto-nodes
+  [nodes]
+  (remove (fn [{:keys [data]}]
+            (re-find #"gradient" (:id data)))
+          nodes))
+
+(defn filter-cyto
+  [cyto]
+  (-> cyto
+      (update :edges filter-cyto-edges)
+      (update :nodes filter-cyto-nodes)))
+
+
 (defn lvl-id->id-pos*
   [nodes]
   (map vector
@@ -569,6 +582,7 @@
   (into {}
         (mapcat lvl-id->id-pos*
                 (vals lvl->id))))
+
 
 (defn seg->t-s
   [seg]
@@ -584,7 +598,7 @@
 
 (defn seg->st-w
   [[_ w seg]]
-  (map (fn [a b] {[a b] w})
+  (map (fn [a b] {[a b] (mk-st-weights* a b)})
        (drop-last seg)
        (drop 1 seg)))
 
@@ -607,10 +621,12 @@
 
 (defn mk-maps
   [cyto]
-  (let [edge-maps1 (mk-edge-maps1 cyto)
-        grp->ids (dissoc (mk-groups cyto)
-                         "gradients") ;; TODO
-        id->lvl (assign-levels-stacked2 edge-maps1 grp->ids 1)
+  (let [edge-maps1 (cyto->edge-maps cyto)
+        longest-info (find-longest-path-info
+                      (find-paths (cyto->ids cyto)
+                                  edge-maps1))
+        id->lvl (assign-levels-stack-groups edge-maps1
+                                            longest-info)
         segs (mk-segments id->lvl edge-maps1)
         id->lvl' (segs->id-lvl segs)
         lvl->id (map-group-invert id->lvl')
@@ -622,63 +638,80 @@
      :id->pos id->pos
      :s->t s->t
      :t->s t->s
-     :st->w st->w
-     :grp->ids grp->ids}))
+     :st->w st->w}))
 
-#_(defn adjust-lvl-avg*
-  [{:keys [lvl->id s->t t->s] :as mm} id->pos id]
-  (let [xs (map id->pos (concat (s->t id)
-                                (t->s id)))]
-    (assoc id->pos id
-           (/ (apply + xs)
-              (count xs)))))
+(defn weight-force
+  [[id frc w]]
+  (* frc w))
+
+(defn reduce-forces*
+  [fs]
+  (let [weighted (->> fs
+                      (map weight-force)
+                      (apply +))
+        weights (map #(nth % 2) fs)
+        w-factor (mean (apply + weights)
+                       (apply max weights))]
+    (/ weighted
+       w-factor)))
+
+(defn calc-forces-rnd
+  [{:keys [id->pos]}]
+  (for [id (keys id->pos)]
+    [id (Math/random) 1.]))
+
 
 (defn ->xw-pairs
-  [id->pos st->w id ids dir]
+  [pos id->pos st->w id ids dir]
   (for [id2 ids]
-    (let [x (id->pos id2)
+    (let [pos2 (id->pos id2)
           w (-> (if dir [id id2] [id2 id])
                 st->w)]
-      [(* x w) w])))
+      [pos2
+       (* -1. w)
+       (format "->xw-pairs pos %s| id2 %s| pos2 %s"
+               pos id2
+               pos2)])))
 
-(defn adjust-lvl-avg*
-  [{:keys [s->t t->s st->w] :as mm} id->pos id]
-  (let [xw-pairs (concat (->xw-pairs id->pos st->w id (s->t id) true)
-                         (->xw-pairs id->pos st->w id (t->s id) false))
-        [xs ws] (transpose xw-pairs)]
-    (assoc id->pos id
-           (/ (apply + xs)
-              (apply + ws)))))
+(defn calc-forces-avg-neighbor*
+  [id  {:keys [s->t t->s st->w] :as mm} id->pos]
+  (concat (->xw-pairs (id->pos id) id->pos st->w id (s->t id) true)
+          (->xw-pairs (id->pos id) id->pos st->w id (t->s id) false)))
 
-(defn adjust-lvl-avg
-  [{:keys [lvl->id] :as mm} id->pos lvl]
-  (reduce (partial adjust-lvl-avg* mm)
-          id->pos
-          (lvl->id lvl)))
+(defn calc-forces-avg-neighbor
+  [{:keys [ s->t t->s st->w lvl->id] :as mm} id->pos id _]
+  (calc-forces-avg-neighbor* id mm id->pos))
 
-(defn adjust-lvls-avg
-  [id->pos {:keys [lvl->id] :as mm}]
-  (let [clvl (apply max (keys lvl->id))]
-    (reduce (partial adjust-lvl-avg mm)
-            id->pos
-            (concat (range 0 clvl)
-                    (range clvl 0 -1)))))
+
+#_(defn pusher
+  [id frc pos id' pos']
+  (when (not= id id')
+    (if (or (< pos' pos)
+            (and (= pos' pos)
+                 (> (hash id)
+                    (hash id'))))
+      [(- (- pos pos') frc) ]
+      [(- frc (- pos' pos)) 1.0 1.0])))
 
 (defn pusher
-  [id pos id' pos' pos-left pos-right]
-  (when (not= id id')
-    (if (<= pos' pos)
-      pos-left
-      pos-right)))
+  [id width pos id' pos']
+  (let [frc (- width (Math/abs (- pos pos')))]
+    (when (not= id id')
+      (if (or (< pos' pos)
+              (and (= pos' pos)
+                   (> (hash id)
+                      (hash id'))))
+        [-1. frc]
+        [1. frc]))))
 
 (defn mk-scopes-for-node
   [mm id->pos id]
-  (let [width 100.
+  (let [width 2.
         pos (id->pos id)
         pos-left (- pos width)
         pos-right (+ pos width)
         f (fn [id' pos']
-            (pusher id pos id' pos' pos-left pos-right))]
+            (pusher id width pos id' pos'))]
     [[pos-left f]
      [pos-right f]]))
 
@@ -697,13 +730,21 @@
     (disj in-scope f)
     (conj in-scope f)))
 
+(defn scopes->id-xs**
+  [id->xs]
+  (remove nil?
+          (for [[k vs] id->xs
+                v vs]
+            (when v
+              (into [k] (vec v))))))
+
 (defn scopes->id-xs
   [id->pos ids scopes]
   (loop [[head & tail] (scopes->id-xs* id->pos ids scopes)
          id->xs {}
          in-scope #{}]
     (let [[_ payload] head]
-      (cond (nil? head) id->xs
+      (cond (nil? head) (scopes->id-xs** id->xs)
             (fn? payload) (recur tail
                                  id->xs
                                  (toggle-fn-scope in-scope
@@ -716,7 +757,7 @@
                                       in-scope))
                          in-scope)))))
 
-(defn avg-list
+#_(defn avg-list
   [args]
   (let [c (count args)]
     (when (> c 0)
@@ -725,10 +766,7 @@
 
 (defn apply-scopes-to-lvl
   [id->pos ids scopes]
-  (merge-with #(or %2 %)
-              id->pos
-              (fmap avg-list
-                    (scopes->id-xs id->pos ids scopes))))
+  (scopes->id-xs id->pos ids scopes))
 
 (defn select-scopes-by-lvl
   [scopes lvl]
@@ -738,7 +776,7 @@
         scopes))
 
 (defn adjust-lvl-scopes
-  [{:keys [lvl->id] :as mm} other-scopes id->pos lvl]
+  [{:keys [lvl->id id->pos] :as mm} other-scopes lvl]
   (let [ids (lvl->id lvl)]
     (apply-scopes-to-lvl id->pos
                          ids
@@ -748,258 +786,105 @@
                                                   id->pos)
                                          ids)))))
 
-#_(def grp->ids1 (:grp->ids $s/*))
 
-#_ (def id->pos1 $s/*)
-
-#_(defn median [v]
-  (let [v' (sort v)
-        half (/ (dec (count v)) 2.)
-        f (Math/floor half)
-        c (Math/ceil half)]
-    (when (>= f 0)
-      (/ (+ (nth v' f)
-            (nth v' c))
-         2.))))
-
-(defn spread
-  [v]
-  (if (not-empty v)
-    (- (apply max v)
-       (apply min v))
-    0.))
-
-(defn get-grp-stats
-  [xs]
-  {:avg (avg-list xs)
-   :spread (spread xs)})
-
-(defn inter-node?
-  [id]
-  (.startsWith id "__"))
-
-(defn const-node?
-  [id]
-  (.startsWith id "Const"))
-
-(defn id-in-group?
-  [grp id]
-  (.startsWith id grp))
-
-(defn mk-grp-scope-fns
-  [grp ids lmx lmn {:keys [avg spread]}]
-  (let [outer-limit  (* 1. (/ spread 2.))
-        inner-limit  0. #_(* 0.5 (/ spread 2.))
-        pos-left (- avg outer-limit)
-        pos-right (+ avg outer-limit)
-        pos-left' (- avg inner-limit)
-        pos-right' (+ avg inner-limit)
-        grp? (partial id-in-group? grp)
-        f (fn [id' pos'] (when-not (or (grp? id')
-                                       (inter-node? id')
-                                       (const-node? id'))
-                           (if (<= pos' avg)
-                             pos-left
-                             pos-right)))
-        f2 (fn [id' pos'] (when (grp? id')
-                            avg
-                            #_(cond (< pos' pos-left')
-                                  pos-left'
-                                  (> pos' pos-right')
-                                  pos-right')))]
-    [[lmn lmx pos-left f]
-     [lmn lmx pos-right f]
-     [lmn lmx Float/MIN_VALUE f2]
-     [lmn lmx Float/MAX_VALUE f2]]))
-
-(defn mk-grp-scopes*
-  [id->lvl id->pos [grp ids]]
-  (let [lvls (keep id->lvl ids)
-        lmx (apply safe-fn max lvls)
-        lmn (apply safe-fn min lvls)]
-    (if (and lmx lmn)
-      (->> ids
-           (keep id->pos)
-           get-grp-stats
-           (mk-grp-scope-fns grp ids lmx lmn))
-      [])))
-
-(defn mk-grp-scopes
-  [id->lvl id->pos grp->ids]
-  (mapcat (partial mk-grp-scopes* id->lvl id->pos)
-          grp->ids))
-
-(defn adjust-lvls-scopes
-  [id->pos {:keys [id->lvl lvl->id grp->ids] :as mm}]
+#_(defn calc-forces-scopes
+  [{:keys [id->pos id->lvl lvl->id grp->ids] :as mm}]
   (let [clvl (apply max (keys lvl->id))
-        grp-scopes  (mk-grp-scopes id->lvl id->pos grp->ids)]
+        grp-scopes [] #_  (mk-grp-scopes id->lvl id->pos grp->ids)]
     (reduce (partial adjust-lvl-scopes mm grp-scopes)
             id->pos
             (range 0 clvl))))
 
-(defn alpha-applier
-  [alpha current adjust]
-  (+ (* current (- 1. alpha))
-     (* adjust alpha)))
+(defn calc-forces-scopes
+  [{:keys [id->pos id->lvl lvl->id grp->ids] :as mm}]
+  (let [clvl (apply max (keys lvl->id))
+        grp-scopes [] #_  (mk-grp-scopes id->lvl id->pos grp->ids)]
+    (mapcat (partial adjust-lvl-scopes mm grp-scopes)
+            (range 0 clvl))))
 
-(defn update-with-alpha
-  [id->pos alpha f & args]
-  (let [id->pos' (apply f id->pos args)]
-    (merge-with (partial alpha-applier alpha)
-                id->pos
-                id->pos')))
+(defn calc-fp-repel
+  [mm id->pos id lvl-ids]
+  (remove nil?
+          (for [id2 lvl-ids]
+            (let [pos2 (id->pos id2)]
+              (when-not (= id id2)
+                [pos2 2. (format "calc-fp-repel id2 %s| pos2 %s"
+                                  id2 pos2)])))))
 
-(defn find-crossings1-bottoms
-  [id->pos t->s ids]
-  (sort-by id->pos (filter t->s ids)))
 
-(defn find-crossings1-tops
-  [id->pos t->s ids]
-  (map second
-       (sort-by first (mapcat (fn [id]
-                                (map #(vector (+ (id->pos %)
-                                                 (/ (id->pos id)
-                                                    10000.))
-                                              id)
-                                     (t->s id)))
-                              ids))))
-(defn interleave*
-  [a b]
-  (let [c (+ (count a) (count b))
-        r (repeat ::stupid)]
-    (take c (remove #{::stupid}
-                    (mapcat vector
-                            (concat a r)
-                            (concat b r))))))
+(defn calc-force-points
+  [mm lvl-ids id->pos id]
+  (mapcat #(% mm id->pos id lvl-ids)
+          [calc-forces-avg-neighbor
+           calc-fp-repel]))
 
-(defn find-crossings1
-  [id->pos t->s ids]
-  (interleave*
-   (dedupe (find-crossings1-bottoms id->pos t->s ids))
-   (dedupe (find-crossings1-tops id->pos t->s ids))))
+(defn find-attractive-center
+  [fps]
+  (let [attractors (filter #(-> % second (< 0.))
+                           fps)]
+    (when (not-empty attractors)
+      (let [w-factor (->> attractors
+                          (map second)
+                          (apply +))]
+        (/ (->> attractors             
+                       (map (fn [[x w]]
+                              (* x w)))
+                       (apply +)
+                       )
+           w-factor)))))
 
-(defn update-crossings-map
-  [m past id]
-  (loop [m' m
-         [head & tail] past]
-    (if head
-      (recur (if-not (= head id)
-               (update m' head
-                       (fnil conj #{})
-                       id)
-               m')
-             tail)
-      m')))
+(defn apply-force-points**
+  [fps x alpha]
+  (let [frc (apply + (map (fn [[pos frc]]
+                            (let [d (- x pos)
+                                  dabs (Math/abs d)]
+                              (if (> frc 0.)
+                                (/ frc
+                                   (max 1.
+                                        (* dabs dabs dabs)))
+                                (* d frc ))))
+                          fps))]
+    (+ (* x (- 1 alpha))
+       (* frc alpha))))
 
-(defn find-crossings2
-  [ids]
-  (loop [[head & tail] ids
-         m {}
-         past #{}
-         x #{}]
-    (if head
-      (let [past' (conj past head)
-            m' (update-crossings-map m past head)
-            mhead (m' head)
-            x' (if (not-empty mhead)
-                 (clojure.set/union x mhead #{head})
-                 x)]
-        (recur tail
-               m'
-               past'
-               x'))
-      x)))
+(defn apply-force-points*
+  [fps x]
+  (loop [n 4.
+         x' x]
+    (if (> n 0)
+      (recur (dec n)
+             (apply-force-points** fps x' (/ n 6.)))
+      x')))
 
-(defn find-crossings
-  [id->pos t->s lvl->id]
-  (mapcat (fn [ids]
-         (find-crossings2
-          (find-crossings1 id->pos t->s ids)))
-       (vals lvl->id)))
+(defn apply-force-points
+  [fps alpha id->pos id]
+  (assoc id->pos id
+         (->> fps
+              find-attractive-center
+              (apply-force-points* fps))))
 
-#_(find-crossings $s/id->pos $s/t->s $s/lvl->id)
 
-(defn inc-temp
-  [n]
-  (min 100.
-       (max 1.
-            (* (or n 0.)
-               4.))))
 
-(defn dec-temp
-  [n]
-  (if (< n 0.1)
-    0.
-    (/ n 3.)))
+(defn do-iter-lvl-reducer
+  [mm alpha lvl-ids id->pos id]
+  (-> (calc-force-points mm lvl-ids id->pos id)
+      (apply-force-points alpha id->pos id)))
 
-(defn adjust-temperature
-  [{:keys [id->temp id->pos lvl->id s->t t->s] :as mm}]
-  (let [cooled (fmap dec-temp id->temp)
-        crossed (find-crossings id->pos t->s lvl->id)]
-    (assoc mm
-           :id->temp
-           (reduce (fn [agg item]
-                     (update agg item
-                             inc-temp))
-                   cooled
-                   crossed)
-           :crossed crossed)))
-
-(defn adjust-lvls-temperature
-  [id->pos {:keys [id->temp crossed] :as mm}]
-  (loop [[head & tail] crossed
-         id->pos' id->pos]
-    (if head
-      (update id->pos'
-              head
-              (fn [pos]
-                (-> (Math/random)
-                    (- 0.5)
-                    (* (id->temp head))
-                    (+ pos))))
-      id->pos')))
-
-(defn adjust-lvls-horiz-scale
-  [id->pos {:keys [lvl->id] :as mm}]
-  (let [{:keys [avg spread]} (get-grp-stats (vals id->pos))
-        widest (apply max (map count (vals lvl->id)))]
-    (if (> spread (* widest 3.))
-      (fmap (fn [x]
-              (/ (* widest 2.5
-                    (- x avg))
-                 spread))
-            id->pos)
-      id->pos)))
+(defn do-iter-lvl
+  [{:keys [lvl->id] :as mm} alpha id->pos lvl]
+  (reduce (partial do-iter-lvl-reducer mm alpha (lvl->id lvl))
+          id->pos
+          (lvl->id lvl)))
 
 (defn do-iter
-  [mm alpha]
-  (-> mm
-      adjust-temperature
-#_      (update :id->pos
-              update-with-alpha
-              alpha
-              adjust-lvls-temperature
-              mm)
-      (update :id->pos
-              update-with-alpha
-              0.
-              adjust-lvls-avg
-              mm)
-      (update :id->pos
-              update-with-alpha
-              alpha
-              adjust-lvls-scopes
-              mm)
-      (update :id->pos
-              update-with-alpha
-              1.
-              adjust-lvls-horiz-scale
-              mm)
-      (update :id->pos
-              update-with-alpha
-              alpha
-              adjust-lvls-avg
-              mm)))
+  [{:keys [id->pos lvl->id] :as mm} alpha]
+  (let [mx-lvl (->> lvl->id keys (apply max))]
+    (assoc mm
+           :id->pos
+           (reduce (partial do-iter-lvl mm alpha)
+                   id->pos
+                   (concat (range 0 mx-lvl)
+                           (range mx-lvl 0 -1))))))
 
 (defn do-iters
   [mm n & [alpha-i alpha-n]]
@@ -1011,49 +896,25 @@
                                      (or alpha-n n)))))
       mm')))
 
-(defn filter-cyto-edges
-  [edges]
-  (filter (fn [{:keys [data]}]
-            (= (nil? (re-find #"gradient" (:source data)))
-               (nil? (re-find #"gradient" (:target data)))))
-          edges))
+(defn init-or-inc-state
+  [state cyto n]
+  (if (nil? state)
+    (let [cyto' (filter-cyto cyto)]
+      {:n n
+       :i n
+       :cyto cyto'
+       :mm (mk-maps cyto')})
+    (let [{:keys [i n mm]} state]
+      (if (> i 0)
+        (-> state
+            (assoc :i (dec i))
+            (assoc :mm (do-iters mm 1 i n)))
+        state))))
 
-(defn filter-cyto-nodes
-  [nodes]
-  (remove (fn [{:keys [data]}]
-            (re-find #"gradient" (:id data)))
-          nodes))
 
-(defn filter-cyto
-  [cyto]
-  (-> cyto
-      (update :edges filter-cyto-edges)
-      (update :nodes filter-cyto-nodes)))
+(defn ->cyto2
+  [& args])
 
-(defn id->name
-  [id]
-  (last (clojure.string/split id
-                              #"/")))
-
-(defn ->cyto*
-  [id->lvl id->slot node]
-  (let [id (-> node :data :id)
-        y (id->lvl id)
-        x (id->slot id)]
-    (try
-      (assoc node
-             :name (id->name id)
-             :position
-             {:x (* 600 x)
-              :y (* 200 y)})
-      (catch Exception e
-        node))))
-
-(defn ->cyto
-  [{:keys [id->lvl id->pos]} cyto]
-  (update cyto :nodes
-          (partial mapv
-                   (partial ->cyto* id->lvl id->pos))))
 
 (defn mk-id->xy
   [id->lvl id->pos]
@@ -1219,43 +1080,6 @@
     {:nodes (mapv (partial assoc-pos-to-node id->xy) nodes)
      :edges (mapv (partial assoc-styles-to-edge ctrl-pt-styles) edges)}))
 
-(defn ->cyto2*
-  [id->lvl id->slot id]
-  (let [y (id->lvl id)
-        x (id->slot id)]
-    {:data {:id id}
-     :position
-     {:x (* 200 x)
-      :y (* 200 y)}}))
-
-(defn ->cyto2
-  [{:keys [id->lvl lvl->id id->pos s->t] :as mm}]
-  {:nodes (mapv (partial ->cyto2* id->lvl id->pos)
-                (keys id->lvl))
-   :edges (mapcat (fn [[id outs]]
-                    (map (fn [t]
-                           {:data {:source id
-                                   :target t}})
-                         outs))
-                  s->t)})
-
-(def astate (atom nil))
-
-(defn init-or-inc-state
-  [state cyto n]
-  (if (nil? state)
-    (let [cyto' (filter-cyto cyto)]
-      {:n n
-       :i n
-       :cyto cyto'
-       :mm (mk-maps cyto')})
-    (let [{:keys [i n mm]} state]
-      (if (> i 0)
-        (-> state
-            (assoc :i (dec i))
-            (assoc :mm (do-iters mm 1 i n)))
-        state))))
-
 (defn do-layout2
   [cyto n]
   (let [{:keys [mm cyto n i]} (swap! astate init-or-inc-state cyto n)]
@@ -1274,7 +1098,7 @@
   [cyto]
   (let [cyto' (filter-cyto cyto)]
     (let [mm (mk-maps cyto')]
-      (->cyto2 (do-iters mm 3)))))
+      (->cyto2 (do-iters mm 1)))))
 
 #_(do-layout2 nodes2 10)
 
@@ -1294,6 +1118,8 @@
           :elements (select-keys (do-layout nodes2 10)
                                  [:nodes :edges])}])
 
+#_aaaaaaaaaaaaaaaaaaaa
+
 #_(w-push ['$/graph
          {:layout {:name "preset"}
           :style [{:selector "node"
@@ -1304,7 +1130,7 @@
                            :control-point-weights [0.5]
                            :target-arrow-color "#f00"
                            :target-arrow-shape "triangle"}}]
-          :elements (select-keys (do-layout2 nodes2 20)
+          :elements (select-keys (do-layout2 nodes2 10)
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
