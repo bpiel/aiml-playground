@@ -11,6 +11,7 @@
             [flojure-tens.data-type :as dt]
             [flojure-tens.tensor :as tsr]
             [flatland.protobuf.core :as pr]
+            [flojure-tens.tf-record :as tfr]
             flojure-tens.grad-desc-opt2
             flojure-tens.gradients2)
   (:import [org.tensorflow.framework Summary]
@@ -170,7 +171,11 @@
        byte-arrays->tf-rec-byte-array))
 
 #_ (clojure.pprint/pprint ) (graph->event-ba g1)
-(clojure.pprint/pprint  (tfrec-bb->seq
+(clojure.pprint/pprint  (tfr/tfrec-bb->seq
                          (java.nio.ByteBuffer/wrap
-                          (graph->event-ba g1))))
+                          (tfr/graph->event-ba g1))))
 
+(tfr/spit-bytes "/home/bill/repos/aiml-playground/flojure-tens/a1.events"
+                (tfr/graph->event-ba g1))
+
+(tfr/tfrec-file->seq "/home/bill/repos/aiml-playground/flojure-tens/a1.events")

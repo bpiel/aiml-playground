@@ -1,12 +1,54 @@
 (ns flojure-tens.tf-record
-  (:require [flatland.protobuf.core :as pr])
+  (:require [flatland.protobuf.core :as pr]
+            flojure-tens.common)
   (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
            [org.tensorflow.util Event]
            [flojure_tens.common Graph Op GraphRef]
-           [com.macfaq.io LittleEndianOutputStream]))
+           [com.macfaq.io LittleEndianOutputStream]
+           [com.google.cloud Crc32c]
+           [tfnative TensorFlow]))
 
 (def EventP (pr/protodef Event))
 (def GraphDefP (pr/protodef GraphDef))
+
+(def crc (com.google.cloud.Crc32c.))
+
+
+(defn long->int-bytes
+  [l]
+  (let [bb (-> (java.nio.ByteBuffer/allocate 8)
+               #_  (.order java.nio.ByteOrder/LITTLE_ENDIAN))]
+    (.putLong bb l)
+    (->> (.array bb)
+         (drop 4)
+         byte-array)))
+
+(defn compute-masked-crc32
+  [bytea]
+  (let [crc (com.google.cloud.Crc32c.)]
+    (.update crc bytea 0 (count bytea))
+    (-> crc
+        .getValue
+        (bit-and 0xFFFF)
+        TensorFlow/mask
+        long->int-bytes)))
+
+(defn int->little-endian-bytes
+  [i]
+  (let [bb (-> (java.nio.ByteBuffer/allocate 4)
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN))]
+    (.putInt bb i)
+    (.array bb)))
+
+
+(defn long->bytes
+  [l]
+  (let [bb (-> (java.nio.ByteBuffer/allocate 8)
+               #_  (.order java.nio.ByteOrder/LITTLE_ENDIAN))]
+    (.putLong bb l)
+    (->> (.array bb)
+         byte-array)))
+
 
 (defn get-wall-time [] (double (/ (System/currentTimeMillis) 1000.)))
 
@@ -91,13 +133,13 @@
 (defn write-tf-rec
   [^LittleEndianOutputStream output ba]
   (let [length (count ba)
-        masked-crc32-of-length 0
-        masked-crc32-of-data 0]
+        masked-crc32-of-length (-> length long->bytes compute-masked-crc32)
+        masked-crc32-of-data (compute-masked-crc32 ba)]
     (doto output
       (.writeLong length)
-      (.writeInt masked-crc32-of-length)
+      (.write masked-crc32-of-length 0 4)
       (.write ba 0 length)
-      (.writeInt masked-crc32-of-data))
+      (.write masked-crc32-of-data 0 4))
     output))
 
 (defn byte-arrays->tf-rec-byte-array
@@ -122,5 +164,3 @@
             mk-graphdef-event)]
        events->tf-recs-bytes
        byte-arrays->tf-rec-byte-array))
-
-
