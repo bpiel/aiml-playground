@@ -6,12 +6,11 @@
            [flojure_tens.common Graph Op GraphRef]
            [com.macfaq.io LittleEndianOutputStream]
            [com.google.cloud Crc32c]
-           [tfnative TensorFlow]))
+           [tfnative TensorFlow]
+           [org.tensorflow.hadoop.util TFRecordWriter]))
 
 (def EventP (pr/protodef Event))
 (def GraphDefP (pr/protodef GraphDef))
-
-(def crc (com.google.cloud.Crc32c.))
 
 
 (defn long->int-bytes
@@ -32,6 +31,13 @@
         (bit-and 0xFFFF)
         TensorFlow/mask
         long->int-bytes)))
+
+(defn bytes->little-endian
+  [ba]
+  (let [bb (-> (java.nio.ByteBuffer/allocate (count ba))
+               (.order java.nio.ByteOrder/LITTLE_ENDIAN))]
+    (.put bb ba 0 (count ba))
+    (.array bb)))
 
 (defn int->little-endian-bytes
   [i]
@@ -142,12 +148,15 @@
       (.write masked-crc32-of-data 0 4))
     output))
 
+
+
 (defn byte-arrays->tf-rec-byte-array
   [byte-arrays]
   (let [baos (java.io.ByteArrayOutputStream.)
-        leos (LittleEndianOutputStream. baos)]
+        leos (java.io.DataOutputStream. baos) #_(LittleEndianOutputStream. baos)
+        tfrw (TFRecordWriter. leos)]
     (doseq [ba byte-arrays]
-      (write-tf-rec leos ba))
+      (.write tfrw ba 0 (count ba)))
     (.toByteArray baos)))
 
 (defn events->tf-recs-bytes

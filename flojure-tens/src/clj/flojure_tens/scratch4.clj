@@ -178,4 +178,16 @@
 (tfr/spit-bytes "/home/bill/repos/aiml-playground/flojure-tens/a1.events"
                 (tfr/graph->event-ba g1))
 
+
+
 (tfr/tfrec-file->seq "/home/bill/repos/aiml-playground/flojure-tens/a1.events")
+
+(tfr/tfrec-file->seq "/home/bill/py.event")
+
+(println (take 20 (tfr/slurp-bytes "/home/bill/py.event")))
+
+
+(take 20 (tfr/slurp-bytes "/home/bill/repos/aiml-playground/flojure-tens/a1.events"))
+
+(print  (take 40 (slurp "/home/bill/py.event")))
+(print (take 40 (slurp "/home/bill/repos/aiml-playground/flojure-tens/a1.events")))
