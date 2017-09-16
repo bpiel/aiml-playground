@@ -14,7 +14,8 @@
   (:import [org.tensorflow.framework Summary]
            [flojure_tens.tensor TensorNDArray]
            [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
-           [org.tensorflow.util Event]))
+           [org.tensorflow.util Event]
+           [flojure_tens.common Graph Op GraphRef]))
 
 
 
@@ -378,6 +379,8 @@
 (def e3 (read-from-tfrecord-byte-buffer tf-bb))
 
 
+(pr/protobuf-dump (first evts))
+
 (read-one-tf-rec "/home/bill/repos/aiml-playground/flojure-tens/py.event")
 
 
@@ -386,6 +389,10 @@
 
 
 (def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/matmul.mgpb")))
+
+(defn graph->event-ba
+  [^Graph g]
+  )
 
 
 (let [a (p/v :a 1.)
