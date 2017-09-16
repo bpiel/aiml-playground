@@ -12,7 +12,9 @@
             [flojure-tens.tensor :as tsr]
             [flatland.protobuf.core :as pr])
   (:import [org.tensorflow.framework Summary]
-           [flojure_tens.tensor TensorNDArray]))
+           [flojure_tens.tensor TensorNDArray]
+           [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
+           [org.tensorflow.util Event]))
 
 
 
@@ -275,6 +277,117 @@
   (ft/fetch-all s [a b])
   #_  (-> g1 :state deref clojure.pprint/pprint))
 
+(defn spit-bytes
+  "Slurp the bytes from a slurpable thing"
+  [f ba]
+  (let [bais (java.io.ByteArrayInputStream. ba)]
+    (with-open [out (clojure.java.io/output-stream f)]
+      (clojure.java.io/copy bais out))))
+
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy (clojure.java.io/input-stream x) out)
+    (.toByteArray out)))
+
+(ft/produce (o/read-file "/home/bill/repos/aiml-playground/flojure-tens/py.event" ))
+(ft/produce (o/tf-record-reader-v2))
+
+
+
+(def )
+(def EventP (pr/protodef Event))
+
+(def py-evt (pr/protobuf-load EventP (byte-array (take 36 (slurp-bytes "/home/bill/repos/aiml-playground/flojure-tens/py.event")))))
+
+(defn get-something
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (let [out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy (clojure.java.io/input-stream x) out)
+    (java.nio.ByteBuffer/wrap (.toByteArray out))))
+
+(def bb (get-something "/home/bill/repos/aiml-playground/flojure-tens/py.event" ))
+
+(.order bb java.nio.ByteOrder/LITTLE_ENDIAN)
+
+(def l1 (.getLong bb))
+
+(defn mk-tfrecord-byte-buffer
+  [filename]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy (clojure.java.io/input-stream filename) out)
+    (-> out
+        .toByteArray
+        java.nio.ByteBuffer/wrap
+        (.order java.nio.ByteOrder/LITTLE_ENDIAN)
+        .asReadOnlyBuffer)))
+
+(defn read-event-from-tfrecord-byte-buffer
+  [^java.nio.ByteBuffer tfrecs-bb]
+  (when (.hasRemaining tfrecs-bb)
+    (let [length (.getLong tfrecs-bb) ;; TODO unsigned???
+          masked-crc32-of-length (.getInt tfrecs-bb)
+          ba (byte-array length)
+          _ (.get tfrecs-bb ba 0 length)
+          masked-crc32-of-data (.getInt tfrecs-bb)]
+      (pr/protobuf-load EventP ba))))
+
+(defn tfrec-bb->event-seq
+  "I hope this isn't terribly wrong"
+  [^java.nio.ByteBuffer tfrecs-bb]
+  (let [dup (-> tfrecs-bb
+                .slice
+                (.order java.nio.ByteOrder/LITTLE_ENDIAN))
+        evt (read-event-from-tfrecord-byte-buffer dup)]
+    (if evt
+      (lazy-cat [evt] (tfrec-bb->event-seq dup))
+      [])))
+
+(defn extract-from-tf-event
+  [evt]
+  (let [k (-> evt
+            (dissoc :wall-time)
+            keys
+            first)
+        v (evt k)]
+    (case k
+      :file-version v
+      :graph-def (pr/protobuf-load GraphDefP (.toByteArray v)))))
+
+(defn tfrec-bb->seq
+  [^java.nio.ByteBuffer tfrecs-bb]
+  (map extract-from-tf-event
+       (tfrec-bb->event-seq tfrecs-bb)))
+
+(def evts (tfrec-bb->event-seq tf-bb))
+
+(def tf-things (tfrec-bb->seq tf-bb))
+
+
+(clojure.pprint/pprint tf-things)
+
+(def tf-bb (mk-tfrecord-byte-buffer "/home/bill/repos/aiml-playground/flojure-tens/py.event"))
+
+
+(def e1 (-> evts second :graph-def))
+
+(def e2 (read-from-tfrecord-byte-buffer tf-bb))
+
+(def e3 (read-from-tfrecord-byte-buffer tf-bb))
+
+
+(read-one-tf-rec "/home/bill/repos/aiml-playground/flojure-tens/py.event")
+
+
+
+(take 80 (slurp "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/matmul.mgpb"))
+
+
+(def mg2 (pr/protobuf-load MetaGraphP (slurp-bytes "/home/bill/repos/aiml-playground/udacity-2-fullyconnected/matmul.mgpb")))
+
+
 (let [a (p/v :a 1.)
       sin1 (o/sin a)
       cos1 (o/cos a)
@@ -285,6 +398,7 @@
   (def g1 g)
   (ft/run-global-vars-init s)
   (ft/fetch-all s [sin1 cos1])
+  (spit-bytes "gd1.gdpb"  (tfnative.Graph/toGraphDef (:handle g)))
   #_  (-> g1 :state deref clojure.pprint/pprint))
 
 (ft/produce (o/sum [[[1.] [2.]]
@@ -337,3 +451,8 @@
 
 (def ls (map identity (range 10)))
 (def s1 '(1 2 3))
+
+
+(def MetaGraphP (pr/protodef MetaGraphDef))
+
+(def GraphDefP (pr/protodef GraphDef))

@@ -430,6 +430,7 @@ ldd ./src_native/libtensorflow_jni.so
 $ protoc --java_out=./ ./tensorflow/core/framework/*.proto
 $ protoc --java_out=./ ./tensorflow/core/protobuf/*.proto
 $ protoc --java_out=./ ./tensorflow/core/lib/core/*.proto
+$ protoc --java_out=./ ./tensorflow/core/util/*.proto
 -----
 
 
