@@ -6,6 +6,45 @@
 (def c1 (volatile! nil))
 (def a1 (atom nil))
 
+(def last-node-click (volatile! [nil 0]))
+
+(defn now-ts [] (.getTime (js/Date.)))
+
+(defn on-click-node
+  [xc-api evt-js]
+  (def evt-js1 evt-js)
+  (let [{target "target"} (js->clj evt-js)
+        [last-node last-ts] @last-node-click]
+    (if (= last-node target)
+      (let [now (now-ts)]
+        (println (- now last-ts))
+        (if (< (- now last-ts) 750)
+          (cond (.isExpandable xc-api target)
+                (.expand xc-api target)
+
+                (.isCollapsible xc-api target)
+                (.collapse xc-api target))
+          (println "single same")))
+      (println "different"))
+    (vreset! last-node-click
+             [target (now-ts)])))
+
+
+
+(defn setup-cyto
+  [cy]
+  (println "START setup-cyto")
+  (let [xc-api (.expandCollapse cy (clj->js {:layoutBy {:name "dagre"
+                                                        :nodeSep 600
+                                                        :rankSep 100}
+                                             :fisheye false
+                                             :animate true
+                                             :undoable false
+                                             :cueEnabled false}))]
+    (.collapseAll xc-api)
+    (-> cy .nodes (.on "click" (partial on-click-node xc-api)))
+    (println "DONE setup-cyto")))
+
 (defn cyto-state->cyto-gen-map
   [{:keys [id value]}]
   (println "cyto-state->cyto-gen-map")
@@ -231,7 +270,8 @@
   [state this]
   (vswap! state assoc 
           :instance
-          (gen-cyto @state)))
+          (gen-cyto @state))
+  (setup-cyto (:instance @state)))
 
 (defn cyto-reagent-render
   [state value]
@@ -254,7 +294,8 @@
               (vswap! state
                       assoc
                       :instance
-                      (gen-cyto state')))
+                      (gen-cyto state'))
+              (setup-cyto (:instance @state)))
           #_ ((not= data (:data state'))
               (do (println "load")
                   (.load instance (clj->js (merge (:data state') {:unload true}))))
@@ -274,4 +315,20 @@
                      :component-did-update (partial cyto-comp-did-update state)
                      :component-will-update (partial cyto-comp-will-update state)
                      :reagent-render (partial cyto-reagent-render state)})))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

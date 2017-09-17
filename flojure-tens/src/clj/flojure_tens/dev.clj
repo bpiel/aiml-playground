@@ -557,6 +557,26 @@
 
 ;; ===================================================
 
+(defn filter-cyto-edges
+  [edges]
+  (filter (fn [{:keys [data]}]
+            (= (nil? (re-find #"gradient" (:source data)))
+                (nil? (re-find #"gradient" (:target data)))))
+          edges))
+
+(defn filter-cyto-nodes
+  [nodes]
+  (remove (fn [{:keys [data]}]
+            (or #_(re-find #"gradient" (:id data))
+                (re-find #"Const" (:id data))))
+          nodes))
+
+(defn filter-cyto
+  [cyto]
+  (-> cyto
+      (update :edges filter-cyto-edges)
+      (update :nodes filter-cyto-nodes)))
+
 
 #_(w-push ['$/graph
          {:layout {:name "preset"}
@@ -599,18 +619,41 @@
                                  [:nodes :edges])}])
 
 #_(w-push ['$/graph
-           {:layout {:name "preset"}
+           {:layout {:name "dagre"}
             :style [{:selector "node"
-                     :style {:content "data(id)"}}
+                     :style {:content "data(name)"
+                             :border-width 5
+                             :font-size 40
+                             :background-color "#DDD"
+                             :shape "rectangle"
+                             :height 100
+                             :width 400
+                             :text-valign "center"
+                             }}
                     {:selector "edge"
-                     :style {"curve-style" "unbundled-bezier"
+                     :style {:width 10
+                             "curve-style" "unbundled-bezier"
                              :control-point-distances [0]
                              :control-point-weights [0.5]
                              :target-arrow-color "#f00"
-                             :target-arrow-shape "triangle"}}]
-            :elements (select-keys (bill1 (select-keys (w-mk-graph-def2)
-                                                              [:nodes :edges]))
-                                   [:nodes :edges])}])
+                             :target-arrow-shape "triangle"}}
+                    {:selector "node.cy-expand-collapse-collapsed-node"
+                     :style {:background-color "lightgreen"
+                             :shape "rectangle"
+                             :height 100
+                             :width 400
+                             :text-valign "center"
+                             }}
+                    {:selector ":parent"
+                     :style {:background-color "white"
+                             :text-valign "top"
+                             :border-color "lightgreen"
+                             :border-width 10
+                             }}
+                    {:selector ":selected"
+                     :style {:background-color "lightblue"}}]
+            :elements (filter-cyto (select-keys (w-mk-graph-def2)
+                                                [:nodes :edges]))}])
 
 #_
 (w-push ['$/h-box :children [['$/chart
@@ -630,11 +673,3 @@
                                               :control-point-weights [0.5]}}]
                              :elements (select-keys (w-mk-graph-def2)
                                                     [:nodes :edges])}]]])
-
-
-
-
-
-
-
-
