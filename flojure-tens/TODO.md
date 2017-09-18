@@ -80,30 +80,34 @@ x fetch non-zero macro ops by plan
 
 x Tensor Mgr
 
+x view graph in tensorboard
+
+x web app w/ graph
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
 
 
-===============================================
-INSANE WEB APP
+================
+BIG PLAN
 
-x ugh... reorg src
+- defn-experiment (better name?)
+ - CLI style? (:status :start :start-sync)
 
-x simplest web app
-  x figwheel
-- simplest ws wep app
-  - re-frame
-  - aleph
-  - transit
-- make ns from graph
-- send to web svr
-  - process for front-end
-  - send to front-end
-- render in front-end
+- makes ns (named by defn-experiment symbol)
+- captures summaries between runs
+
+- click node -> set selected atom
+- click node -> show scalar-series chart
+- click node -> show histo-series chart
+- show source for selected
+- expand/center/select node by $g/var
 
 
-===============================================
+================
+
+
 
 
 - tensors fed to session.run should either be deleted or cached (then deleted later)
@@ -138,9 +142,6 @@ random search
 ================
 
 
-vvvvvvvvvvvvvvvvvvv
-- view graph in tensorboard!!!!!!!!!!!!!!1
-^^^^^^^^^^^^^^^^^^^
 
 
 
