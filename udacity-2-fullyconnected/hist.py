@@ -11,6 +11,8 @@ tf.summary.histogram("normal/moving_mean", mean_moving_normal)
 sess = tf.Session()
 writer = tf.summary.FileWriter("/home/bill/tf-logs")
 
+writer.add_graph(sess.graph)
+
 summaries = tf.summary.merge_all()
 
 # Setup a loop and write the summaries to disk
@@ -20,3 +22,4 @@ for step in range(N):
   summ = sess.run(summaries, feed_dict={k: k_val})
   writer.add_summary(summ, global_step=step)
   
+

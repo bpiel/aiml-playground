@@ -1,13 +1,15 @@
 (ns flojure-tens.tf-record
   (:require [flatland.protobuf.core :as pr]
             flojure-tens.common)
-  (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
+  (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef Summary]
            [org.tensorflow.util Event]
            [flojure_tens.common Graph Op GraphRef]
            [org.tensorflow.hadoop.util TFRecordWriter]))
 
 (def EventP (pr/protodef Event))
 (def GraphDefP (pr/protodef GraphDef))
+(def SummaryP (pr/protodef Summary))
+
 
 (defn get-wall-time [] (double (/ (System/currentTimeMillis) 1000.)))
 
@@ -66,7 +68,8 @@
         v (evt k)]
     (case k
       :file-version v
-      :graph-def (pr/protobuf-load GraphDefP (.toByteArray v)))))
+      :graph-def (pr/protobuf-load GraphDefP (.toByteArray v))
+      :summary (pr/protobuf-load SummaryP (.toByteArray v)))))
 
 (defn tfrec-bb->seq
   [^java.nio.ByteBuffer tfrecs-bb]
@@ -78,6 +81,12 @@
   (-> filename
       mk-tfrecord-byte-buffer
       tfrec-bb->seq))
+
+(defn tfrec-file->event-seq
+  [filename]
+  (-> filename
+      mk-tfrecord-byte-buffer
+      tfrec-bb->event-seq))
 
 (defn mk-version-event
   []

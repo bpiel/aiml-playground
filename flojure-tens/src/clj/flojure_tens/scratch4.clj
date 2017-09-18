@@ -191,3 +191,11 @@
 
 (print  (take 40 (slurp "/home/bill/py.event")))
 (print (take 40 (slurp "/home/bill/repos/aiml-playground/flojure-tens/a1.events")))
+
+(clojure.pprint/pprint (tfr/tfrec-file->seq "/home/bill/tf-logs/events.out.tfevents.1505696589.bill-desktop"))
+
+(clojure.pprint/pprint (last (tfr/tfrec-file->event-seq "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")))
+
+(clojure.pprint/pprint (take 3 (tfr/tfrec-file->event-seq "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")))
+
+(o/histogram-summary )
