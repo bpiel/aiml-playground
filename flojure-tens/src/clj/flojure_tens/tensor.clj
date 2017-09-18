@@ -123,7 +123,8 @@
 
 (defmethod get-scalar-value :string
   [handle _]
-  (String. (tfnative.Tensor/scalarBytes handle)))
+  (tfnative.Tensor/scalarBytes handle)
+#_  (String. (tfnative.Tensor/scalarBytes handle)))
 
 (defn- mk-tensor-ndarray
   [handle ref-id {:keys [kw byte-size]} shape]
@@ -206,8 +207,8 @@
     (let [dst (zeros-array-by-dtype shape dtype)]
       (tfnative.Tensor/readNDArray handle dst)
       (if (= dtype dt/string-kw)
-        (to-array (map #(String. %) ;; TODO -- fix gross HACK!!!!
-                       dst))
+        (to-array dst #_(map #(String. %) ;; TODO -- fix gross HACK!!!!
+                             dst))
         dst))))
 
 #_(defn get-value-clj

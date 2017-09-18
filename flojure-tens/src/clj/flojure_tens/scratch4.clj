@@ -21,181 +21,58 @@
            [flojure_tens.common Graph Op GraphRef]
            [com.macfaq.io LittleEndianOutputStream]))
 
-(def EventP (pr/protodef Event))
-(def GraphDefP (pr/protodef GraphDef))
+(def SummaryP (pr/protodef Summary))
 
-(defn get-wall-time [] (double (/ (System/currentTimeMillis) 1000.)))
+(let [data (dt/convert-whatever [[1. 2.]
+                                 [1. 3.]
+                                 [2. 3.]
+                                 [2. 4.]]
+                                dt/float-kw)
+      labels (dt/convert-whatever [[1.]
+                                   [2.]
+                                   [1.]
+                                   [2.]]
+                                  dt/float-kw)
+      {:keys [out opt]}
+      (ut/id$->> (o/placeholder :data
+                                dt/float-kw
+                                [-1 2])
+                 (l/dense {:units 100})
+                 (l/dense {:units 100})
+                 (l/dense {:id :out
+                           :units 1})
+                 (o/sub (o/placeholder :labels
+                                       dt/float-kw
+                                       [-1 1]))
+                 o/abs
+                 (p/reduce-mean :loss)
+                 (p/grad-desc-opt :opt))]
+  (let [{:keys [graph] :as s} (ft/build-all->session [opt])]
+    (d/mk-ns s)
+    (ft/run-global-vars-init s)
+    (ft/run-all s (repeat 1000 opt) {:data data
+                                     :labels labels})
+    (ft/produce s out {:data data})))
 
-(defn spit-bytes
-  "Slurp the bytes from a slurpable thing"
-  [f ba]
-  (let [bais (java.io.ByteArrayInputStream. ba)]
-    (with-open [out (clojure.java.io/output-stream f)]
-      (clojure.java.io/copy bais out))))
+(let [rn (o/random-standard-normal {:dtype dt/float-kw} [100])
+      hist (o/histogram-summary "hist" rn)
+      {:keys [graph] :as s} (ft/build-all->session [rn hist])]
+  (ft/run-global-vars-init s)
+  (def h (ft/produce s hist)))
 
-(defn slurp-bytes
-  "Slurp the bytes from a slurpable thing"
-  [x]
-  (with-open [out (java.io.ByteArrayOutputStream.)]
-    (clojure.java.io/copy (clojure.java.io/input-stream x) out)
-    (.toByteArray out)))
+(let [rn (o/identity-tf 1.2)
+      smry (o/scalar-summary :smry "smry" rn)
+      {:keys [graph] :as s} (ft/build-all->session [rn smry])]
+  (ft/run-global-vars-init s)
+  (def smry
+    (ft/produce s smry)))
 
+(count (.getBytes h))
 
-(defn mk-tfrecord-byte-buffer
-  [filename]
-  (with-open [out (java.io.ByteArrayOutputStream.)]
-    (clojure.java.io/copy (clojure.java.io/input-stream filename) out)
-    (-> out
-        .toByteArray
-        java.nio.ByteBuffer/wrap
-        (.order java.nio.ByteOrder/LITTLE_ENDIAN)
-        .asReadOnlyBuffer)))
+(count (.getBytes smry))
 
-(defn read-event-from-tfrecord-byte-buffer
-  [^java.nio.ByteBuffer tfrecs-bb]
-  (when (.hasRemaining tfrecs-bb)
-    (let [length (.getLong tfrecs-bb) ;; TODO unsigned???
-          masked-crc32-of-length (.getInt tfrecs-bb)
-          ba (byte-array length)
-          _ (.get tfrecs-bb ba 0 length)
-          masked-crc32-of-data (.getInt tfrecs-bb)]
-      (pr/protobuf-load EventP ba))))
+(def xxx (pr/protobuf-load SummaryP h))
 
-(defn tfrec-bb->event-seq
-  "I hope this isn't terribly wrong"
-  [^java.nio.ByteBuffer tfrecs-bb]
-  (let [dup (-> tfrecs-bb
-                .slice
-                (.order java.nio.ByteOrder/LITTLE_ENDIAN))
-        evt (read-event-from-tfrecord-byte-buffer dup)]
-    (if evt
-      (lazy-cat [evt] (tfrec-bb->event-seq dup))
-      [])))
+(def xxx2 (pr/protobuf-load SummaryP smry))
 
-(defn extract-from-tf-event
-  [evt]
-  (clojure.pprint/pprint evt)
-  (let [k (-> evt
-            (dissoc :wall-time)
-            keys
-            first)
-        v (evt k)]
-    (case k
-      :file-version v
-      :graph-def (pr/protobuf-load GraphDefP (.toByteArray v)))))
-
-(defn tfrec-bb->seq
-  [^java.nio.ByteBuffer tfrecs-bb]
-  (map extract-from-tf-event
-       (tfrec-bb->event-seq tfrecs-bb)))
-
-(defn tfrec-file->seq
-  [filename]
-  (-> filename
-      mk-tfrecord-byte-buffer
-      tfrec-bb->seq))
-
-#_(let [a (p/v :a 1.)
-      sin1 (o/sin a)
-      cos1 (o/cos a)
-      opt {:macro :grad-desc-opt2
-           :inputs [sin1]}
-      g (ft/build-all->graph [cos1 opt])
-      s (ft/graph->session g)
-      gd (tfnative.Graph/toGraphDef (:handle g))]
-  (def g1 g)
-  (def gd1 gd))
-
-#_(tfrec-file->seq "/home/bill/py.event")
-
-
-(defn mk-version-event
-  []
-  {:wall-time (get-wall-time)
-   :file-version "brain.Event:2"})
-
-(defn mk-graphdef-event
-  [graphdef-bytes]
-  {:wall-time (get-wall-time)
-   :graph-def graphdef-bytes})
-
-(defn write-tf-rec
-  [^LittleEndianOutputStream output ba]
-  (let [length (count ba)
-        masked-crc32-of-length 0
-        masked-crc32-of-data 0]
-    (doto output
-      (.writeLong length)
-      (.writeInt masked-crc32-of-length)
-      (.write ba 0 length)
-      (.writeInt masked-crc32-of-data))
-    output))
-
-(defn byte-arrays->tf-rec-byte-array
-  [byte-arrays]
-  (let [baos (java.io.ByteArrayOutputStream.)
-        leos (LittleEndianOutputStream. baos)]
-    (doseq [ba byte-arrays]
-      (write-tf-rec leos ba))
-    (.toByteArray baos)))
-
-(def baos1 (java.io.ByteArrayOutputStream.))
-
-(def dos1  (LittleEndianOutputStream. baos1))
-
-(.writeLong dos1 1000)
-
-(.writeByte dos1 -1)
-
-(.writeByte dos1 10)
-
-(.writeByte dos1 33)
-
-(.writeByte dos1 130)
-
-(vec (.toByteArray baos1))
-
-(defn events->tf-recs-bytes
-  [evts]
-  (map (partial pr/protobuf-dump EventP)
-       evts))
-
-(defn graph->event-ba
-  [^Graph g]
-  (->> [(mk-version-event)
-        (-> g
-            :handle
-            tfnative.Graph/toGraphDef
-            mk-graphdef-event)]
-       events->tf-recs-bytes
-       byte-arrays->tf-rec-byte-array))
-
-#_ (clojure.pprint/pprint ) (graph->event-ba g1)
-(clojure.pprint/pprint  (tfr/tfrec-bb->seq
-                         (java.nio.ByteBuffer/wrap
-                          (tfr/graph->event-ba g1))))
-
-(tfr/spit-bytes "/home/bill/repos/aiml-playground/flojure-tens/a1.events"
-                (tfr/graph->event-ba g1))
-
-
-
-(tfr/tfrec-file->seq "/home/bill/repos/aiml-playground/flojure-tens/a1.events")
-
-(tfr/tfrec-file->seq "/home/bill/py.event")
-
-(println (take 20 (tfr/slurp-bytes "/home/bill/py.event")))
-
-
-(take 20 (tfr/slurp-bytes "/home/bill/repos/aiml-playground/flojure-tens/a1.events"))
-
-(print  (take 40 (slurp "/home/bill/py.event")))
-(print (take 40 (slurp "/home/bill/repos/aiml-playground/flojure-tens/a1.events")))
-
-(clojure.pprint/pprint (tfr/tfrec-file->seq "/home/bill/tf-logs/events.out.tfevents.1505696589.bill-desktop"))
-
-(clojure.pprint/pprint (last (tfr/tfrec-file->event-seq "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")))
-
-(clojure.pprint/pprint (take 3 (tfr/tfrec-file->event-seq "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")))
-
-(o/histogram-summary )
+(clojure.pprint/pprint  xxx)
