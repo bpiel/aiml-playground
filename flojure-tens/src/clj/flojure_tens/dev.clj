@@ -625,9 +625,9 @@
                              :border-width 1
                              :font-size 35
                              :background-color "#FFC"
-                             :shape "rectangle"
-                             :height 60
-                             :width 400
+                             :shape "ellipsis"
+                             :height 80
+                             :width 200
                              :text-valign "center"
                              }}
                     {:selector "edge"
