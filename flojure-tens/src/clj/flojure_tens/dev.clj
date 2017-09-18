@@ -622,30 +622,36 @@
            {:layout {:name "dagre"}
             :style [{:selector "node"
                      :style {:content "data(name)"
-                             :border-width 5
-                             :font-size 40
-                             :background-color "#DDD"
+                             :border-width 1
+                             :font-size 35
+                             :background-color "#FFC"
                              :shape "rectangle"
-                             :height 100
+                             :height 60
                              :width 400
                              :text-valign "center"
                              }}
                     {:selector "edge"
-                     :style {:width 10
+                     :style {:width 5
                              "curve-style" "unbundled-bezier"
                              :control-point-distances [0]
                              :control-point-weights [0.5]
+                             :line-color "#888"
+                             :arrow-scale 1.5
                              :target-arrow-color "#f00"
                              :target-arrow-shape "triangle"}}
                     {:selector "node.cy-expand-collapse-collapsed-node"
-                     :style {:background-color "lightgreen"
+                     :style {:font-size 40
+                             :background-color "lightgreen"
+                             :border-width 8
+                             :border-color "darkgreen"
                              :shape "rectangle"
                              :height 100
                              :width 400
                              :text-valign "center"
                              }}
                     {:selector ":parent"
-                     :style {:background-color "white"
+                     :style {:font-size 80
+                             :background-color "white"
                              :text-valign "top"
                              :border-color "lightgreen"
                              :border-width 10
