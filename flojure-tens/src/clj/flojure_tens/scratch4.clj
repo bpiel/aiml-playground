@@ -156,6 +156,67 @@
                              {:step 8
                               :bins (hist-bytes->histo-bins2 h7)}]}])
 
+(dev/w-push ['h-box :children [['histos {:mode "offset"
+                                         :timeProperty "step"
+                                         :data [{:step 1
+                                                 :bins (hist-bytes->histo-bins2 h)}
+                                                {:step 2
+                                                 :bins (hist-bytes->histo-bins2 h1)}
+                                                {:step 3
+                                                 :bins (hist-bytes->histo-bins2 h2)}
+                                                {:step 4
+                                                 :bins (hist-bytes->histo-bins2 h3)}
+                                                {:step 5
+                                                 :bins (hist-bytes->histo-bins2 h4)}
+                                                {:step 6
+                                                 :bins (hist-bytes->histo-bins2 h5)}
+                                                {:step 7
+                                                 :bins (hist-bytes->histo-bins2 h6)}
+                                                {:step 8
+                                                 :bins (hist-bytes->histo-bins2 h7)}]}]
+                               ['graph
+                                {:layout {:name "dagre"}
+            :style [{:selector "node"
+                     :style {:content "data(name)"
+                             :border-width 1
+                             :font-size 35
+                             :background-color "#FFC"
+                             :shape "ellipsis"
+                             :height 80
+                             :width 200
+                             :text-valign "center"
+                             }}
+                    {:selector "edge"
+                     :style {:width 5
+                             "curve-style" "unbundled-bezier"
+                             :control-point-distances [0]
+                             :control-point-weights [0.5]
+                             :line-color "#888"
+                             :arrow-scale 1.5
+                             :target-arrow-color "#f00"
+                             :target-arrow-shape "triangle"}}
+                    {:selector "node.cy-expand-collapse-collapsed-node"
+                     :style {:font-size 40
+                             :background-color "lightgreen"
+                             :border-width 8
+                             :border-color "darkgreen"
+                             :shape "rectangle"
+                             :height 100
+                             :width 400
+                             :text-valign "center"
+                             }}
+                    {:selector ":parent"
+                     :style {:font-size 80
+                             :background-color "white"
+                             :text-valign "top"
+                             :border-color "lightgreen"
+                             :border-width 10
+                             }}
+                    {:selector ":selected"
+                     :style {:background-color "lightblue"}}]
+            :elements (dev/filter-cyto (select-keys (dev/w-mk-graph-def2)
+                                                [:nodes :edges]))}]]])
+
 (clojure.pprint/pprint [{:step 1
                          :bins (hist-bytes->histo-bins2 h)}
                         {:step 2
@@ -172,6 +233,11 @@
                          :bins (hist-bytes->histo-bins2 h6)}
                         #_{:step 8
                          :bins (hist-bytes->histo-bins h7)}])
+
+
+
+
+
 
 
 
