@@ -171,52 +171,41 @@
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
 
-(defmulti call-plugin (fn [plugin-id+hook & args] (clojure.pprint/pprint plugin-id+hook) plugin-id+hook))
+(defmulti call-plugin (fn [plugin-id+hook & args] plugin-id+hook))
 (defmethod call-plugin :default
   [[_ hook] & args] nil)
 
 (defn- call-plugins
-  [hook & args]
+  [hook m & args]
   (let [plugin-ids @plugins]
-    (mapv #(apply call-plugin [% hook] args)
+    (mapv #(apply call-plugin [% hook] m args)
             plugin-ids)))
 
 (defn- ws-init-graph&session
-  [state plug-fn]
+  [{:keys [state] :as m}]
   (if-let [session (:session @state)]
     session
     (let [s (build->session [])]
-      (plug-fn :init s)
+      (call-plugins :init m)
       (swap! state assoc :session s)
       s)))
 
-(defmulti workspace-cmd (fn [cmd & args] cmd))
-
-(defmethod workspace-cmd :build
-  [_ state ws-name {:keys [build]} plug-fn]
-  (let [{:keys [graph]}  (ws-init-graph&session state plug-fn)]
-    (plug-fn :pre-build)
+(defn ws-build
+  [m]
+  (let [{:keys [graph]}  (ws-init-graph&session m)]
+    (call-plugins :pre-build m)
     (build-all->graph graph build)
-    (plug-fn :post-build)
+    (call-plugins :post-build m)
     true))
-
-(defn- mk-workspace*
-  [state ws-name ws-def plug-fn & [cmd & args]]
-  (if cmd
-    (apply workspace-cmd cmd state ws-name ws-def plug-fn args)
-    :HI))
 
 (defn mk-workspace
   [ws-name ws-def]
-  (let [state (atom {})
-        plug-fn (fn [hook & args]
-                  (apply call-plugins hook state ws-name ws-def args))]
-    (plug-fn :new)
-    (partial mk-workspace*
-             state
-             ws-name
-             ws-def
-             plug-fn)))
+  (let [m {:state (atom {})
+           :ws-name ws-name
+           :ws-def ws-def
+           :plugins @plugins}]
+    (call-plugins :new m)
+    m))
 
 (defmacro def-workspace
   [ws-name & body]
@@ -227,48 +216,3 @@
 #_
 (def-workspace ws1
   {:what :who})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
