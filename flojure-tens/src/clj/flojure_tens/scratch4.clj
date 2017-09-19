@@ -90,7 +90,7 @@
             :histo)]
     (mapv (fn [x x' y]
             {:x x
-             :y (* y (/ (Math/abs x) (- x' x)))
+             :y y
              :dx (- x' x)})
           bucket-limit
           (-> bucket-limit
@@ -98,6 +98,41 @@
               drop-last)
           bucket)))
 
+(defn merge-hists
+  [{x1 :x y1 :y dx1 :dx} {y2 :y dx2 :dx}]
+  {:x x1
+   :y (+ y1 y2)
+   :dx (+ dx1 dx2)})
+
+(defn normalize-hist
+  [{:keys [y dx] :as h}]
+  (assoc h :y (/ y dx)))
+
+
+
+(defn hist-bytes->histo-bins2
+  [ba]
+  (loop [[head & tail] (hist-bytes->histo-bins ba)
+         agg []
+         current nil]
+    (cond (nil? head)
+          (mapv normalize-hist
+                (remove nil?
+                        (conj agg current)))
+
+          (nil? current)
+          (recur tail
+                 agg
+                 head)
+
+          :else (let [{:keys [dx] :as nxt} (merge-hists current head)]
+                  (if (> dx 0.1)
+                    (recur tail
+                           (conj agg nxt)
+                           nil)
+                    (recur tail
+                           agg
+                           nxt))))))
 
 
 (clojure.pprint/pprint (hist-bytes->histo-bins h3))
@@ -105,35 +140,56 @@
 (dev/w-push ['histos {:mode "offset"
                       :timeProperty "step"
                       :data [{:step 1
-                              :bins (hist-bytes->histo-bins h)}
+                              :bins (hist-bytes->histo-bins2 h)}
                              {:step 2
-                              :bins (hist-bytes->histo-bins h1)}
+                              :bins (hist-bytes->histo-bins2 h1)}
                              {:step 3
-                              :bins (hist-bytes->histo-bins h2)}
+                              :bins (hist-bytes->histo-bins2 h2)}
                              {:step 4
-                              :bins (hist-bytes->histo-bins h3)}
+                              :bins (hist-bytes->histo-bins2 h3)}
                              {:step 5
-                              :bins (hist-bytes->histo-bins h4)}
+                              :bins (hist-bytes->histo-bins2 h4)}
                              {:step 6
-                              :bins (hist-bytes->histo-bins h5)}
+                              :bins (hist-bytes->histo-bins2 h5)}
                              {:step 7
-                              :bins (hist-bytes->histo-bins h6)}
+                              :bins (hist-bytes->histo-bins2 h6)}
                              {:step 8
-                              :bins (hist-bytes->histo-bins h7)}]}])
+                              :bins (hist-bytes->histo-bins2 h7)}]}])
 
 (clojure.pprint/pprint [{:step 1
-                         :bins (hist-bytes->histo-bins h)}
+                         :bins (hist-bytes->histo-bins2 h)}
                         {:step 2
-                         :bins (hist-bytes->histo-bins h1)}
+                         :bins (hist-bytes->histo-bins2 h1)}
                         {:step 3
-                         :bins (hist-bytes->histo-bins h2)}
+                         :bins (hist-bytes->histo-bins2 h2)}
                         {:step 4
-                         :bins (hist-bytes->histo-bins h3)}
+                         :bins (hist-bytes->histo-bins2 h3)}
                         {:step 5
-                         :bins (hist-bytes->histo-bins h4)}
+                         :bins (hist-bytes->histo-bins2 h4)}
                         {:step 6
-                         :bins (hist-bytes->histo-bins h5)}
+                         :bins (hist-bytes->histo-bins2 h5)}
                         {:step 7
-                         :bins (hist-bytes->histo-bins h6)}
+                         :bins (hist-bytes->histo-bins2 h6)}
                         #_{:step 8
                          :bins (hist-bytes->histo-bins h7)}])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
