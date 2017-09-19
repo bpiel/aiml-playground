@@ -30,10 +30,10 @@
 
 (defn respond-transit
   [data & [ws]]
-  (let [ws' (or ws @ws-conn)]
+  (when-let [ws' (or ws @ws-conn)]
     (ms/try-put! ws'
                  (String. (->transit data))
-                 1000)))
+                 200)))
 
 #_(respond-transit {:nodes [{:data {:id "a"}} {:data {:id "b"}} {:data {:id "c"}}] :edges [{:data {:source "a" :target "b"}}]})
 

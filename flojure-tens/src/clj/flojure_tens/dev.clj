@@ -679,3 +679,17 @@
                                               :control-point-weights [0.5]}}]
                              :elements (select-keys (w-mk-graph-def2)
                                                     [:nodes :edges])}]]])
+
+#_
+(w-push ['histos {:mode "offset"
+                  :timeProperty "step"
+                  :data [{:step 1
+                          :bins [{:x -3.
+                                  :y 1.
+                                  :dx 1.}
+                                 {:x -2.
+                                  :y 2.
+                                  :dx 1.}
+                                 {:x -1.
+                                  :y 5.
+                                  :dx 1.}]}]}])

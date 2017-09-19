@@ -12,6 +12,7 @@
             [flojure-tens.tensor :as tsr]
             [flatland.protobuf.core :as pr]
             [flojure-tens.tf-record :as tfr]
+            [flojure-tens.dev :as dev]
             flojure-tens.grad-desc-opt2
             flojure-tens.gradients2)
   (:import [org.tensorflow.framework Summary]
@@ -53,11 +54,17 @@
                                      :labels labels})
     (ft/produce s out {:data data})))
 
-(let [rn (o/random-standard-normal {:dtype dt/float-kw} [100])
+(let [rn (o/random-uniform {:dtype dt/float-kw} [10000])
       hist (o/histogram-summary "hist" rn)
       {:keys [graph] :as s} (ft/build-all->session [rn hist])]
   (ft/run-global-vars-init s)
-  (def h (ft/produce s hist)))
+  (def h7 (ft/produce s hist)))
+
+(let [rn (o/random-standard-normal {:dtype dt/float-kw} [10000])
+      hist (o/histogram-summary "hist" rn)
+      {:keys [graph] :as s} (ft/build-all->session [rn hist])]
+  (ft/run-global-vars-init s)
+  (def h6 (ft/produce s hist)))
 
 (let [rn (o/identity-tf 1.2)
       smry (o/scalar-summary :smry "smry" rn)
@@ -66,8 +73,67 @@
   (def smry
     (ft/produce s smry)))
 
-(def xxx (pr/protobuf-load SummaryP h))
+(def xxx (pr/protobuf-load SummaryP h7))
 
 (def xxx2 (pr/protobuf-load SummaryP smry))
 
 (clojure.pprint/pprint  xxx)
+
+
+(defn hist-bytes->histo-bins
+  [ba]
+  (let [h (pr/protobuf-load SummaryP ba)
+        {:keys [bucket-limit bucket] mx :max mn :min}
+        (-> h
+            :value
+            first
+            :histo)]
+    (mapv (fn [x x' y]
+            {:x x
+             :y (* y (/ (Math/abs x) (- x' x)))
+             :dx (- x' x)})
+          bucket-limit
+          (-> bucket-limit
+              rest
+              drop-last)
+          bucket)))
+
+
+
+(clojure.pprint/pprint (hist-bytes->histo-bins h3))
+
+(dev/w-push ['histos {:mode "offset"
+                      :timeProperty "step"
+                      :data [{:step 1
+                              :bins (hist-bytes->histo-bins h)}
+                             {:step 2
+                              :bins (hist-bytes->histo-bins h1)}
+                             {:step 3
+                              :bins (hist-bytes->histo-bins h2)}
+                             {:step 4
+                              :bins (hist-bytes->histo-bins h3)}
+                             {:step 5
+                              :bins (hist-bytes->histo-bins h4)}
+                             {:step 6
+                              :bins (hist-bytes->histo-bins h5)}
+                             {:step 7
+                              :bins (hist-bytes->histo-bins h6)}
+                             {:step 8
+                              :bins (hist-bytes->histo-bins h7)}]}])
+
+(clojure.pprint/pprint [{:step 1
+                         :bins (hist-bytes->histo-bins h)}
+                        {:step 2
+                         :bins (hist-bytes->histo-bins h1)}
+                        {:step 3
+                         :bins (hist-bytes->histo-bins h2)}
+                        {:step 4
+                         :bins (hist-bytes->histo-bins h3)}
+                        {:step 5
+                         :bins (hist-bytes->histo-bins h4)}
+                        {:step 6
+                         :bins (hist-bytes->histo-bins h5)}
+                        {:step 7
+                         :bins (hist-bytes->histo-bins h6)}
+                        #_{:step 8
+                         :bins (hist-bytes->histo-bins h7)}])

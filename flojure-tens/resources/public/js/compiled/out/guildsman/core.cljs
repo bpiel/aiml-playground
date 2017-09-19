@@ -45,9 +45,10 @@
 
 (def components
   {;'$/chart #'ch/chart
-   '$/graph #'cy/cytoscape
-   '$/v-box rc/v-box
-   '$/h-box rc/h-box})
+   'histos #'hs/histogram-series
+   'graph #'cy/cytoscape
+   'v-box rc/v-box
+   'h-box rc/h-box})
 
 (defn dispatch-ws-msg
   [{:keys [cmd] :as msg}]
@@ -93,17 +94,6 @@
             :selected nil}]
           (.getElementById js/document "app"))
 
-(r/render [hs/histogram-series {:mode "offset"
-                                :timeProperty "step"
-                                :data [{:step 1
-                                        :bins [{:x -3.
-                                                :y 1.
-                                                :dx 1.}
-                                               {:x -2.
-                                                :y 2.
-                                                :dx 1.}
-                                               {:x -1.
-                                                :y 5.
-                                                :dx 1.}]}]}]
+(r/render [:div "loaded"]
           (.getElementById js/document "app"))
 
