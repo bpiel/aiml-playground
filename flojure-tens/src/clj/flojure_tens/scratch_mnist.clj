@@ -65,8 +65,7 @@
                                       TEST-CASE-COUNT)))
 
 
-
-(time (let [{:keys [data1]}
+#_(time (let [{:keys [data1]}
             (ut/id$->> (o/placeholder :data
                                       dt/float-kw
                                       [-1 784])
@@ -75,7 +74,7 @@
           (def o
             (ft/fetch-map s [:data1] {:data (take 1 @test-data)})))))
 
-(defn log-run
+#_(defn log-run
   [{:keys [session feed fetch]}]
   (swap! @(ns-resolve (the-ns '$g)
                      '$log)
@@ -85,7 +84,7 @@
                                fetch
                                feed)}))
 
-(time (let [{:keys [data1]}
+#_(time (let [{:keys [data1]}
             (ut/id$->> (o/placeholder :data
                                       dt/float-kw
                                       [-1 3])

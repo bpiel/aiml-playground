@@ -92,15 +92,30 @@ x web app w/ graph
 ================
 BIG PLAN
 
-- defn-experiment (better name?)
+- defn-workspace (better name?)
  - CLI style? (:status :start :start-sync)
+ - what does it do?
+   - make ns (dev?)
+   - closes out previous graph/session if overwriting (dev?)
+   - build
+   - train
+     - batches
+     - create summaries (dev?)
+     - init vars
+     - runs
+     - logs summaries (dev?)
+     - update status
+     - final fetch?
+   - predict
+     - load vars?
+     - fetch
 
 - makes ns (named by defn-experiment symbol)
 - captures summaries between runs
 
+- click node -> show histo-series chart
 - click node -> set selected atom
 - click node -> show scalar-series chart
-- click node -> show histo-series chart
 - show source for selected
 - expand/center/select node by $g/var
 

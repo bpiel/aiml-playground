@@ -54,6 +54,39 @@
                                      :labels labels})
     (ft/produce s out {:data data})))
 
+(ft/def-workspace ws1
+  (let [data (dt/convert-whatever [[1. 2.]
+                                   [1. 3.]
+                                   [2. 3.]
+                                   [2. 4.]]
+                                  dt/float-kw)
+        labels (dt/convert-whatever [[1.]
+                                     [2.]
+                                     [1.]
+                                     [2.]]
+                                    dt/float-kw)
+        {:keys [out opt]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 2])
+                   (l/dense {:units 100})
+                   (l/dense {:units 100})
+                   (l/dense {:id :out
+                             :units 1})
+                   (o/sub (o/placeholder :labels
+                                         dt/float-kw
+                                         [-1 1]))
+                   o/abs
+                   (p/reduce-mean :loss)
+                   (p/grad-desc-opt :opt))]
+    {:build [opt]}))
+
+(ws1 :build)
+
+(dev/activate-dev-mode true)
+
+
+
 (let [rn (o/random-uniform {:dtype dt/float-kw} [10000])
       hist (o/histogram-summary "hist" rn)
       {:keys [graph] :as s} (ft/build-all->session [rn hist])]
@@ -178,7 +211,8 @@
                                 {:layout {:name "dagre"}
             :style [{:selector "node"
                      :style {:content "data(name)"
-                             :border-width 1
+                             :border-width 3
+                             :border-color "#CC9"
                              :font-size 35
                              :background-color "#FFC"
                              :shape "ellipsis"
@@ -191,15 +225,15 @@
                              "curve-style" "unbundled-bezier"
                              :control-point-distances [0]
                              :control-point-weights [0.5]
-                             :line-color "#888"
+                             :line-color "#AAA"
                              :arrow-scale 1.5
-                             :target-arrow-color "#f00"
+                             :target-arrow-color "#d00"
                              :target-arrow-shape "triangle"}}
                     {:selector "node.cy-expand-collapse-collapsed-node"
                      :style {:font-size 40
-                             :background-color "lightgreen"
-                             :border-width 8
-                             :border-color "darkgreen"
+                             :background-color "#FFC"
+                             :border-width 5
+                             :border-color "#CC9"
                              :shape "rectangle"
                              :height 100
                              :width 400
@@ -209,7 +243,7 @@
                      :style {:font-size 80
                              :background-color "white"
                              :text-valign "top"
-                             :border-color "lightgreen"
+                             :border-color "CC9"
                              :border-width 10
                              }}
                     {:selector ":selected"
@@ -233,29 +267,3 @@
                          :bins (hist-bytes->histo-bins2 h6)}
                         #_{:step 8
                          :bins (hist-bytes->histo-bins h7)}])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

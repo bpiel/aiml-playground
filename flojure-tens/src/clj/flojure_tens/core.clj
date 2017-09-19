@@ -14,6 +14,9 @@
   (:import [flojure_tens.common Graph]
            [flojure_tens.session Session]))
 
+#_ (def plugins (atom #{}))
+(defonce plugins (atom #{})) ;; only support one for now?
+
 (defmulti close (fn [v] (type v)))
 
 (defmethod close :default [_])
@@ -43,13 +46,11 @@
   (with-close-let* bindings body))
 
 (defn tensor->value [tensor]
-  (:value tensor)
-  #_ (tsr/get-value-clj tensor))
+  (:value tensor))
 
 (defn delete-tensor->value [tensor]
   (let [r (tensor->value tensor)]
-    (tm/release-tensor-ref tensor)
-    #_(tfnative.Tensor/delete (:handle tensor))
+    (tm/release-tensor-ref tensor)    
     r))
 
 (defn graph->session [^Graph graph]
@@ -102,12 +103,11 @@
 
 (defn fetch [^Session session plan & [feed]]
   (-> (fetch->tensor session plan feed)
-      :value
-      #_delete-tensor->value))
+      :value))
 
 (defn fetch-all [^Session session plans & [feed]]
   (->> (fetch-all->tensors session plans feed)
-       (map :value #_delete-tensor->value)))
+       (map :value)))
 
 (defn fetch-map [^Session session plans & [feed]]
   (let [g (:graph session)]
@@ -170,6 +170,105 @@
   ([^Session session plan & [feed]]
    (build->graph (:graph session) plan)
    (fetch session plan feed)))
+
+(defmulti call-plugin (fn [plugin-id+hook & args] (clojure.pprint/pprint plugin-id+hook) plugin-id+hook))
+(defmethod call-plugin :default
+  [[_ hook] & args] nil)
+
+(defn- call-plugins
+  [hook & args]
+  (let [plugin-ids @plugins]
+    (mapv #(apply call-plugin [% hook] args)
+            plugin-ids)))
+
+(defn- ws-init-graph&session
+  [state plug-fn]
+  (if-let [session (:session @state)]
+    session
+    (let [s (build->session [])]
+      (plug-fn :init s)
+      (swap! state assoc :session s)
+      s)))
+
+(defmulti workspace-cmd (fn [cmd & args] cmd))
+
+(defmethod workspace-cmd :build
+  [_ state ws-name {:keys [build]} plug-fn]
+  (let [{:keys [graph]}  (ws-init-graph&session state plug-fn)]
+    (plug-fn :pre-build)
+    (build-all->graph graph build)
+    (plug-fn :post-build)
+    true))
+
+(defn- mk-workspace*
+  [state ws-name ws-def plug-fn & [cmd & args]]
+  (if cmd
+    (apply workspace-cmd cmd state ws-name ws-def plug-fn args)
+    :HI))
+
+(defn mk-workspace
+  [ws-name ws-def]
+  (let [state (atom {})
+        plug-fn (fn [hook & args]
+                  (apply call-plugins hook state ws-name ws-def args))]
+    (plug-fn :new)
+    (partial mk-workspace*
+             state
+             ws-name
+             ws-def
+             plug-fn)))
+
+(defmacro def-workspace
+  [ws-name & body]
+  `(def ~ws-name
+     (mk-workspace '~ws-name
+                   (do ~@body))))
+
+#_
+(def-workspace ws1
+  {:what :who})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
