@@ -44,8 +44,6 @@ goog.addDependency("../re_com/dropdown.js", ['re_com.dropdown'], ['re_com.util',
 goog.addDependency("../re_com/splits.js", ['re_com.splits'], ['re_com.util', 're_com.box', 'reagent.core', 'cljs.core', 're_com.validate']);
 goog.addDependency("../re_com/modal_panel.js", ['re_com.modal_panel'], ['cljs.core', 're_com.validate']);
 goog.addDependency("../re_com/core.js", ['re_com.core'], ['re_com.popover', 're_com.text', 're_com.box', 'cljs.core', 're_com.typeahead', 're_com.tabs', 're_com.alert', 're_com.datepicker', 're_com.input_time', 're_com.buttons', 're_com.tour', 're_com.selection_list', 're_com.dropdown', 're_com.misc', 're_com.splits', 're_com.modal_panel']);
-goog.addDependency("../cljsjs/d3/development/d3.inc.js", ['cljsjs.d3'], []);
-goog.addDependency("../cljsjs/c3/development/c3.inc.js", ['cljsjs.c3'], ['cljsjs.d3']);
 goog.addDependency("../re_frame/interop.js", ['re_frame.interop'], ['reagent.ratom', 'reagent.core', 'cljs.core', 'goog.async.nextTick']);
 goog.addDependency("../re_frame/loggers.js", ['re_frame.loggers'], ['cljs.core', 'clojure.set']);
 goog.addDependency("../re_frame/interceptor.js", ['re_frame.interceptor'], ['re_frame.interop', 'cljs.core', 'clojure.set', 're_frame.loggers']);
@@ -61,7 +59,7 @@ goog.addDependency("../clojure/data.js", ['clojure.data'], ['cljs.core', 'clojur
 goog.addDependency("../re_frame/std_interceptors.js", ['re_frame.std_interceptors'], ['re_frame.interceptor', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.cofx', 'clojure.data', 're_frame.db']);
 goog.addDependency("../re_frame/subs.js", ['re_frame.subs'], ['re_frame.interop', 're_frame.trace', 're_frame.registrar', 'cljs.core', 're_frame.utils', 're_frame.loggers', 're_frame.db']);
 goog.addDependency("../re_frame/core.js", ['re_frame.core'], ['re_frame.interop', 're_frame.interceptor', 're_frame.events', 're_frame.fx', 're_frame.registrar', 'cljs.core', 're_frame.router', 'clojure.set', 're_frame.std_interceptors', 're_frame.loggers', 're_frame.subs', 're_frame.cofx', 're_frame.db']);
-goog.addDependency("../guildsman/chart.js", ['guildsman.chart'], ['re_com.core', 'cljsjs.c3', 'reagent.core', 'cljs.core', 're_frame.core']);
+goog.addDependency("../guildsman/histogram_series.js", ['guildsman.histogram_series'], ['re_com.core', 'reagent.core', 'cljs.core', 're_frame.core']);
 goog.addDependency("../guildsman/cytoscape.js", ['guildsman.cytoscape'], ['re_com.core', 'reagent.core', 'cljs.core', 're_frame.core']);
 goog.addDependency("../com/cognitect/transit/util.js", ['com.cognitect.transit.util'], ['goog.object']);
 goog.addDependency("../com/cognitect/transit/eq.js", ['com.cognitect.transit.eq'], ['com.cognitect.transit.util']);
@@ -111,6 +109,7 @@ goog.addDependency("../devtools/formatters.js", ['devtools.formatters'], ['devto
 goog.addDependency("../cljs/stacktrace.js", ['cljs.stacktrace'], ['goog.string', 'cljs.core', 'clojure.string']);
 goog.addDependency("../devtools/hints.js", ['devtools.hints'], ['cljs.stacktrace', 'cljs.core', 'devtools.context', 'devtools.prefs']);
 goog.addDependency("../devtools/core.js", ['devtools.core'], ['devtools.toolbox', 'devtools.util', 'cljs.core', 'devtools.async', 'devtools.formatters', 'devtools.hints', 'devtools.defaults', 'devtools.prefs']);
-goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['re_com.core', 'cljsjs.c3', 'reagent.core', 'cljs.core', 'guildsman.chart', 'goog.history.EventType', 'goog.History', 'guildsman.cytoscape', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
+goog.addDependency("../cljsjs/d3/development/d3.inc.js", ['cljsjs.d3'], []);
+goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['guildsman.histogram_series', 're_com.core', 'reagent.core', 'cljs.core', 'goog.history.EventType', 'goog.History', 'guildsman.cytoscape', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core', 'cljsjs.d3']);
 goog.addDependency("../process/env.js", ['process.env'], ['cljs.core']);
 goog.addDependency("../devtools/preload.js", ['devtools.preload'], ['cljs.core', 'devtools.core', 'devtools.prefs']);

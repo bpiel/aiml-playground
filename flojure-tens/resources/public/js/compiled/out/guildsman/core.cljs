@@ -7,8 +7,8 @@
             [devtools.core :as devtools]
             [figwheel.client :as figwheel :include-macros true]
             [cognitect.transit :as t]
-            cljsjs.c3
-            [guildsman.chart :as ch]
+            cljsjs.d3
+            [guildsman.histogram-series :as hs]
             [guildsman.cytoscape :as cy])
   (:import goog.History))
 
@@ -21,7 +21,7 @@
 (def json-reader (t/reader :json))
 
 
-(defn chart
+#_(defn chart
   [m]
   (println "chart")
   (println m)
@@ -44,7 +44,7 @@
 
 
 (def components
-  {'$/chart #'ch/chart
+  {;'$/chart #'ch/chart
    '$/graph #'cy/cytoscape
    '$/v-box rc/v-box
    '$/h-box rc/h-box})
@@ -84,7 +84,7 @@
 
 (println "done loading.")
 
-(r/render [ch/chart
+#_(r/render [ch/chart
            {:config
             {:transition {:duration 0}}
             :data
@@ -92,3 +92,18 @@
             :highlighted nil
             :selected nil}]
           (.getElementById js/document "app"))
+
+(r/render [hs/histogram-series {:mode "offset"
+                                :timeProperty "step"
+                                :data [{:step 1
+                                        :bins [{:x -3.
+                                                :y 1.
+                                                :dx 1.}
+                                               {:x -2.
+                                                :y 2.
+                                                :dx 1.}
+                                               {:x -1.
+                                                :y 5.
+                                                :dx 1.}]}]}]
+          (.getElementById js/document "app"))
+

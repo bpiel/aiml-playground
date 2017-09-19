@@ -314,21 +314,4 @@
     (r/create-class {:component-did-mount (partial cyto-comp-did-mount state)
                      :component-did-update (partial cyto-comp-did-update state)
                      :component-will-update (partial cyto-comp-will-update state)
-                     :reagent-render (partial cyto-reagent-render state)})))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                     :reagent-render (partial cyto-reagent-render state)}))) 

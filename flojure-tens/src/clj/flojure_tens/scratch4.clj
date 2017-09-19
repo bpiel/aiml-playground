@@ -18,8 +18,7 @@
            [flojure_tens.tensor TensorNDArray]
            [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
            [org.tensorflow.util Event]
-           [flojure_tens.common Graph Op GraphRef]
-           [com.macfaq.io LittleEndianOutputStream]))
+           [flojure_tens.common Graph Op GraphRef]))
 
 (def SummaryP (pr/protodef Summary))
 
@@ -66,10 +65,6 @@
   (ft/run-global-vars-init s)
   (def smry
     (ft/produce s smry)))
-
-(count (.getBytes h))
-
-(count (.getBytes smry))
 
 (def xxx (pr/protobuf-load SummaryP h))
 
