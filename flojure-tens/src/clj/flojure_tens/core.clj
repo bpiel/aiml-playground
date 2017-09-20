@@ -202,14 +202,16 @@
 (defn ws-train
   [{:keys [state ws-def] :as ws}]
   (let [{:keys [train]} ws-def
-        {:keys [targets feed fetch]} train
+        {:keys [targets feed fetch steps]} train
         {:keys [session]} @state]
     (run-global-vars-init session)
-    (ut/$- ->> (call-plugins :train-fetch ws)
-           (apply concat fetch)
-           distinct
-           (fetch-map session $ feed targets)
-           (call-plugins :log-step ws $ 1))
+    (let [fetch' (->> (call-plugins :train-fetch ws)
+                      (apply concat fetch)
+                      distinct)]
+      (future (dotimes [step steps]
+                (ut/$- ->> fetch'
+                       (fetch-map session $ feed targets)
+                       (future (call-plugins :log-step ws $ step))))))
     true))
 
 (defn- ws-do-auto

@@ -157,7 +157,8 @@
     :array? (is-type?-fn (type (long-array 0)))
     :scalar java.lang.Long
     :scalar-fn long
-    :array-fn long-array}
+    :array-fn long-array
+    :protobuf :dt-int64}
    {:kw :bool 
     :native 10  
     :byte-size 1 

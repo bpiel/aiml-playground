@@ -81,6 +81,17 @@
       :inputs [target]
       :no-auto-scope? true})))
 
+(defn grad-desc-opt2
+  "MACRO"
+  [id target & [scope]]
+  (sc/with-push-both-scopes (or scope :gradients)
+    (sc/assoc-scopes-to-plan
+     {:macro :grad-desc-opt2
+      :id id
+      :inputs [target]
+      :no-auto-scope? true})))
+
+
 (defn gradient
   "MACRO"
   [id y dxs output-idx]

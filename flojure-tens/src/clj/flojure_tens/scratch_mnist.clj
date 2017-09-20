@@ -7,6 +7,8 @@
             [flojure-tens.data-type :as dt]
             [flojure-tens.util :as ut]
             [clojure.java.io :as io]
+            [flojure-tens.grad-desc-opt2 :as gdo2]
+            flojure-tens.gradients2
             [flatland.protobuf.core :as pr])
   (:import [java.io DataInputStream File FileInputStream BufferedInputStream]
            [org.tensorflow.framework Summary]))
@@ -83,6 +85,31 @@
              :fetch []}}))
 
 
+(ft/def-workspace ws1
+  (let [{:keys [logits classes]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 784])
+                   (l/dense {:id :logits
+                             :units 10})
+                   (o/arg-max :classes $ 1))
+        {:keys [loss opt]}
+        (ut/id$->> (o/placeholder :labels
+                                  dt/int-kw
+                                  [-1])
+                   (p/one-hot $ 10)
+                   (o/softmax-cross-entropy-with-logits logits)
+                   (p/reduce-mean :loss)
+                   (p/grad-desc-opt2 :opt))]
+    {:auto [:build :train ]
+     :build [classes opt]
+     :summaries [logits] ;; TODO move to :train
+     :train {:targets [opt]
+             :feed {:data @test-data
+                    :labels @test-labels}
+             :fetch []
+             :steps 3}}))
+
 
 #_(def SummaryP (pr/protodef Summary))
 
@@ -130,3 +157,10 @@
           (log-run {:session s
                     :feed {:data [1. 3. 4.]}
                     :fetch [:data1]}))))
+
+
+
+
+
+
+
