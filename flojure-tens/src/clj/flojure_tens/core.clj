@@ -209,8 +209,16 @@
            (apply concat fetch)
            distinct
            (fetch-map session $ feed targets)
-           (call-plugins :log-step ws))
+           (call-plugins :log-step ws $ 1))
     true))
+
+(defn- ws-do-auto
+  [{:keys [ws-def] :as ws}]
+  (doseq [a (:auto ws-def)]
+    (case a
+      :build (ws-build ws)
+      :train (ws-train ws)
+      (throw (Exception. (str "Unknown auto " a))))))
 
 (defn mk-workspace
   [ws-name ws-def]
@@ -219,6 +227,7 @@
            :ws-def ws-def
            :plugins @plugins}]
     (call-plugins :new m)
+    (ws-do-auto m)
     m))
 
 (defmacro def-workspace

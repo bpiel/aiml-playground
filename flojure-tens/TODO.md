@@ -110,8 +110,10 @@ BIG PLAN
      - load vars?
      - fetch
 
-- makes ns (named by defn-experiment symbol)
-- captures summaries between runs
+x makes ns (named by defn-experiment symbol)
+x captures summaries between runs
+
+- :auto
 
 - click node -> show histo-series chart
 - click node -> set selected atom

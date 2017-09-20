@@ -15,6 +15,10 @@
 (defonce server (atom nil))
 (defonce ws-conn (atom nil))
 
+(def view (atom {:left [:div]
+                 :right [:div]
+                 :selected nil}))
+
 (defn ->transit
   [v]
   (def v1 v)
@@ -34,6 +38,21 @@
     (ms/try-put! ws'
                  (String. (->transit data))
                  200)))
+
+(defn diff-views
+  [v1 v2]
+  (merge-with (fn [a b]
+                (when-not (= a b)
+                  (or b [:div])))
+              v1 v2))
+
+(defn update-view
+  [new-view]
+  (let [view' @view]
+    (reset! view new-view)
+    (->> new-view
+         (diff-views view')
+         respond-transit)))
 
 #_(respond-transit {:nodes [{:data {:id "a"}} {:data {:id "b"}} {:data {:id "c"}}] :edges [{:data {:source "a" :target "b"}}]})
 
@@ -88,3 +107,7 @@
 #_ (stop-server)
 
 #_(start-server)
+
+
+
+

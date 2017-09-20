@@ -50,17 +50,22 @@
    'v-box rc/v-box
    'h-box rc/h-box})
 
+(defn mk-renderable
+  [{:keys [left right selected]}]
+  [rc/h-box :children
+   [(clojure.walk/prewalk-replace components left)
+    (clojure.walk/prewalk-replace components right)]])
+
 (defn dispatch-ws-msg
-  [{:keys [cmd] :as msg}]
-  (r/render (clojure.walk/prewalk-replace components
-                                          msg)
+  [msg]
+  (r/render (mk-renderable msg)
             (.getElementById js/document "app")))
 
 (defn ws-onmessage
   [data]
   (println (.-data data))
   (let [d (t/read json-reader (.-data data))]
-    (println d)
+#_    (println d)
     (dispatch-ws-msg d)))
 
 (defn init-ws
@@ -75,6 +80,7 @@
   :websocket-url "ws://localhost:3449/figwheel-ws"
 ;  :on-jsload mount-components
   )
+
 
 #_(devtools/install!)
 

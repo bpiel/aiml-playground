@@ -72,14 +72,17 @@
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
-                   (o/identity-tf :data1)
+                   (o/identity-tf :data-id)
                    (l/dense {:id :logits
                              :units 10} ))]
-    {:build [logits]
+    {:auto [:build :train]
+     :build [logits]
      :summaries [logits] ;; TODO move to :train
      :train {:targets []
              :feed {:data @test-data}
              :fetch []}}))
+
+
 
 #_(def SummaryP (pr/protodef Summary))
 

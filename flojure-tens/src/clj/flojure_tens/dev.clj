@@ -133,6 +133,43 @@
 
 #_(w-push-histos @$.ws1/$log "summaries/logits/BiasAdd_11")
 
+(defn w-mk-histos-data*
+  [selected agg entry]
+  (let [re (->> selected
+                (format "summaries/%s($|/.*)?")
+                re-pattern)]
+    (merge-with into
+                agg
+                (into {}
+                      (for [[k v] entry]
+                        (when (and (string? k)
+                                   (re-find re k))
+                          [k [{:step (:step entry)
+                                :bins v}]]))))))
+
+(defn w-mk-histos-data
+  [selected log]
+  (reduce (partial w-mk-histos-data* selected)
+          {}
+          log))
+
+(defn w-mk-histos
+  [selected log]
+  {:mode "offset"
+   :timeProperty "step"
+   :data (or (some-> (w-mk-histos-data selected log)
+                     not-empty
+                     vals
+                     first)
+             [])})
+
+(defn w-update
+  [^Graph g selected log]
+  (wsvr/update-view
+   {:left ['graph (w-mk-graph-def2 g)]
+    :right ['histos (w-mk-histos selected log)]
+    :selected selected}))
+
 (defn w-push-histos
   [log id]
   (w-push ['histos
@@ -175,7 +212,7 @@
                                                 :border-color "#CC9"
                                                 :shape "rectangle"
                                                 :height 100
-                                                :width 400
+                                                :width 300
                                                 :text-valign "center"
                                                 }}
                                        {:selector ":parent"
@@ -258,7 +295,7 @@
              update-in [::dev :summaries]
              (fnil into #{})
              (set smries)))
-    (w-push-graph graph)))
+    (w-update graph nil [])))
 
 (defmethod ft/call-plugin [::dev :train-fetch]
   [_ {:keys [state]}]
@@ -325,37 +362,26 @@
                              agg
                              nxt)))))))
 
-#_(clojure.pprint/pprint (hist-bytes->histo-bins2 $s/*))
-
 (defn- fetched->log-entry
   [^Graph g summarized fetched]
-  (let [#_ (targets (map (partial opn/find-op g) summarized))
-        #_ (smry->trgt (ut/for->map [t-op targets]
-                                    [(op->summary-id t-op)
-                                     (:id t-op)]))
-;        smry-ids (keys smry->trgt)
-        ]
-    (ut/$- -> fetched
-           (select-keys summarized)
-#_           (clojure.set/rename-keys smry->trgt)
-           (ut/fmap hist-bytes->histo-bins2
-                    $))))
-
-#_(fetched->log-entry $s/g
-                    $s/summarized
-                    $s/fetched4)
+  (ut/$- -> fetched
+         (select-keys summarized)
+         (ut/fmap hist-bytes->histo-bins2
+                  $)))
 
 (defmethod ft/call-plugin [::dev :log-step]
-  [_ {:keys [state ws-def]} fetched]
+  [_ {:keys [state ws-def]} fetched step]
   (let [state' @state
         dev-ns (-> state' ::dev :ns)
         graph  (-> state' :session :graph)
         summaries (-> state' ::dev :summaries)
         log-atom @(ns-resolve dev-ns '$log)]
     (swap! log-atom conj
-           (fetched->log-entry graph
-                               summaries
-                               fetched))))
+           (assoc (fetched->log-entry graph
+                                      summaries
+                                      fetched)
+                  :step step))
+    (w-update graph "logits" @log-atom)))
 
 (defn w-mk-node-defs
   [{:keys [id]}]
@@ -424,8 +450,10 @@
 (defn filter-cyto-edges
   [edges]
   (filter (fn [{:keys [data]}]
-            (= (nil? (re-find #"gradient" (:source data)))
-                (nil? (re-find #"gradient" (:target data)))))
+            (and (= (nil? (re-find #"gradient" (:source data)))
+                    (nil? (re-find #"gradient" (:target data))))
+                 (= (nil? (re-find #"summaries" (:source data)))
+                    (nil? (re-find #"summaries" (:target data))))))
           edges))
 
 (defn filter-cyto-nodes
