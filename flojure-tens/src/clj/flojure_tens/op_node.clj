@@ -31,6 +31,15 @@
        ((gr/hash->id g))
        ((gr/id->node g))))
 
+(defn find-op
+  [^Graph g qry]
+  (if (map? qry)
+    (get-op-by-plan g qry)
+    (let [qry' (if (keyword? qry)
+                 (name qry)
+                 qry)]
+      ((gr/id->node g) qry'))))
+
 (defn node-def->plan
   [node-def]
   (let [op-def (-> node-def :op ogc/proc-op-list-by-name)]

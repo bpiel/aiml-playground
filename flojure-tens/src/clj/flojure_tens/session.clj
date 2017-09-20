@@ -37,6 +37,7 @@
   [^Graph g x]
   (cond (com/Op? x) x
         (keyword? x) ((gr/id->node g) (name x))
+        (string? x) ((gr/id->node g) x)
         (:op x) (op-node/get-op-by-plan g x)
         (:macro x) (->> x
                         (mcro/macro-plan->op-plan g)
@@ -117,12 +118,12 @@
     (mapv tm/get-tensor-ref-by-handle
           handles)))
 
-(defn fetch-all->tensors [^Session session plans & [feed]]
-  (->> (mk-run-req plans nil feed)
+(defn fetch-all->tensors [^Session session plans & [feed targets]]
+  (->> (mk-run-req plans targets feed)
        (run-req->tensors session)))
 
-(defn fetch->tensor [^Session session plan & [feed]]
-  (first (fetch-all->tensors session [plan] feed)))
+(defn fetch->tensor [^Session session plan & [feed targets]]
+  (first (fetch-all->tensors session [plan] feed targets)))
 
 (defn run [^Session session plan & [feed]]
   (run-req->tensors session

@@ -6,8 +6,10 @@
             [flojure-tens.layers :as l]
             [flojure-tens.data-type :as dt]
             [flojure-tens.util :as ut]
-            [clojure.java.io :as io])
-  (:import [java.io DataInputStream File FileInputStream BufferedInputStream]))
+            [clojure.java.io :as io]
+            [flatland.protobuf.core :as pr])
+  (:import [java.io DataInputStream File FileInputStream BufferedInputStream]
+           [org.tensorflow.framework Summary]))
 
 (def TEST-CASE-COUNT 10000)
 (def TRAIN-CASE-COUNT 60000)
@@ -65,6 +67,35 @@
                                       TEST-CASE-COUNT)))
 
 
+(ft/def-workspace ws1
+  (let [{:keys [data1]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 784])
+                   (o/identity-tf :data1))]
+    {:build [data1]
+     :summaries [data1] ;; TODO move to :train
+     :train {:targets []
+             :feed {:data @test-data}
+             :fetch ["summaries/data1"]}}))
+
+#_(def SummaryP (pr/protodef Summary))
+
+#_(pr/protobuf-load SummaryP
+                  (-> @$.ws1/$log
+                      first
+                      (get "summaries/data1")))
+
+
+#_ (do
+     (ft/ws-build ws1)
+
+     (ft/ws-train ws1)
+
+     (clojure.pprint/pprint ws1))
+
+
+
 #_(time (let [{:keys [data1]}
             (ut/id$->> (o/placeholder :data
                                       dt/float-kw
@@ -94,3 +125,33 @@
           (log-run {:session s
                     :feed {:data [1. 3. 4.]}
                     :fetch [:data1]}))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

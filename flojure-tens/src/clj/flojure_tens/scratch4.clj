@@ -79,11 +79,13 @@
                    o/abs
                    (p/reduce-mean :loss)
                    (p/grad-desc-opt :opt))]
-    {:build [opt]}))
+    {:build [opt]
+     :summaries [:data]}))
 
-(ws1 :build)
+(ft/ws-build ws1)
 
 (dev/activate-dev-mode true)
+
 
 
 

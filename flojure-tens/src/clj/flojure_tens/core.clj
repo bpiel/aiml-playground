@@ -98,23 +98,23 @@
 (defn fetch->tensor [^Session session plan & [feed]]
   (sess/fetch->tensor session plan feed))
 
-(defn fetch-all->tensors [^Session session plans & [feed]]
-  (sess/fetch-all->tensors session plans feed))
+(defn fetch-all->tensors [^Session session plans & [feed targets]]
+  (sess/fetch-all->tensors session plans feed targets))
 
 (defn fetch [^Session session plan & [feed]]
   (-> (fetch->tensor session plan feed)
       :value))
 
-(defn fetch-all [^Session session plans & [feed]]
-  (->> (fetch-all->tensors session plans feed)
+(defn fetch-all [^Session session plans & [feed targets]]
+  (->> (fetch-all->tensors session plans feed targets)
        (map :value)))
 
-(defn fetch-map [^Session session plans & [feed]]
+(defn fetch-map [^Session session plans & [feed targets]]
   (let [g (:graph session)]
     (zipmap (map (comp :id
-                       (partial opn/get-op-by-plan g))
+                       (partial opn/find-op g))
                  plans)
-            (fetch-all session plans feed))))
+            (fetch-all session plans feed targets))))
 
 (defn exec
   ([plan]
@@ -186,17 +186,27 @@
   (if-let [session (:session @state)]
     session
     (let [s (build->session [])]
-      (call-plugins :init m)
+      (call-plugins :init m s)
       (swap! state assoc :session s)
       s)))
 
 (defn ws-build
-  [m]
+  [{:keys [state ws-def] :as m}]
   (let [{:keys [graph]}  (ws-init-graph&session m)]
     (call-plugins :pre-build m)
-    (build-all->graph graph build)
+    (build-all->graph graph (:build ws-def))
     (call-plugins :post-build m)
     true))
+
+(defn ws-train
+  [{:keys [state ws-def] :as ws}]
+  (let [{:keys [train]} ws-def
+        {:keys [targets feed fetch]} train
+        {:keys [session]} @state]
+    (->> (fetch-map session fetch feed targets)
+         (call-plugins :log-step ws))
+    true))
+
 
 (defn mk-workspace
   [ws-name ws-def]
@@ -216,3 +226,43 @@
 #_
 (def-workspace ws1
   {:what :who})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
