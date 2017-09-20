@@ -131,7 +131,7 @@
 
 #_ (clojure.pprint/pprint  @$.ws1/$log)
 
-#_(w-push-histos @$.ws1/$log "data")
+#_(w-push-histos @$.ws1/$log "summaries/logits/BiasAdd_11")
 
 (defn w-push-histos
   [log id]
@@ -274,7 +274,7 @@
             :value
             first
             :histo)]
-    {:mx (or mn (-> bucket-limit drop-last last))
+    {:mx (or mx (-> bucket-limit drop-last last))
      :mn (or mn (first bucket-limit)) ;; because :min is null sometimes?
      :bins (mapv (fn [x x' y]
                    {:x x
@@ -329,14 +329,15 @@
 
 (defn- fetched->log-entry
   [^Graph g summarized fetched]
-  (let [targets (map (partial opn/find-op g) summarized)
-        smry->trgt (ut/for->map [t-op targets]
-                                [(op->summary-id t-op)
-                                 (:id t-op)])
-        smry-ids (keys smry->trgt)]
+  (let [#_ (targets (map (partial opn/find-op g) summarized))
+        #_ (smry->trgt (ut/for->map [t-op targets]
+                                    [(op->summary-id t-op)
+                                     (:id t-op)]))
+;        smry-ids (keys smry->trgt)
+        ]
     (ut/$- -> fetched
-           (select-keys smry-ids)
-           (clojure.set/rename-keys smry->trgt)
+           (select-keys summarized)
+#_           (clojure.set/rename-keys smry->trgt)
            (ut/fmap hist-bytes->histo-bins2
                     $))))
 
@@ -346,9 +347,10 @@
 
 (defmethod ft/call-plugin [::dev :log-step]
   [_ {:keys [state ws-def]} fetched]
-  (let [dev-ns (-> @state ::dev :ns)
-        graph  (-> @state :session :graph)
-        {:keys [summaries]} ws-def
+  (let [state' @state
+        dev-ns (-> state' ::dev :ns)
+        graph  (-> state' :session :graph)
+        summaries (-> state' ::dev :summaries)
         log-atom @(ns-resolve dev-ns '$log)]
     (swap! log-atom conj
            (fetched->log-entry graph
