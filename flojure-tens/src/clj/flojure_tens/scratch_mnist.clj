@@ -24,7 +24,7 @@
       (DataInputStream.)))
 
 (defn normalize-img-byte [x]
-  (float (- (/ x 255.0) 0.5)))
+  (float (- (/ x 255.0) 0. #_0.5)))
 
 (defn read-mnist-data
   [res-name n size]
@@ -68,16 +68,18 @@
 
 
 (ft/def-workspace ws1
-  (let [{:keys [data1]}
+  (let [{:keys [logits data data1]}
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
-                   (o/identity-tf :data1))]
-    {:build [data1]
-     :summaries [data1] ;; TODO move to :train
+                   (o/identity-tf :data1)
+                   (l/dense {:id :logits
+                             :units 10} ))]
+    {:build [logits]
+     :summaries [logits] ;; TODO move to :train
      :train {:targets []
              :feed {:data @test-data}
-             :fetch ["summaries/data1"]}}))
+             :fetch []}}))
 
 #_(def SummaryP (pr/protodef Summary))
 

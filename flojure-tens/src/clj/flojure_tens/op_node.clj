@@ -33,12 +33,22 @@
 
 (defn find-op
   [^Graph g qry]
-  (if (map? qry)
-    (get-op-by-plan g qry)
-    (let [qry' (if (keyword? qry)
-                 (name qry)
-                 qry)]
-      ((gr/id->node g) qry'))))
+  (if (map? qry) (get-op-by-plan g qry) 
+      (let [qry' (if (keyword? qry)
+                   (name qry)
+                   qry)]
+        ((gr/id->node g) qry'))))
+
+(defn find-ops
+  [^Graph g qry]
+  (or (when (ut/regex? qry)
+        (let [id->node (gr/id->node g)]
+          (->> id->node
+               keys
+               (filter (partial re-find qry))
+               (mapv id->node))))
+      (when-let [r (find-op g qry)]
+        [r])))
 
 (defn node-def->plan
   [node-def]

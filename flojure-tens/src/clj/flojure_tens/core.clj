@@ -4,6 +4,7 @@
             [flojure-tens.session :as sess]
             [flojure-tens.tensor-mgr :as tm]
             [flojure-tens.op-node :as opn]
+            [flojure-tens.util :as ut]
             flojure-tens.macros
             flojure-tens.gradients
             flojure-tens.grad-desc-opt
@@ -203,10 +204,13 @@
   (let [{:keys [train]} ws-def
         {:keys [targets feed fetch]} train
         {:keys [session]} @state]
-    (->> (fetch-map session fetch feed targets)
-         (call-plugins :log-step ws))
+    (run-global-vars-init session)
+    (ut/$- ->> (call-plugins :train-fetch ws)
+           (apply concat fetch)
+           distinct
+           (fetch-map session $ feed targets)
+           (call-plugins :log-step ws))
     true))
-
 
 (defn mk-workspace
   [ws-name ws-def]

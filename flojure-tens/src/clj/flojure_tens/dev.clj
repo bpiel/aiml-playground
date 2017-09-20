@@ -3,6 +3,7 @@
             [flojure-tens.scope :as sc]
             [flojure-tens.shape :as sh]
             [flojure-tens.ops :as o]
+            [flojure-tens.macros :as mcro]
             [flojure-tens.op-node :as opn]
             [flojure-tens.ops-gen :as ops-gen]
             [flojure-tens.plan-time-comps :as p]
@@ -49,10 +50,12 @@
 
 (defmethod ft/call-plugin [::dev :new]
   [_ {:keys [state ws-name]}]
-  (let [ns-sym (mk-ns-sym ws-name)]
-    (release-dev-ns ns-sym)
+  (let [ns-sym (mk-ns-sym ws-name)
+        _ (release-dev-ns ns-sym)
+        dev-ns (create-ns ns-sym)]
     (swap! state assoc-in [::dev :ns]
-           (create-ns ns-sym))
+           dev-ns)
+    (intern dev-ns '$log (atom []))
     (println "created ns "ns-sym)))
 
 (defn rebuild-op-fns
@@ -126,26 +129,19 @@
 
 (defn drop-output-idx [id] (first (clojure.string/split id #":")))
 
+#_ (clojure.pprint/pprint  @$.ws1/$log)
+
+#_(w-push-histos @$.ws1/$log "data")
+
 (defn w-push-histos
   [log id]
-#_  (dev/w-push ['histos {:mode "offset"
-                        :timeProperty "step"
-                        :data [{:step 1
-                                :bins (hist-bytes->histo-bins2 h)}
-                               {:step 2
-                                :bins (hist-bytes->histo-bins2 h1)}
-                               {:step 3
-                                :bins (hist-bytes->histo-bins2 h2)}
-                               {:step 4
-                                :bins (hist-bytes->histo-bins2 h3)}
-                               {:step 5
-                                :bins (hist-bytes->histo-bins2 h4)}
-                               {:step 6
-                                :bins (hist-bytes->histo-bins2 h5)}
-                               {:step 7
-                                :bins (hist-bytes->histo-bins2 h6)}
-                               {:step 8
-                                :bins (hist-bytes->histo-bins2 h7)}]}]))
+  (w-push ['histos
+           {:mode "offset"
+            :timeProperty "step"
+            :data (vec (map-indexed (fn [i entry]
+                                      {:step i
+                                       :bins (get entry id)})
+                                    log))}]))
 
 (defn w-push-graph
   [^Graph g]
@@ -198,33 +194,55 @@
   [_ {:keys [state ws-def]} {:keys [graph] :as session}]
   (let [dev-ns (-> @state ::dev :ns)]
     (intern dev-ns 'graph graph)
-    (intern dev-ns 'session session)
-    (intern dev-ns '$log (atom []))))
+    (intern dev-ns 'session session)))
 
 (defn op->summary-id [op]
   (->> op
        :id
        (str "summaries/")))
 
-(defn mk-summary-plans
-  [g target]
-  (let [target' (opn/find-op g target)
-        smry-id (op->summary-id target')
-        scalar? (-> target'
+(defn find-ops-to-summarize
+  [^Graph g target]
+  (distinct
+   (into [(->> target
+               (mcro/macro-plan->op-plan g)
+               (opn/find-op g))]
+         (ut/$- some-> target
+                :id
+                name
+                (str "/.*")
+                re-pattern
+                (opn/find-ops g $)
+                (filter #(-> % :op #{:VariableV2})
+                        $)))))
+
+(defn mk-summary-plan
+  [^Graph g target]
+  (let [smry-id (op->summary-id target)
+        scalar? (-> target
                     opn/get-desc-of-output
                     :shapes
                     first
                     sh/scalar?)]
     (when-not ((gr/id->node g) smry-id)
       (if scalar?
-        (o/scalar-summary {:id smry-id} smry-id target')
-        (o/histogram-summary {:id smry-id} smry-id target')))))
+        (o/scalar-summary {:id smry-id} smry-id target)
+        (o/histogram-summary {:id smry-id} smry-id target)))))
+
+(defn mk-summary-plans
+  [g target]
+  (if-let [target' (opn/find-op g target)]
+    [(mk-summary-plan g target')]
+    (keep (partial mk-summary-plan g)
+          (find-ops-to-summarize g target))))
 
 (defn add-summaries
   [^Graph g summaries]
-  (->> summaries
-       (keep (partial mk-summary-plans g))
-       (ft/build-all->graph g)))
+  (let [added (->> summaries
+                   (mapcat (partial mk-summary-plans g))
+                   (remove nil?))]
+    (ft/build-all->graph g added)
+    added))
 
 (defmethod ft/call-plugin [::dev :post-build]
   [_ {:keys [state ws-def]}]
@@ -232,27 +250,43 @@
         {:keys [summaries]} ws-def
         graph (-> @state :session :graph)]
     (mk-nodes-in-ns graph dev-ns)
-    (add-summaries graph summaries)
+    (if-let [smries (->> summaries
+                         (add-summaries graph )
+                         not-empty
+                         (map :id))]
+      (swap! state
+             update-in [::dev :summaries]
+             (fnil into #{})
+             (set smries)))
     (w-push-graph graph)))
 
+(defmethod ft/call-plugin [::dev :train-fetch]
+  [_ {:keys [state]}]
+  (some-> @state ::dev :summaries))
+
+(defn pb-load-summary [ba] (pr/protobuf-load SummaryP ba))
 
 (defn hist-bytes->histo-bins
   [ba]
-  (let [h (pr/protobuf-load SummaryP ba)
+  (let [h (pb-load-summary ba)
         {:keys [bucket-limit bucket] mx :max mn :min}
         (-> h
             :value
             first
             :histo)]
-    (mapv (fn [x x' y]
-            {:x x
-             :y y
-             :dx (- x' x)})
-          bucket-limit
-          (-> bucket-limit
-              rest
-              drop-last)
-          bucket)))
+    {:mx (or mn (-> bucket-limit drop-last last))
+     :mn (or mn (first bucket-limit)) ;; because :min is null sometimes?
+     :bins (mapv (fn [x x' y]
+                   {:x x
+                    :y y
+                    :dx (- x' x)})
+                 bucket-limit
+                 (-> bucket-limit
+                     rest
+                     drop-last)
+                 bucket)}))
+
+
 
 (defn merge-hists
   [{x1 :x y1 :y dx1 :dx} {y2 :y dx2 :dx}]
@@ -261,34 +295,37 @@
    :dx (+ dx1 dx2)})
 
 (defn normalize-hist
-  [{:keys [y dx] :as h}]
-  (assoc h :y (/ y dx)))
-
-
+  [scale {:keys [y dx] :as h}]
+  (assoc h :y (* scale (/ y dx))))
 
 (defn hist-bytes->histo-bins2
   [ba]
-  (loop [[head & tail] (hist-bytes->histo-bins ba)
-         agg []
-         current nil]
-    (cond (nil? head)
-          (mapv normalize-hist
-                (remove nil?
-                        (conj agg current)))
+  (let [{:keys [mx mn bins]} (hist-bytes->histo-bins ba)
+        spread (- mx mn)
+        min-dx (/ spread 100.)]
+    (loop [[head & tail] bins
+           agg []
+           current nil]
+      (cond (nil? head)
+            (->> current
+                 (conj agg)
+                 (remove nil?)
+                 (mapv (partial normalize-hist
+                                min-dx)))
 
-          (nil? current)
-          (recur tail
-                 agg
-                 head)
+            (nil? current)
+            (recur tail agg head)
 
-          :else (let [{:keys [dx] :as nxt} (merge-hists current head)]
-                  (if (> dx 0.1)
-                    (recur tail
-                           (conj agg nxt)
-                           nil)
-                    (recur tail
-                           agg
-                           nxt))))))
+            :else (let [{:keys [dx] :as nxt} (merge-hists current head)]
+                    (if (> dx min-dx)
+                      (recur tail
+                             (conj agg nxt)
+                             nil)
+                      (recur tail
+                             agg
+                             nxt)))))))
+
+#_(clojure.pprint/pprint (hist-bytes->histo-bins2 $s/*))
 
 (defn- fetched->log-entry
   [^Graph g summarized fetched]

@@ -190,3 +190,7 @@
   (into {}
         (for [[k v] m]
           [k (f v)])))
+
+(defn regex?
+  [v]
+  (isa? (type v) java.util.regex.Pattern))
