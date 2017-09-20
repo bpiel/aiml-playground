@@ -16,7 +16,6 @@
 
 (println "start loading")
 
-(def ws-conn (atom nil))
 (def json-writer (t/writer :json))
 (def json-reader (t/reader :json))
 
@@ -70,6 +69,20 @@
           (when right
             {:right (mk-renderable right)}))))
 
+(rf/reg-event-db
+ :node-select
+ (fn [db [_ node-id]]
+   (rf/dispatch [:ws-send {:select node-id}])
+   (assoc db :selected node-id)))
+
+(rf/reg-event-db
+ :ws-send
+ (fn ws-send [db [_ data]]
+   (println data)
+   (.send (:ws db)
+          (t/write json-writer data))
+   db))
+
 (defn ws-onmessage
   [data]
   (println (.-data data))
@@ -84,9 +97,8 @@
      (do
        (println "ws init'd!")
        (set! (.-onmessage ws) ws-onmessage)
-       (reset! ws-conn ws))
-     (throw (js/Error. "Websocket connection failed!")))
-   db))
+       (assoc db :ws ws))
+     (throw (js/Error. "Websocket connection failed!")))))
 
 (figwheel/watch-and-reload
   :websocket-url "ws://localhost:3449/figwheel-ws"

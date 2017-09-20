@@ -18,6 +18,15 @@
 (def view (atom {:left [:div]
                  :right [:div]
                  :selected nil}))
+(def selected-node (atom nil))
+
+(defn read-transit-string
+  [s]
+  (-> s
+      .getBytes
+      (ByteArrayInputStream.)
+      (t/reader :json)
+      t/read))
 
 (defn ->transit
   [v]
@@ -56,19 +65,13 @@
          (diff-views view')
          respond-transit)))
 
-#_(respond-transit {:nodes [{:data {:id "a"}} {:data {:id "b"}} {:data {:id "c"}}] :edges [{:data {:source "a" :target "b"}}]})
-
-#_(respond-transit (flojure-tens.dev/w-mk-graph-def2))
-
-#_(defmacro xxx [x]
-  `(clojure.pprint/pprint [~*file* ~(meta (second &form))]))
-
-#_(xxx (inc 3))
-
 (defn ws-inbound-handler
   [ws data]
   (def ib-data data)
-  (println data))
+  (println data)
+  (let [data' (read-transit-string data)]
+    (when-let [{:keys [select]} data']
+      (reset! selected-node select))))
 
 (defn ws-handler
   [req]

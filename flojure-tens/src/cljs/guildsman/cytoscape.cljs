@@ -27,9 +27,8 @@
           (println "single same")))
       (println "different"))
     (vreset! last-node-click
-             [target (now-ts)])))
-
-
+             [target (now-ts)])
+    (rf/dispatch [:node-select (.id target)])))
 
 (defn setup-cyto
   [cy]
@@ -42,7 +41,7 @@
                                              :undoable false
                                              :cueEnabled false}))]
     (.collapseAll xc-api)
-    (-> cy .nodes (.on "click" (partial on-click-node xc-api)))
+    (.on cy "tap" "node" (partial on-click-node xc-api))
     (println "DONE setup-cyto")))
 
 (defn cyto-state->cyto-gen-map

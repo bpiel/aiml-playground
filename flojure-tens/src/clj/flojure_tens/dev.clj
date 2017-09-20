@@ -11,17 +11,29 @@
             [flojure-tens.util :as ut]
             [flojure-tens.data-type :as dt]
             [flojure-tens.graph :as gr]
-            [flatland.protobuf.core :as pr]
-            [flojure-tens.webapp.server :as wsvr])
+            [flojure-tens.webapp.server :as wsvr]
+            [flatland.protobuf.core :as pr])
   (:import [flojure_tens.common Graph Op]
            [flojure_tens.session Session]
            [org.tensorflow.framework Summary]))
 
+
 (def dev-nses (atom #{}))
+
 
 (def SummaryP (pr/protodef Summary))
 
 (def ^:dynamic *default-ns* '$g) ;; TODO drop this
+
+(def selected-node-watcher (atom nil))
+
+(defn set-selected-node-watcher
+  [f]
+  (when-let [w @selected-node-watcher]
+    (remove-watch wsvr/selected-node w))
+  (reset! selected-node-watcher f)
+  (add-watch wsvr/selected-node f
+             (fn [_ _ _ selected] (f selected))))
 
 (defn activate-dev-mode
   [& [enable?]]
@@ -133,6 +145,55 @@
 
 #_(w-push-histos @$.ws1/$log "summaries/logits/BiasAdd_11")
 
+
+(defn filter-cyto-edges
+  [edges]
+  (filter (fn [{:keys [data]}]
+            (and (= (nil? (re-find #"gradient" (:source data)))
+                    (nil? (re-find #"gradient" (:target data))))
+                 (= (nil? (re-find #"summaries" (:source data)))
+                    (nil? (re-find #"summaries" (:target data))))))
+          edges))
+
+(defn filter-cyto-nodes
+  [nodes]
+  (remove (fn [{:keys [data]}]
+            (or #_(re-find #"gradient" (:id data))
+                (re-find #"Const_" (:id data))))
+          nodes))
+
+(defn filter-cyto
+  [cyto]
+  (-> cyto
+      (update :edges filter-cyto-edges)
+      (update :nodes filter-cyto-nodes)))
+
+
+(defn w-mk-node-defs
+  [{:keys [id]}]
+  (mk-id-seq (clojure.string/split (drop-output-idx id)
+                                   #"/")))
+
+
+(defn- w-mk-edge-defs
+  [opnode]
+  (let [id-src (drop-output-idx (:id opnode))]
+    (map (fn [id-target]
+           {:data {:source (drop-output-idx id-target) :target id-src }})
+          (:inputs opnode))))
+
+
+(defn- w-mk-graph-def
+  [^Graph g]
+  (let [nodes (-> g :state deref :id->node vals)]
+    {:nodes (distinct (mapcat w-mk-node-defs nodes))
+     :edges (mapcat w-mk-edge-defs nodes)}))
+
+(defn w-mk-graph-def2
+  [^Graph g]
+  (w-mk-graph-def g))
+
+
 (defn w-mk-histos-data*
   [selected agg entry]
   (let [re (->> selected
@@ -206,8 +267,19 @@
                      :style {:background-color "lightblue"}}]
    :elements (filter-cyto elements)})
 
-(defn w-update
+#_(defn w-update
   [^Graph g selected log]
+  (let [histos (when-let [h (w-mk-histos selected log)]
+                 ['histos h])
+        f #(wsvr/update-view
+            {:left ['graph (w-mk-cyto (w-mk-graph-def2 g))]
+             :right histos
+             :selected %})]
+    (f selected)
+    (set-selected-node-watcher f)))
+
+(defn w-update*
+  [^Graph g log selected]
   (let [histos (when-let [h (w-mk-histos selected log)]
                  ['histos h])]
     (wsvr/update-view
@@ -215,62 +287,13 @@
       :right histos
       :selected selected})))
 
-(defn w-push-histos
-  [log id]
-  (w-push ['histos
-           {:mode "offset"
-            :timeProperty "step"
-            :data (vec (map-indexed (fn [i entry]
-                                      {:step i
-                                       :bins (get entry id)})
-                                    log))}]))
+(defn w-update
+  [^Graph g log selected]
+  (w-update* g log selected)
+  (-> (partial w-update* g log)
+      set-selected-node-watcher))
 
-(defn w-push-graph
-  [^Graph g]
-  (w-push ['h-box :children [[:div]
-                             ['graph
-                              {:layout {:name "dagre"}
-                               :style [{:selector "node"
-                                        :style {:content "data(name)"
-                                                :border-width 3
-                                                :border-color "#CC9"
-                                                :font-size 35
-                                                :background-color "#FFC"
-                                                :shape "ellipsis"
-                                                :height 80
-                                                :width 200
-                                                :text-valign "center"
-                                                }}
-                                       {:selector "edge"
-                                        :style {:width 5
-                                                "curve-style" "unbundled-bezier"
-                                                :control-point-distances [0]
-                                                :control-point-weights [0.5]
-                                                :line-color "#AAA"
-                                                :arrow-scale 1.5
-                                                :target-arrow-color "#d00"
-                                                :target-arrow-shape "triangle"}}
-                                       {:selector "node.cy-expand-collapse-collapsed-node"
-                                        :style {:font-size 40
-                                                :background-color "#FFC"
-                                                :border-width 5
-                                                :border-color "#CC9"
-                                                :shape "rectangle"
-                                                :height 100
-                                                :width 300
-                                                :text-valign "center"
-                                                }}
-                                       {:selector ":parent"
-                                        :style {:font-size 80
-                                                :background-color "white"
-                                                :text-valign "top"
-                                                :border-color "CC9"
-                                                :border-width 10
-                                                }}
-                                       {:selector ":selected"
-                                        :style {:background-color "lightblue"}}]
-                               :elements (filter-cyto (select-keys (w-mk-graph-def2 g)
-                                                                   [:nodes :edges]))}]]]))
+
 
 (defmethod ft/call-plugin [::dev :init]
   [_ {:keys [state ws-def]} {:keys [graph] :as session}]
@@ -340,7 +363,7 @@
              update-in [::dev :summaries]
              (fnil into #{})
              (set smries)))
-    (w-update graph nil [])))
+    (w-update graph [] nil)))
 
 (defmethod ft/call-plugin [::dev :train-fetch]
   [_ {:keys [state]}]
@@ -367,8 +390,6 @@
                      rest
                      drop-last)
                  bucket)}))
-
-
 
 (defn merge-hists
   [{x1 :x y1 :y dx1 :dx} {y2 :y dx2 :dx}]
@@ -417,40 +438,16 @@
 (defmethod ft/call-plugin [::dev :log-step]
   [_ {:keys [state ws-def]} fetched step]
   (let [state' @state
-        dev-ns (-> state' ::dev :ns)
+        dev-state (::dev state')
+        {dev-ns :ns summaries :summaries} dev-state
         graph  (-> state' :session :graph)
-        summaries (-> state' ::dev :summaries)
         log-atom @(ns-resolve dev-ns '$log)]
     (swap! log-atom conj
            (assoc (fetched->log-entry graph
                                       summaries
                                       fetched)
                   :step step))
-    (w-update graph "logits" @log-atom)))
-
-(defn w-mk-node-defs
-  [{:keys [id]}]
-  (mk-id-seq (clojure.string/split (drop-output-idx id)
-                                   #"/")))
-
-
-(defn- w-mk-edge-defs
-  [opnode]
-  (let [id-src (drop-output-idx (:id opnode))]
-    (map (fn [id-target]
-           {:data {:source (drop-output-idx id-target) :target id-src }})
-          (:inputs opnode))))
-
-
-(defn- w-mk-graph-def
-  [^Graph g]
-  (let [nodes (-> g :state deref :id->node vals)]
-    {:nodes (distinct (mapcat w-mk-node-defs nodes))
-     :edges (mapcat w-mk-edge-defs nodes)}))
-
-(defn w-mk-graph-def2
-  [^Graph g]
-  (w-mk-graph-def g))
+    (w-update graph @log-atom @wsvr/selected-node)))
 
 (defn w-push
   [data]
@@ -491,28 +488,6 @@
 
 
 
-
-(defn filter-cyto-edges
-  [edges]
-  (filter (fn [{:keys [data]}]
-            (and (= (nil? (re-find #"gradient" (:source data)))
-                    (nil? (re-find #"gradient" (:target data))))
-                 (= (nil? (re-find #"summaries" (:source data)))
-                    (nil? (re-find #"summaries" (:target data))))))
-          edges))
-
-(defn filter-cyto-nodes
-  [nodes]
-  (remove (fn [{:keys [data]}]
-            (or #_(re-find #"gradient" (:id data))
-                (re-find #"Const_" (:id data))))
-          nodes))
-
-(defn filter-cyto
-  [cyto]
-  (-> cyto
-      (update :edges filter-cyto-edges)
-      (update :nodes filter-cyto-nodes)))
 
 
 #_(w-push ['$/graph
