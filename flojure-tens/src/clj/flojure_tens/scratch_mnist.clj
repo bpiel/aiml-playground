@@ -75,7 +75,7 @@
                    (o/identity-tf :data-id)
                    (l/dense {:id :logits
                              :units 10} ))]
-    {:auto [:build :train]
+    {:auto [:build :train ]
      :build [logits]
      :summaries [logits] ;; TODO move to :train
      :train {:targets []
@@ -130,33 +130,3 @@
           (log-run {:session s
                     :feed {:data [1. 3. 4.]}
                     :fetch [:data1]}))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

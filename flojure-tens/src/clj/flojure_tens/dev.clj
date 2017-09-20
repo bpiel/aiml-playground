@@ -155,20 +155,65 @@
 
 (defn w-mk-histos
   [selected log]
-  {:mode "offset"
-   :timeProperty "step"
-   :data (or (some-> (w-mk-histos-data selected log)
+  (when-let [data (some-> (w-mk-histos-data selected log)
                      not-empty
                      vals
-                     first)
-             [])})
+                     first)]
+    {:mode "offset"
+     :timeProperty "step"
+     :data data}))
+
+(defn w-mk-cyto
+  [elements]
+  {:layout {:name "dagre"}
+            :style [{:selector "node"
+                     :style {:content "data(name)"
+                             :border-width 1
+                             :font-size 35
+                             :background-color "#FFC"
+                             :shape "ellipsis"
+                             :height 80
+                             :width 200
+                             :text-valign "center"
+                             }}
+                    {:selector "edge"
+                     :style {:width 5
+                             "curve-style" "unbundled-bezier"
+                             :control-point-distances [0]
+                             :control-point-weights [0.5]
+                             :line-color "#888"
+                             :arrow-scale 1.5
+                             :target-arrow-color "#f00"
+                             :target-arrow-shape "triangle"}}
+                    {:selector "node.cy-expand-collapse-collapsed-node"
+                     :style {:font-size 40
+                             :background-color "lightgreen"
+                             :border-width 8
+                             :border-color "darkgreen"
+                             :shape "rectangle"
+                             :height 100
+                             :width 400
+                             :text-valign "center"
+                             }}
+                    {:selector ":parent"
+                     :style {:font-size 80
+                             :background-color "white"
+                             :text-valign "top"
+                             :border-color "lightgreen"
+                             :border-width 10
+                             }}
+                    {:selector ":selected"
+                     :style {:background-color "lightblue"}}]
+   :elements (filter-cyto elements)})
 
 (defn w-update
   [^Graph g selected log]
-  (wsvr/update-view
-   {:left ['graph (w-mk-graph-def2 g)]
-    :right ['histos (w-mk-histos selected log)]
-    :selected selected}))
+  (let [histos (when-let [h (w-mk-histos selected log)]
+                 ['histos h])]
+    (wsvr/update-view
+     {:left ['graph (w-mk-cyto (w-mk-graph-def2 g))]
+      :right histos
+      :selected selected})))
 
 (defn w-push-histos
   [log id]
@@ -460,7 +505,7 @@
   [nodes]
   (remove (fn [{:keys [data]}]
             (or #_(re-find #"gradient" (:id data))
-                (re-find #"Const" (:id data))))
+                (re-find #"Const_" (:id data))))
           nodes))
 
 (defn filter-cyto
@@ -510,7 +555,7 @@
           :elements (select-keys @afinal
                                  [:nodes :edges])}])
 
-#_(w-push ['$/graph
+#_(w-push ['graph
            {:layout {:name "dagre"}
             :style [{:selector "node"
                      :style {:content "data(name)"
@@ -550,7 +595,7 @@
                              }}
                     {:selector ":selected"
                      :style {:background-color "lightblue"}}]
-            :elements (filter-cyto (select-keys (w-mk-graph-def2)
+            :elements (filter-cyto (select-keys (w-mk-graph-def2 $.ws1/graph)
                                                 [:nodes :edges]))}])
 
 #_

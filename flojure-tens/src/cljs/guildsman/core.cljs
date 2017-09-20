@@ -20,14 +20,15 @@
 (def json-writer (t/writer :json))
 (def json-reader (t/reader :json))
 
+(rf/reg-sub
+ :left
+ (fn [db _]
+   (:left db)))
 
-#_(defn chart
-  [m]
-  (println "chart")
-  (println m)
-  (.generate js/c3
-             (clj->js {:data {:columns [['data', 1, 3, 7, 2]]}})))
-
+(rf/reg-sub
+ :right
+  (fn [db _]
+    (:right db)))
 
 (defn init-cyto
   [m]
@@ -51,30 +52,41 @@
    'h-box rc/h-box})
 
 (defn mk-renderable
-  [{:keys [left right selected]}]
-  [rc/h-box :children
-   [(clojure.walk/prewalk-replace components left)
-    (clojure.walk/prewalk-replace components right)]])
+  [v]
+  (clojure.walk/prewalk-replace components v))
 
 (defn dispatch-ws-msg
   [msg]
   (r/render (mk-renderable msg)
             (.getElementById js/document "app")))
 
+(rf/reg-event-db
+ :ws-inbound
+ (fn [db [_ {:keys [left right] :as p}]]
+   (println p)
+   (merge db
+          (when left
+            {:left (mk-renderable left)})
+          (when right
+            {:right (mk-renderable right)}))))
+
 (defn ws-onmessage
   [data]
   (println (.-data data))
   (let [d (t/read json-reader (.-data data))]
-#_    (println d)
-    (dispatch-ws-msg d)))
+    #_    (println d)
+    (rf/dispatch [:ws-inbound d])))
 
-(defn init-ws
-  []
-  (if-let [ws (js/WebSocket. (str "ws://" (.-host js/location) "/ws"))]
-   (do
-     (set! (.-onmessage ws) ws-onmessage)
-     (reset! ws-conn ws))
-   (throw (js/Error. "Websocket connection failed!"))))
+(rf/reg-event-db
+ :ws-init
+ (fn [db _]
+   (if-let [ws (js/WebSocket. (str "ws://" (.-host js/location) "/ws"))]
+     (do
+       (println "ws init'd!")
+       (set! (.-onmessage ws) ws-onmessage)
+       (reset! ws-conn ws))
+     (throw (js/Error. "Websocket connection failed!")))
+   db))
 
 (figwheel/watch-and-reload
   :websocket-url "ws://localhost:3449/figwheel-ws"
@@ -85,7 +97,7 @@
 #_(devtools/install!)
 
 #_(init!)
-(init-ws)
+
 
 ;; === app END
 
@@ -100,6 +112,28 @@
             :selected nil}]
           (.getElementById js/document "app"))
 
-(r/render [:div "loaded"]
+(rf/reg-event-db
+  :init-db
+  (fn [db _]
+    {:left [:div "loaded"]
+     :right [:div]}))
+
+(defn page []
+  (let [left @(rf/subscribe [:left])
+        right @(rf/subscribe [:right])]
+    [rc/h-box :children
+     [left
+      right]]))
+
+(defn init! []
+  (rf/dispatch-sync [:init-db])
+  (rf/dispatch-sync [:ws-init])
+  (r/render [#'page]
+            (.getElementById js/document "app")))
+
+(init!)
+#_
+(r/render [cy/cytoscape {:layout {:name "dagre"}
+                         :elements [{:data {:id "a"}}]}]
           (.getElementById js/document "app"))
 

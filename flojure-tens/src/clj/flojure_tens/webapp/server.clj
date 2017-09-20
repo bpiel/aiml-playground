@@ -41,13 +41,15 @@
 
 (defn diff-views
   [v1 v2]
-  (merge-with (fn [a b]
+  v2
+  #_(merge-with (fn [a b]
                 (when-not (= a b)
-                  (or b [:div])))
+                  (or b [:div "empty"])))
               v1 v2))
 
 (defn update-view
   [new-view]
+  (clojure.pprint/pprint new-view)
   (let [view' @view]
     (reset! view new-view)
     (->> new-view
