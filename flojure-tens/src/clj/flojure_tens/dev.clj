@@ -25,7 +25,7 @@
 
 (def ^:dynamic *default-ns* '$g) ;; TODO drop this
 
-(def selected-node-watcher (atom nil))
+(defonce selected-node-watcher (atom nil))
 
 (defn set-selected-node-watcher
   [f]
@@ -194,7 +194,15 @@
   (w-mk-graph-def g))
 
 
-(defn w-mk-histos-data*
+(defn w-mk-summary-data**
+  [entry data]
+  (if (sequential? data)
+    {:step (:step entry)
+     :bins data}
+    {:x (:step entry)
+     :y data}))
+
+(defn w-mk-summary-data*
   [selected agg entry]
   (let [re (->> selected
                 (format "summaries/%s($|/.*)?")
@@ -205,24 +213,36 @@
                       (for [[k v] entry]
                         (when (and (string? k)
                                    (re-find re k))
-                          [k [{:step (:step entry)
-                                :bins v}]]))))))
+                          (clojure.pprint/pprint k)
+                          [k [(w-mk-summary-data** entry v)]]))))))
 
-(defn w-mk-histos-data
+(defn w-mk-summary-data
   [selected log]
-  (reduce (partial w-mk-histos-data* selected)
+  (reduce (partial w-mk-summary-data* selected)
           {}
           log))
 
-(defn w-mk-histos
+(defn ->chart-map
+  [d]
+  {:config {}
+   :data {:type "area"
+          :x "x"
+          :columns [(into [:x] (map :x d))
+                    (into [:y] (map :y d))]}})
+
+(defn- w-mk-summaries
   [selected log]
-  (when-let [data (some-> (w-mk-histos-data selected log)
-                     not-empty
-                     vals
-                     first)]
-    {:mode "offset"
-     :timeProperty "step"
-     :data data}))
+  (when-let [data (some-> (w-mk-summary-data selected log)
+                          not-empty)]
+    (for [[id d] data]
+      [:div#summary id
+       (if (-> d first :bins)
+         ['histos {:mode "offset"
+                   :timeProperty "step"
+                   :data d}]
+         ['chart (->chart-map d)])])))
+
+#_(w-mk-histos $s/selected $s/log)
 
 (defn w-mk-cyto
   [elements]
@@ -268,25 +288,16 @@
             :style {:background-color "lightblue"}}]      
    :elements (filter-cyto elements)})
 
-#_(defn w-update
-  [^Graph g selected log]
-  (let [histos (when-let [h (w-mk-histos selected log)]
-                 ['histos h])
-        f #(wsvr/update-view
-            {:left ['graph (w-mk-cyto (w-mk-graph-def2 g))]
-             :right histos
-             :selected %})]
-    (f selected)
-    (set-selected-node-watcher f)))
-
 (defn w-update*
   [^Graph g log selected]
-  (let [histos (if-let [h (w-mk-histos selected log)]
-                 ['histos h]
-                 [:div])]
+  (let [right (if-let [h (not-empty (w-mk-summaries selected log))]
+                 [:div#summaries h]
+                 [:div "no logs"])]
+    (def selected1 selected)
+    (def right1 right)
     (wsvr/update-view
      {:left ['graph (w-mk-cyto (w-mk-graph-def2 g))]
-      :right histos
+      :right #_[:div "what?"] right
       :selected selected})))
 
 (defn w-update
@@ -328,9 +339,9 @@
   (let [smry-id (op->summary-id target)
         scalar? (-> target
                     opn/get-desc-of-output
-                    :shapes
-                    first
+                    :shape
                     sh/scalar?)]
+    (clojure.pprint/pprint [target scalar?])
     (when-not ((gr/id->node g) smry-id)
       (if scalar?
         (o/scalar-summary {:id smry-id} smry-id target)
@@ -361,21 +372,23 @@
                          (add-summaries graph )
                          not-empty
                          (map :id))]
-      (swap! state
-             update-in [::dev :summaries]
-             (fnil into #{})
-             (set smries)))
+      (do       (clojure.pprint/pprint smries)
+        (swap! state
+               update-in [::dev :summaries]
+               (fnil into #{})
+               (set smries))))
     (w-update graph [] nil)))
 
 (defmethod ft/call-plugin [::dev :train-fetch]
   [_ {:keys [state]}]
+  (def tf-state1 @state)
   (some-> @state ::dev :summaries))
 
 (defn pb-load-summary [ba] (pr/protobuf-load SummaryP ba))
 
 (defn hist-bytes->histo-bins
-  [ba]
-  (let [h (pb-load-summary ba)
+  [smry]
+  (let [h smry #_ (pb-load-summary ba)
         {:keys [bucket-limit bucket] mx :max mn :min}
         (-> h
             :value
@@ -404,8 +417,8 @@
   (assoc h :y (* scale (/ y dx))))
 
 (defn hist-bytes->histo-bins2
-  [ba]
-  (let [{:keys [mx mn bins]} (hist-bytes->histo-bins ba)
+  [smry]
+  (let [{:keys [mx mn bins]} (hist-bytes->histo-bins smry)
         spread (- mx mn)
         min-dx (/ spread 100.)]
     (loop [[head & tail] bins
@@ -430,11 +443,19 @@
                              agg
                              nxt)))))))
 
+(defn fetched->log-entry*
+  [ba]
+  (let [smry (pb-load-summary ba)]
+    (if-let [value (-> smry :value first :simple-value )]
+      value
+      (hist-bytes->histo-bins2 smry)
+      )))
+
 (defn- fetched->log-entry
   [^Graph g summarized fetched]
   (ut/$- -> fetched
          (select-keys summarized)
-         (ut/fmap hist-bytes->histo-bins2
+         (ut/fmap fetched->log-entry*
                   $)))
 
 (defmethod ft/call-plugin [::dev :log-step]
@@ -444,6 +465,7 @@
         {dev-ns :ns summaries :summaries} dev-state
         graph  (-> state' :session :graph)
         log-atom @(ns-resolve dev-ns '$log)]
+    (clojure.pprint/pprint fetched)
     (swap! log-atom conj
            (assoc (fetched->log-entry graph
                                       summaries
@@ -609,7 +631,7 @@
                                   :dx 1.}]}]}])
 
 
-
+#_
 (defn w-push-graph
   [^Graph g]
   (w-push ['h-box :children [[:div]

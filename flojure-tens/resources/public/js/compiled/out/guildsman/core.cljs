@@ -7,7 +7,7 @@
             [devtools.core :as devtools]
             [figwheel.client :as figwheel :include-macros true]
             [cognitect.transit :as t]
-            cljsjs.d3
+            [guildsman.chart :as ch]
             [guildsman.histogram-series :as hs]
             [guildsman.cytoscape :as cy])
   (:import goog.History))
@@ -44,7 +44,7 @@
 
 
 (def components
-  {;'$/chart #'ch/chart
+  {'chart #'ch/chart
    'histos #'hs/histogram-series
    'graph #'cy/cytoscape
    'v-box rc/v-box
@@ -85,7 +85,7 @@
 
 (defn ws-onmessage
   [data]
-  (println (.-data data))
+#_  (println (.-data data))
   (let [d (t/read json-reader (.-data data))]
     #_    (println d)
     (rf/dispatch [:ws-inbound d])))
@@ -134,8 +134,8 @@
   (let [left @(rf/subscribe [:left])
         right @(rf/subscribe [:right])]
     [rc/h-box :children
-     [left
-      right]]))
+     [[rc/box :size "100%" :child left]
+      [rc/box :size "300px" :child right]]]))
 
 (defn init! []
   (rf/dispatch-sync [:init-db])

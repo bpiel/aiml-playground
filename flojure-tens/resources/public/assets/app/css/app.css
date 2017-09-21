@@ -8,6 +8,10 @@ body{
     font-family: 'Source Code Pro',monospace;
 }
 
+#summaries {
+    width: 90%;
+}
+
 .container{
     border: none;
     padding: 0;

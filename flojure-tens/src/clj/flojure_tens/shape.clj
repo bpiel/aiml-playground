@@ -7,7 +7,8 @@
 
 (defn scalar [] [])
 
-(defn scalar? [sh] (= sh []))
+(defn scalar? [sh] (and (sequential? sh)
+                        (empty? sh)))
 
 (def create vector)
 

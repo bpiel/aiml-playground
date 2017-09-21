@@ -69,7 +69,7 @@
                                       TEST-CASE-COUNT)))
 
 
-(ft/def-workspace ws1
+#_(ft/def-workspace ws1
   (let [{:keys [logits data data1]}
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
@@ -100,15 +100,15 @@
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt2 :opt))]
+                   (p/grad-desc-opt :opt))]
     {:auto [:build :train ]
      :build [classes opt]
-     :summaries [logits] ;; TODO move to :train
+     :summaries [loss logits] ;; TODO move to :train
      :train {:targets [opt]
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 3}}))
+             :steps 10}}))
 
 
 #_(def SummaryP (pr/protodef Summary))

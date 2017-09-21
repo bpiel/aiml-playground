@@ -6,6 +6,8 @@
             [flojure-tens.util :as ut]
             [flojure-tens.plan-time-comps :as p]
             [flojure-tens.scope :as sc]
+            flojure-tens.grad-desc-opt2
+            flojure-tens.gradients2
             [clojure.java.io :as io]
             [mikera.image.core :as img])
   (:import [org.tensorflow.framework OpDef OpList MetaGraphDef GraphDef NodeDef]
@@ -119,6 +121,7 @@
 
 
 
+
 ;; just test data
 (let [{:keys [logits classes]}
       (ut/id$->> @test-data
@@ -150,7 +153,7 @@
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
                  (p/reduce-mean :loss)
-                 (p/grad-desc-opt :opt $))]
+                 (p/grad-desc-opt2 :opt $))]
   (ft/with-close-let [{:keys [graph] :as s} (ft/build-all->session [opt  classes])]
     (ft/run-global-vars-init s)
     #_(spit-gd (:graph s))
@@ -232,4 +235,15 @@
   (ft/run-global-vars-init s)
   (flojure-tens.shape/shape-of-seq  (ft/produce s xxx {:data [1. 2. 3. 4]})))
 
-
+(let [b (p/v :b [[2. 3.]])
+      {:keys [a y opt]}
+      (ut/id$->> (o/placeholder :a dt/float-kw [2 2])
+                 (l/dense {:units 2})
+                 (o/reshape $ [2 2])
+                 (p/dropout 0.4)
+                 (o/add :y b)
+                 (p/grad-desc-opt2 :opt))
+      s (ft/build->session opt)]
+  (ft/run-global-vars-init s)
+  (ft/run-all s [opt opt opt opt] {:a [[1. 2.] [3. 4.]]})
+  (ft/fetch-all s [b y] {:a [[1. 2.] [3. 4.]]}))

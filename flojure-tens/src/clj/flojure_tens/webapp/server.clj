@@ -58,7 +58,7 @@
 
 (defn update-view
   [new-view]
-  (clojure.pprint/pprint new-view)
+#_  (clojure.pprint/pprint new-view)
   (let [view' @view]
     (reset! view new-view)
     (->> new-view

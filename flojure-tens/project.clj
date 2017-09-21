@@ -28,8 +28,7 @@
                  [re-com "0.9.0"]
                  [re-frisk "0.4.5"]
                  [com.taoensso/timbre "4.8.0"]
-                 [cljsjs/d3 "4.3.0-5"]
-                 #_[cljsjs/c3 "0.4.14-0" :exclusions [cljsjs/d3]]
+                 #_[cljsjs/d3 "4.3.0-5"]
 
                  ;; examples
                  [net.mikera/imagez "0.12.0"]]

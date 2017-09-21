@@ -21,6 +21,8 @@
            [org.tensorflow.util Event]
            [flojure_tens.common Graph Op GraphRef]))
 
+#_(ft/produce (o/add 1. 2.))
+
 (def SummaryP (pr/protodef Summary))
 
 (let [data (dt/convert-whatever [[1. 2.]
@@ -269,3 +271,5 @@
                          :bins (hist-bytes->histo-bins2 h6)}
                         #_{:step 8
                          :bins (hist-bytes->histo-bins h7)}])
+
+

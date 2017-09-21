@@ -211,7 +211,7 @@
       (future (dotimes [step steps]
                 (ut/$- ->> fetch'
                        (fetch-map session $ feed targets)
-                       (future (call-plugins :log-step ws $ step))))))
+                       (future (call-plugins :log-step ws $ (inc step)))))))
     true))
 
 (defn- ws-do-auto
