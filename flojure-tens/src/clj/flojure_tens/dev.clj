@@ -234,13 +234,14 @@
   [selected log]
   (when-let [data (some-> (w-mk-summary-data selected log)
                           not-empty)]
-    (for [[id d] data]
-      [:div#summary id
+    (vec
+     (for [[id d] data]
        (if (-> d first :bins)
-         ['histos {:mode "offset"
-                   :timeProperty "step"
-                   :data d}]
-         ['chart (->chart-map d)])])))
+         [:histos
+          {:mode "offset"
+           :timeProperty "step"
+           :data d}]
+         [:chart (->chart-map d)])))))
 
 #_(w-mk-histos $s/selected $s/log)
 
@@ -290,14 +291,11 @@
 
 (defn w-update*
   [^Graph g log selected]
-  (let [right (if-let [h (not-empty (w-mk-summaries selected log))]
-                 [:div#summaries h]
-                 [:div "no logs"])]
+  (let [charts (w-mk-summaries selected log)]
     (def selected1 selected)
-    (def right1 right)
     (wsvr/update-view
-     {:left ['graph (w-mk-cyto (w-mk-graph-def2 g))]
-      :right #_[:div "what?"] right
+     {:graph (w-mk-cyto (w-mk-graph-def2 g))
+      :charts charts
       :selected selected})))
 
 (defn w-update

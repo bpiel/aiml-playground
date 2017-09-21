@@ -15,7 +15,7 @@
 (defonce server (atom nil))
 (defonce ws-conn (atom nil))
 
-(def view (atom {:left [:div]
+(def view (atom {:graph nil
                  :right [:div]
                  :selected nil}))
 (def selected-node (atom nil))

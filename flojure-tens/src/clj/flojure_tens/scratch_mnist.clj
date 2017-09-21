@@ -69,27 +69,14 @@
                                       TEST-CASE-COUNT)))
 
 
-#_(ft/def-workspace ws1
-  (let [{:keys [logits data data1]}
-        (ut/id$->> (o/placeholder :data
-                                  dt/float-kw
-                                  [-1 784])
-                   (o/identity-tf :data-id)
-                   (l/dense {:id :logits
-                             :units 10} ))]
-    {:auto [:build :train ]
-     :build [logits]
-     :summaries [logits] ;; TODO move to :train
-     :train {:targets []
-             :feed {:data @test-data}
-             :fetch []}}))
-
 
 (ft/def-workspace ws1
-  (let [{:keys [logits classes]}
+  (let [{:keys [data logits classes]}
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
+                   (l/dense {:id :hidden
+                             :units 100})
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
@@ -108,56 +95,35 @@
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 100
-             :log-step-interval 10}}))
-
-
-#_(def SummaryP (pr/protodef Summary))
-
-#_(pr/protobuf-load SummaryP
-                  (-> @$.ws1/$log
-                      first
-                      (get "summaries/data1")))
-
-
-#_ (do
-     (ft/ws-build ws1)
-
-     (ft/ws-train ws1)
-
-     (clojure.pprint/pprint ws1))
+             :steps 500
+             :log-step-interval 50}}))
 
 
 
-#_(time (let [{:keys [data1]}
-            (ut/id$->> (o/placeholder :data
-                                      dt/float-kw
-                                      [-1 784])
-                       (o/identity-tf :data1))]
-        (ft/with-close-let [{:keys [graph] :as s} (ft/build->session data1)]
-          (def o
-            (ft/fetch-map s [:data1] {:data (take 1 @test-data)})))))
 
-#_(defn log-run
-  [{:keys [session feed fetch]}]
-  (swap! @(ns-resolve (the-ns '$g)
-                     '$log)
-         conj
-         {:feed feed
-          :fetch (ft/fetch-map session
-                               fetch
-                               feed)}))
 
-#_(time (let [{:keys [data1]}
-            (ut/id$->> (o/placeholder :data
-                                      dt/float-kw
-                                      [-1 3])
-                       (o/identity-tf :data1))]
-        (ft/with-close-let [{:keys [graph] :as s} (ft/build->session data1)]
-          (d/mk-ns s)
-          (log-run {:session s
-                    :feed {:data [1. 3. 4.]}
-                    :fetch [:data1]}))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

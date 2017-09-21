@@ -20,28 +20,19 @@
 (def json-reader (t/reader :json))
 
 (rf/reg-sub
- :left
+ :graph
  (fn [db _]
-   (:left db)))
+   (:graph db)))
 
 (rf/reg-sub
- :right
+ :charts
   (fn [db _]
-    (:right db)))
+    (:charts db)))
 
-(defn init-cyto
-  [m]
-  (js/cytoscape (clj->js {:container (.getElementById js/document "app")
-                          :layout {:name "dagre"}
-                          :style [{:selector "node"
-                                   :style {:content "data(name)"}}
-                                  {:selector "edge"
-                                   :style {"curve-style" "unbundled-bezier"
-                                           :control-point-distances [20]
-                                           :control-point-weights [0.75]}}]
-                          :elements (select-keys m
-                                                 [:nodes :edges])})))
-
+(rf/reg-sub
+ :left-mode
+  (fn [db _]
+    (:left-mode db)))
 
 (def components
   {'chart #'ch/chart
@@ -59,15 +50,18 @@
   (r/render (mk-renderable msg)
             (.getElementById js/document "app")))
 
+
 (rf/reg-event-db
  :ws-inbound
- (fn [db [_ {:keys [left right] :as p}]]
+ (fn [db [_ {:keys [graph charts selected] :as p}]]
    (println p)
    (merge db
-          (when left
-            {:left (mk-renderable left)})
-          (when right
-            {:right (mk-renderable right)}))))
+          (when graph
+            {:graph graph})
+          (when charts
+            {:charts charts})
+          (when selected
+            {:selected selected}))))
 
 (rf/reg-event-db
  :node-select
@@ -127,15 +121,59 @@
 (rf/reg-event-db
   :init-db
   (fn [db _]
-    {:left [:div "loaded"]
-     :right [:div]}))
+    {:graph nil
+     :charts nil
+     :left-mode nil}))
+
+(rf/reg-event-db
+ :click-chart
+ (fn [db [_ idx]]
+   (assoc db :left-mode idx)))
+
+(defn graph-view
+  []
+  (let [graph @(rf/subscribe [:graph])]
+    (if graph
+      [cy/cytoscape graph]
+      [:div "no graph"])))
+
+(defn chart-view
+  [ty data]
+  (case ty
+    :chart [ch/chart data]
+    :histos [hs/histogram-series data]))
+
+(defn charts-view
+  []
+  (let [charts @(rf/subscribe [:charts])]
+    (into [:div]
+          (map-indexed
+           (fn [i [ty data]]
+             [:div.summaries
+              {:on-click #(rf/dispatch [:click-chart i])}
+              (chart-view ty data)])
+           charts))))
+
+(defn left-pane
+  []
+  (let [left-mode @(rf/subscribe [:left-mode])
+        charts @(rf/subscribe [:charts])]
+    (if (nil? left-mode)
+      [graph-view]
+      (let [[ty data] (nth charts
+                           left-mode) ]
+        [:div#big-left
+         [:span {:on-click #(rf/dispatch [:click-chart nil])} "[ X close ]"]
+         [chart-view ty data]]))))
+
+(defn right-pane
+  []
+  [charts-view])
 
 (defn page []
-  (let [left @(rf/subscribe [:left])
-        right @(rf/subscribe [:right])]
-    [rc/h-box :children
-     [[rc/box :size "100%" :child left]
-      [rc/box :size "300px" :child right]]]))
+  [rc/h-box :children
+   [[rc/box :size "100%" :child [left-pane]]
+    [rc/box :size "300px" :child [right-pane]]]])
 
 (defn init! []
   (rf/dispatch-sync [:init-db])
@@ -144,8 +182,5 @@
             (.getElementById js/document "app")))
 
 (init!)
-#_
-(r/render [cy/cytoscape {:layout {:name "dagre"}
-                         :elements [{:data {:id "a"}}]}]
-          (.getElementById js/document "app"))
+
 

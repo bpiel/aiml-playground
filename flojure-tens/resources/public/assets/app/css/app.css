@@ -12,6 +12,29 @@ body{
     width: 90%;
 }
 
+#big-left {
+    height: 700px;
+    width: 100%;
+}
+
+
+#big-left div {
+    height: 700px;
+    width: 100%;
+}
+
+
+
+#big-left svg {
+    height: 700px;
+}
+
+#tooltip {
+    height: 20px !important;
+    width: 20px !important;
+}
+
+
 .container{
     border: none;
     padding: 0;
