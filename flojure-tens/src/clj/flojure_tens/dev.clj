@@ -458,6 +458,28 @@
          (ut/fmap fetched->log-entry*
                   $)))
 
+(def spacer-atom (atom [nil 0]))
+
+(defn spacer*
+  [f ts]
+  (let [[last-f last-ts] @spacer-atom]
+    (when (and (= f last-f)
+               (= ts last-ts))
+      (f)
+      (reset! spacer-atom [nil (System/currentTimeMillis)]))))
+
+(defn spacer
+  [f]
+  (let [[last-f last-ts] @spacer-atom
+        ts (System/currentTimeMillis)]
+    (if (and f (> (- ts last-ts) 500))
+      (do
+        (f)
+        (reset! spacer-atom [nil ts]))
+      (do (future (Thread/sleep 501)
+                  (spacer* f ts))
+          (reset! spacer-atom [f ts])))))
+
 (defmethod ft/call-plugin [::dev :log-step]
   [_ {:keys [state ws-def]} fetched step]
   (let [state' @state
@@ -471,7 +493,7 @@
                                       summaries
                                       fetched)
                   :step step))
-    (w-update graph @log-atom @wsvr/selected-node)))
+    (spacer #(w-update graph @log-atom @wsvr/selected-node))))
 
 (defn w-push
   [data]

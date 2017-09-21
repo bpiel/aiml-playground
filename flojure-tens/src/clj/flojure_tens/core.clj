@@ -202,7 +202,7 @@
 (defn ws-train
   [{:keys [state ws-def] :as ws}]
   (let [{:keys [train]} ws-def
-        {:keys [targets feed fetch steps]} train
+        {:keys [targets feed fetch steps log-step-interval]} train
         {:keys [session]} @state]
     (run-global-vars-init session)
     (let [fetch' (->> (call-plugins :train-fetch ws)
@@ -211,7 +211,11 @@
       (future (dotimes [step steps]
                 (ut/$- ->> fetch'
                        (fetch-map session $ feed targets)
-                       (future (call-plugins :log-step ws $ (inc step)))))))
+                       (let [step+1 (inc step)]
+                         (when (or (= step 0)
+                                   (= (mod step+1 (or log-step-interval 1)) 0)
+                                   (= step+1 steps))
+                           (future (call-plugins :log-step ws $ step+1))))))))
     true))
 
 (defn- ws-do-auto
@@ -241,3 +245,33 @@
 #_
 (def-workspace ws1
   {:what :who})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

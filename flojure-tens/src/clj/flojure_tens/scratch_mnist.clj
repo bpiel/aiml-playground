@@ -108,7 +108,8 @@
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 10}}))
+             :steps 100
+             :log-step-interval 10}}))
 
 
 #_(def SummaryP (pr/protodef Summary))
@@ -157,6 +158,11 @@
           (log-run {:session s
                     :feed {:data [1. 3. 4.]}
                     :fetch [:data1]}))))
+
+
+
+
+
 
 
 
