@@ -89,12 +89,16 @@
                         (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
                                    classes)
                         labels)]
-    {:auto [:build :train ]
+    {:auto [:build :train-test ]
      :build [acc opt]
-     :train {:summaries [acc loss logits] ;; TODO move to :train
+     :train {:summaries [acc loss logits]
              :targets [opt]
-             :feed {:data @test-data
-                    :labels @test-labels}
+             :feed {:data (take 100 @train-data)
+                    :labels (take 100 @train-labels)}
              :fetch []
-             :steps 10
-             :log-step-interval 2}}))
+             :steps 100
+             :log-step-interval 10}
+     :test {;:summaries [acc loss logits]
+            :targets []
+            :feed {:data (take 100 (reverse @test-data))
+                   :labels (take 100 (reverse @test-labels))}}}))

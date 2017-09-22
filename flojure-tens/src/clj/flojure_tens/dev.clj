@@ -198,7 +198,7 @@
   (w-mk-graph-def g))
 
 
-(defn w-mk-summary-data**
+#_(defn w-mk-summary-data**
   [entry data]
   (if (sequential? data)
     {:step (:step entry)
@@ -206,22 +206,42 @@
     {:x (:step entry)
      :y data}))
 
+(defn w-mk-summary-data**
+  [id {:keys [train test step]}]
+  (let [train' (get train id)
+        test' (get test id)]
+    (if (sequential? train')
+      {:step step
+       :bins train'}
+      {:x step
+       :train train'
+       :test test'})))
+
+#_(defn w-mk-summary-data*
+  [re agg entry]
+  (merge-with into
+              agg
+              (into {}
+                    (for [[k v] entry]
+                      (when (and (string? k)
+                                 (re-find re k))
+                        [k [(w-mk-summary-data** entry v)]])))))
+
 (defn w-mk-summary-data*
-  [selected agg entry]
-  (let [re (->> selected
-                (format "summaries/%s($|/.*)?")
-                re-pattern)]
-    (merge-with into
-                agg
-                (into {}
-                      (for [[k v] entry]
-                        (when (and (string? k)
-                                   (re-find re k))
-                          [k [(w-mk-summary-data** entry v)]]))))))
+  [re agg entry]
+  (merge-with into
+              agg
+              (into {}
+                    (for [[k _] (:train entry)]
+                      (when (and (string? k)
+                                 (re-find re k))
+                        [k [(w-mk-summary-data** k entry)]])))))
 
 (defn w-mk-summary-data
   [selected log]
-  (reduce (partial w-mk-summary-data* selected)
+  (reduce (partial w-mk-summary-data* (->> selected
+                                           (format "summaries/%s($|/.*)?")
+                                           re-pattern))
           {}
           log))
 
@@ -231,7 +251,8 @@
    :data {:type "area"
           :x "x"
           :columns [(into [:x] (map :x d))
-                    (into [:y] (map :y d))]}})
+                    (into [:train] (map :train d))
+                    (into [:test] (map :test d))]}})
 
 (defn- w-mk-summaries
   [selected log]
@@ -468,18 +489,24 @@
          (select-keys summarized)
          (ut/fmap fetched->log-entry*
                   $)))
+
 (defmethod ft/call-plugin [::dev :log-step]
-  [_ {:keys [state ws-def]} fetched step]
+  [_ {:keys [state ws-def]} {:keys [test train]} step]
   (let [state' @state
         dev-state (::dev state')
         {dev-ns :ns summaries :summaries} dev-state
         graph  (-> state' :session :graph)
         log-atom @(ns-resolve dev-ns '$log)]
     (swap! log-atom conj
-           (assoc (fetched->log-entry graph
-                                      summaries
-                                      fetched)
-                  :step step))
+           {:test (when test
+                    (fetched->log-entry graph
+                                        summaries
+                                        test))
+            :train (when train
+                     (fetched->log-entry graph
+                                         summaries
+                                         train)) 
+            :step step})
     (w-update graph dev-ns @log-atom @wsvr/selected-node)))
 
 (defn w-push

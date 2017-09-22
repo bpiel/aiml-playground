@@ -215,7 +215,31 @@
                           (= step+1 steps))
                     (do (ut/$- ->> fetch'
                                (fetch-map session $ feed targets)
-                               (future (call-plugins :log-step ws $ step+1))))
+                               (future (call-plugins :log-step ws {:train $} step+1))))
+                    (run-all session targets feed))))))
+    true))
+
+(defn ws-train-test
+  [{:keys [state ws-def] :as ws}]
+  (let [{:keys [train test]} ws-def
+        {:keys [targets feed fetch steps log-step-interval]} train
+        {test-feed :feed} test
+        {:keys [session]} @state]
+    (run-global-vars-init session)
+    (let [fetch' (->> (call-plugins :train-fetch ws)
+                      (apply concat fetch)
+                      distinct)]
+      (future (dotimes [step steps]
+                (let [step+1 (inc step)]
+                  (if (or (= step 0)
+                          (= (mod step+1 (or log-step-interval 1)) 0)
+                          (= step+1 steps))
+                    (let [train-fetch (fetch-map session fetch' feed targets)
+                          test-fetch (fetch-map session fetch' test-feed)]
+                      (future (call-plugins :log-step ws
+                                            {:train train-fetch
+                                             :test test-fetch}
+                                            step+1)))
                     (run-all session targets feed))))))
     true))
 
@@ -225,6 +249,7 @@
     (case a
       :build (ws-build ws)
       :train (ws-train ws)
+      :train-test (ws-train-test ws)
       (throw (Exception. (str "Unknown auto " a))))))
 
 (defn mk-workspace
