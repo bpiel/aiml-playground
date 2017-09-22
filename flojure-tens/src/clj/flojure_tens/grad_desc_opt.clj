@@ -115,7 +115,7 @@
          (decorate-w-grads x))))
 
 (defn- mk-applicators*
-  [{:keys [node state] :as x}]
+  [{:keys [node state] :as x} alpha]
   (let [{:keys [n-outputs]} node
         {:keys [id->node id->outputs]} state
         outputs (id->outputs (:id node))
@@ -127,13 +127,13 @@
                                            :dtype
                                            dt/kw->dt
                                            :scalar-fn)
-                                       0.01)
+                                       alpha)
                                       (first (outputs->grads x' outputs node))))))
 
 
 
 (defn- mk-applicators
-  [{:keys [collector] :as x}]
+  [{:keys [collector] :as x} alpha]
   (let [x' (assoc x :collector [])]
     (loop [[head & tail] (vals collector)
            x-iter x']
@@ -141,7 +141,7 @@
         (let [x-iter' (assoc x-iter
                              :node
                              head)]
-          (recur tail (mk-applicators* x-iter')))
+          (recur tail (mk-applicators* x-iter' alpha)))
         (:collector x-iter)))))
 
 (defn input-depth-traveller
@@ -191,7 +191,8 @@
 
 (defmethod mc/build-macro :grad-desc-opt
   [^Graph g plan]
-  (let [{:keys [id inputs scope]} plan
+  (let [{:keys [id inputs scope alpha]} plan
+        alpha' (or alpha 0.01)
         [input] inputs
         [v-a v-b] (:inputs input)]
     [(sc/with-push-both-scopes scope
@@ -199,4 +200,5 @@
                 {:ctrl-inputs
                  (mk-applicators 
                   (find-vari-paths (-> g :state deref)
-                                   (-> plan :inputs first)))}))]))
+                                   (-> plan :inputs first))
+                  alpha')}))]))

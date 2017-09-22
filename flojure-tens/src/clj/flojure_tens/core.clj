@@ -209,13 +209,14 @@
                       (apply concat fetch)
                       distinct)]
       (future (dotimes [step steps]
-                (ut/$- ->> fetch'
-                       (fetch-map session $ feed targets)
-                       (let [step+1 (inc step)]
-                         (when (or (= step 0)
-                                   (= (mod step+1 (or log-step-interval 1)) 0)
-                                   (= step+1 steps))
-                           (future (call-plugins :log-step ws $ step+1))))))))
+                (let [step+1 (inc step)]
+                  (if (or (= step 0)
+                          (= (mod step+1 (or log-step-interval 1)) 0)
+                          (= step+1 steps))
+                    (do (ut/$- ->> fetch'
+                               (fetch-map session $ feed targets)
+                               (future (call-plugins :log-step ws $ step+1))))
+                    (run-all session targets feed))))))
     true))
 
 (defn- ws-do-auto

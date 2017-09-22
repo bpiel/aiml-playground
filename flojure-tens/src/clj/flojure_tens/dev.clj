@@ -227,7 +227,7 @@
 
 (defn ->chart-map
   [d]
-  {:config {:transition {:duration 0}}
+  {:config {}  #_{:transition {:duration 0}}
    :data {:type "area"
           :x "x"
           :columns [(into [:x] (map :x d))
@@ -377,7 +377,7 @@
 (defmethod ft/call-plugin [::dev :post-build]
   [_ {:keys [state ws-def]}]
   (let [dev-ns (-> @state ::dev :ns)
-        {:keys [summaries]} ws-def
+        {:keys [summaries]} (:train ws-def)
         graph (-> @state :session :graph)]
     (mk-nodes-in-ns graph dev-ns)
     (if-let [smries (->> summaries
@@ -468,43 +468,19 @@
          (select-keys summarized)
          (ut/fmap fetched->log-entry*
                   $)))
-
-(def spacer-atom (atom [nil 0]))
-
-(defn spacer*
-  [f ts]
-  (let [[last-f last-ts] @spacer-atom]
-    (when (and (= f last-f)
-               (= ts last-ts))
-      (f)
-      (reset! spacer-atom [nil (System/currentTimeMillis)]))))
-
-(defn spacer
-  [f]
-  (let [[last-f last-ts] @spacer-atom
-        ts (System/currentTimeMillis)]
-    (if (and f (> (- ts last-ts) 500))
-      (do
-        (f)
-        (reset! spacer-atom [nil ts]))
-      (do (future (Thread/sleep 501)
-                  (spacer* f ts))
-          (reset! spacer-atom [f ts])))))
-
 (defmethod ft/call-plugin [::dev :log-step]
   [_ {:keys [state ws-def]} fetched step]
   (let [state' @state
         dev-state (::dev state')
         {dev-ns :ns summaries :summaries} dev-state
         graph  (-> state' :session :graph)
-        log-atom @(ns-resolve dev-ns '$log)
-        ]
+        log-atom @(ns-resolve dev-ns '$log)]
     (swap! log-atom conj
            (assoc (fetched->log-entry graph
                                       summaries
                                       fetched)
                   :step step))
-    (spacer #(w-update graph dev-ns @log-atom @wsvr/selected-node))))
+    (w-update graph dev-ns @log-atom @wsvr/selected-node)))
 
 (defn w-push
   [data]

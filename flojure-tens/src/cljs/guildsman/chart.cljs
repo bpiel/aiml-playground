@@ -6,11 +6,8 @@
 (defn chart-state->bb-gen-map
   [state {:keys [id config data]}]
   (println "!!!!!!!!1 chart-state->bb-gen-map !!!!!!!!")
-  (println (clj->js (assoc config
-                           :data data
-                           :bindto (str "#" (:id @state)))))
-
   (clj->js (assoc config
+                  :transition {:duration 0}
                   :data data
                   :bindto (str "#" (:id @state)))))
 

@@ -74,8 +74,6 @@
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
-                   (l/dense {:id :hidden
-                             :units 100})
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
@@ -86,13 +84,13 @@
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt :opt))]
+                   (p/grad-desc-opt :opt {:alpha 0.2} ))]
     {:auto [:build :train ]
      :build [classes opt]
-     :summaries [loss logits hidden] ;; TODO move to :train
-     :train {:targets [opt]
+     :train {:summaries [loss logits] ;; TODO move to :train
+             :targets [opt]
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 50
-             :log-step-interval 5}}))
+             :steps 200
+             :log-step-interval 50}}))
