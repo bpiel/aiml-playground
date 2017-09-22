@@ -34,6 +34,11 @@
   (fn [db _]
     (:left-mode db)))
 
+(rf/reg-sub
+ :form
+  (fn [db _]
+    (:form db)))
+
 (def components
   {'chart #'ch/chart
    'histos #'hs/histogram-series
@@ -53,7 +58,7 @@
 
 (rf/reg-event-db
  :ws-inbound
- (fn [db [_ {:keys [graph charts selected] :as p}]]
+ (fn [db [_ {:keys [graph charts selected form] :as p}]]
    (println p)
    (merge db
           (when graph
@@ -61,7 +66,8 @@
           (when charts
             {:charts charts})
           (when selected
-            {:selected selected}))))
+            {:selected selected})
+          {:form form})))
 
 (rf/reg-event-db
  :node-select
@@ -172,9 +178,17 @@
   []
   [charts-view])
 
+(defn footer []
+  (when-let [[form ns-name pos] @(rf/subscribe [:form])]
+    [:div#footer
+     [:span form]
+     [:span ns-name]
+     [:span pos]]))
+
 (defn page []
   [rc/h-box :children
-   [[rc/box :size "100%" :child [left-pane]]
+   [[rc/v-box :size "100%" :children [[rc/box :size "40px" :child [footer]]
+                                      [rc/box :size "100%" :child [left-pane]]]]
     [rc/box :size "400px" :child [right-pane]]]])
 
 (defn init! []
@@ -184,5 +198,3 @@
             (.getElementById js/document "app")))
 
 (init!)
-
-

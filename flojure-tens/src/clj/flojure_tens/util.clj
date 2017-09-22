@@ -1,6 +1,9 @@
 (ns flojure-tens.util
   (:require [clojure.walk :as walk]))
 
+(def ^:dynamic *enclosing-form* nil)
+(def ^:dynamic *macro-meta* nil)
+
 (defn ->int
   [v]
   (try (cond (integer? v) v
@@ -150,17 +153,22 @@
        (into {})
        (merge {:$ (last v)})))
 
+(defn- wrap-bind-form
+  [orig-form form]
+  `(binding [*enclosing-form* ['~orig-form (str *ns*) ~(meta orig-form)]]
+     ~form))
+
 (defn- id$->>**
   [prev-sym sym form]
-  [sym (if prev-sym
-         (let [form' (walk/prewalk-replace {'$ prev-sym}
-                                           form)]
-           (if (= form form')
-             (if (sequential? form)
-               (concat form [prev-sym])
-               (list form prev-sym))
-             form'))
-         form)])
+  [sym (wrap-bind-form form (if prev-sym
+                              (let [form' (walk/prewalk-replace {'$ prev-sym}
+                                                                form)]
+                                (if (= form form')
+                                  (if (sequential? form)
+                                    (concat form [prev-sym])
+                                    (list form prev-sym))
+                                  form'))
+                              form))])
 
 (defn- id$->>*
   [body]
@@ -178,7 +186,6 @@
   [& body]
   (id$->>* body))
 
-
 (defmacro for->map
   [bindings & body]
   `(into {}
@@ -194,3 +201,25 @@
 (defn regex?
   [v]
   (isa? (type v) java.util.regex.Pattern))
+
+
+(defn StackTraceElement->map
+  [^StackTraceElement o]
+  {:class-name (.getClassName o)
+   :file-name (.getFileName o)
+   :method-name (.getMethodName o)
+   :line-number (.getLineNumber o)})
+
+(defn get-stack
+  []
+  (mapv StackTraceElement->map
+        (.getStackTrace (Exception. "get-stack"))))
+
+(defmacro with-op-meta
+  [& body]
+  `(let [r# (do ~@body)]
+     (vary-meta r#
+                merge
+                {:stack (get-stack)
+                 :plan r#
+                 :form ut/*enclosing-form*})))

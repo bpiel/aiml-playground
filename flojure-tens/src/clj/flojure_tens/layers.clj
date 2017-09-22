@@ -5,7 +5,7 @@
             [flojure-tens.macros :as mc]
             [flojure-tens.ops-gen-config :as ogc]
             [flojure-tens.scope :as sc]
-            [flojure-tens.util :as util]
+            [flojure-tens.util :as ut]
             [flojure-tens.data-type :as dt]
             [clojure.walk :as w])
   (:import [flojure_tens.common Graph Op]))
@@ -135,9 +135,10 @@
 
 (defn dense
   [{:keys [id activation units]} input]
-  (sc/assoc-scopes-to-plan
-   {:macro :dense
-    :id id
-    :inputs [input]
-    :units units
-    :activation (mk-activation-template activation)}))
+  (-> {:macro :dense
+       :id id
+       :inputs [input]
+       :units units
+       :activation (mk-activation-template activation)}
+      sc/assoc-scopes-to-plan
+      ut/with-op-meta))

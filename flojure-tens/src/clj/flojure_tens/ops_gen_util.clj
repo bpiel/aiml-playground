@@ -179,14 +179,5 @@
     (:ctrl-inputs id-attrs [])
     []))
 
-(defn StackTraceElement->map
-  [^StackTraceElement o]
-  {:class-name (.getClassName o)
-   :file-name (.getFileName o)
-   :method-name (.getMethodName o)
-   :line-number (.getLineNumber o)})
 
-(defn get-stack
-  []
-  (mapv StackTraceElement->map
-        (.getStackTrace (Exception. "get-stack"))))
+

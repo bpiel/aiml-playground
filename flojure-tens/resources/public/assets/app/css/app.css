@@ -47,6 +47,11 @@ body{
     height: 500px;
 }
 
+#footer span{
+    margin: 3px 10px;
+    font-size: 20px;
+}
+
 .container{
     border: none;
     padding: 0;

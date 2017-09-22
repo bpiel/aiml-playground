@@ -35,11 +35,23 @@
   (add-watch wsvr/selected-node f
              (fn [_ _ _ selected] (f selected))))
 
+(defn rebuild-op-fns
+  [& [debug-mode?]]
+  (when (or (nil? debug-mode?)
+            (true? debug-mode?))
+    (reset! ops-gen/assoc-meta-to-op?
+            true))
+  (when (false? debug-mode?)
+    (reset! ops-gen/assoc-meta-to-op?
+            false))
+  #_(o/generate-ops))
+
 (defn activate-dev-mode
   [& [enable?]]
-  (if enable?
-    (swap! ft/plugins conj ::dev)
-    (throw (Exception. "NOT IMPLEMENTED"))))
+  (rebuild-op-fns enable?)
+    (if-not (false? enable?)
+      (swap! ft/plugins conj ::dev)
+      (throw (Exception. "NOT IMPLEMENTED"))))
 
 #_ (activate-dev-mode true)
 
@@ -68,18 +80,10 @@
     (swap! state assoc-in [::dev :ns]
            dev-ns)
     (intern dev-ns '$log (atom []))
+    (intern dev-ns 'sel (atom nil))
     (println "created ns "ns-sym)))
 
-(defn rebuild-op-fns
-  [& [debug-mode?]]
-  (when (or (nil? debug-mode?)
-            (true? debug-mode?))
-    (reset! ops-gen/assoc-meta-to-op?
-            true))
-  (when (false? debug-mode?)
-    (reset! ops-gen/assoc-meta-to-op?
-            false))
-  (o/generate-ops))
+
 
 (defn- unmap-interns [ns']
   (dorun (map (partial ns-unmap ns')
@@ -90,8 +94,8 @@
   (doseq [[k v] (-> g :state deref :id->node)]
     (intern ns'
             (symbol (clojure.string/replace k #"/" ">"))
-            (with-meta v
-              {:ns ns'}))))
+            (vary-meta v
+                       assoc :ns ns'))))
 
 (defn mk-ns
   [^Session s]
@@ -213,7 +217,6 @@
                       (for [[k v] entry]
                         (when (and (string? k)
                                    (re-find re k))
-                          (clojure.pprint/pprint k)
                           [k [(w-mk-summary-data** entry v)]]))))))
 
 (defn w-mk-summary-data
@@ -289,19 +292,31 @@
             :style {:background-color "lightblue"}}]      
    :elements (filter-cyto elements)})
 
+(defn find-selected-op
+  [dev-ns selected]
+  (try
+    (when selected
+      @(ns-resolve dev-ns
+                   (symbol (clojure.string/replace selected
+                                                   #"/" ">"))))
+    (catch Exception e
+      nil)))
+
 (defn w-update*
-  [^Graph g log selected]
-  (let [charts (w-mk-summaries selected log)]
-    (def selected1 selected)
+  [^Graph g dev-ns log selected]
+  (let [charts (w-mk-summaries selected log)
+        sel-op (find-selected-op dev-ns selected)]
+    
     (wsvr/update-view
      {:graph (w-mk-cyto (w-mk-graph-def2 g))
-      :charts charts
-      :selected selected})))
+      :charts (if (nil? charts) [] charts)
+      :selected selected
+      :form (some->> sel-op meta :form (mapv str))})))
 
 (defn w-update
-  [^Graph g log selected]
-  (w-update* g log selected)
-  (-> (partial w-update* g log)
+  [^Graph g dev-ns log selected]
+  (w-update* g dev-ns log selected)
+  (-> (partial w-update* g dev-ns log)
       set-selected-node-watcher))
 
 
@@ -339,7 +354,6 @@
                     opn/get-desc-of-output
                     :shape
                     sh/scalar?)]
-    (clojure.pprint/pprint [target scalar?])
     (when-not ((gr/id->node g) smry-id)
       (if scalar?
         (o/scalar-summary {:id smry-id} smry-id target)
@@ -370,12 +384,11 @@
                          (add-summaries graph )
                          not-empty
                          (map :id))]
-      (do       (clojure.pprint/pprint smries)
-        (swap! state
-               update-in [::dev :summaries]
-               (fnil into #{})
-               (set smries))))
-    (w-update graph [] nil)))
+      (do (swap! state
+                 update-in [::dev :summaries]
+                 (fnil into #{})
+                 (set smries))))
+    (w-update graph dev-ns [] nil)))
 
 (defmethod ft/call-plugin [::dev :train-fetch]
   [_ {:keys [state]}]
@@ -484,14 +497,14 @@
         dev-state (::dev state')
         {dev-ns :ns summaries :summaries} dev-state
         graph  (-> state' :session :graph)
-        log-atom @(ns-resolve dev-ns '$log)]
-    (clojure.pprint/pprint fetched)
+        log-atom @(ns-resolve dev-ns '$log)
+        ]
     (swap! log-atom conj
            (assoc (fetched->log-entry graph
                                       summaries
                                       fetched)
                   :step step))
-    (spacer #(w-update graph @log-atom @wsvr/selected-node))))
+    (spacer #(w-update graph dev-ns @log-atom @wsvr/selected-node))))
 
 (defn w-push
   [data]

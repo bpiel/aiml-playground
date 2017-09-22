@@ -69,7 +69,6 @@
                                       TEST-CASE-COUNT)))
 
 
-
 (ft/def-workspace ws1
   (let [{:keys [data logits hidden classes]}
         (ut/id$->> (o/placeholder :data

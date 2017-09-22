@@ -2,7 +2,8 @@
   (:require [flojure-tens.op-build :as obld]
             [flojure-tens.scope :as sc]
             [flojure-tens.ops-gen-config :as cfg]
-            [flojure-tens.ops-gen-util :as ogu]))
+            [flojure-tens.ops-gen-util :as ogu]
+            [flojure-tens.util :as ut]))
 
 (def assoc-meta-to-op? (atom false))
 
@@ -52,8 +53,10 @@
     (if-not @assoc-meta-to-op?
       p
       (with-meta p
-        {:stack (ogu/get-stack)
-         :plan p}))))
+        (or ut/*macro-meta*
+            {:stack (ut/get-stack)
+             :plan p
+             :form ut/*enclosing-form* })))))
 
 #_(defn finalize-plan
   [plan]

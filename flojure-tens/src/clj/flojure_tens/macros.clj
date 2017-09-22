@@ -1,7 +1,8 @@
 (ns flojure-tens.macros
   (:require flojure-tens.common
             [flojure-tens.graph :as gr]
-            [flojure-tens.scope :as sc])
+            [flojure-tens.scope :as sc]
+            [flojure-tens.util :as ut])
   (:import [flojure_tens.common Graph]))
 
 (defmulti pre-build-macro (fn [^Graph g plan] (:macro plan)))
@@ -45,10 +46,11 @@
 (defn build
   [^Graph g {:keys [macro id scope var-scope hsh no-auto-scope?] :as plan}]
   (let [id' (or id (mk-id g macro))
-        outputs (if no-auto-scope? ;; TODO not great
-                  (build-macro g plan)
-                  (sc/with-push-id-scope (conj scope id')
-                    (sc/with-reuse-var-scope var-scope id'
-                      (build-macro g plan))))]
+        outputs (binding [ut/*macro-meta* (meta plan)]
+                  (if no-auto-scope? ;; TODO not great
+                    (build-macro g plan)
+                    (sc/with-push-id-scope (conj scope id')
+                      (sc/with-reuse-var-scope var-scope id'
+                        (build-macro g plan)))))]
     (gr/add-macro-to-state! g hsh outputs)
     outputs))
