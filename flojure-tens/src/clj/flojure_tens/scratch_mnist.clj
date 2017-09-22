@@ -77,20 +77,24 @@
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
-        {:keys [loss opt]}
+        {:keys [labels loss opt]}
         (ut/id$->> (o/placeholder :labels
                                   dt/int-kw
                                   [-1])
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt :opt {:alpha 0.2} ))]
+                   (p/grad-desc-opt :opt {:alpha 0.2} ))
+        acc (p/accuracy :acc
+                        (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
+                                   classes)
+                        labels)]
     {:auto [:build :train ]
-     :build [classes opt]
-     :train {:summaries [loss logits] ;; TODO move to :train
+     :build [acc opt]
+     :train {:summaries [acc loss logits] ;; TODO move to :train
              :targets [opt]
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 200
-             :log-step-interval 50}}))
+             :steps 10
+             :log-step-interval 2}}))

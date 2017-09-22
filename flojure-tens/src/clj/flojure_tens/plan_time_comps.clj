@@ -3,6 +3,7 @@
             [flojure-tens.ops-gen-util :as ogu]
             [flojure-tens.scope :as sc]
             [flojure-tens.data-type :as dt]
+            [flojure-tens.util :as ut]
             [clojure.walk :as w]))
 
 (defn safe-shape-div
@@ -18,7 +19,7 @@
              x))
 
 (defn reduction-dims
-  [x axis]
+  [x & [axis]]
   (or axis
       (o/range-tf (int 0)
                   (o/rank x)
@@ -202,6 +203,14 @@
   ([id attrs idxs depth]
    (o/one-hot id attrs idxs depth 1. 0.)))
 
+(defn accuracy
+  ([a b] (accuracy nil a b))  
+  ([id a b]
+   (ut/$- ->> (o/equal a b)
+          (o/cast-tf {:SrcT dt/bool-kw :DstT dt/float-kw})
+          (o/mean :accuracy $ (reduction-dims $))
+          (sc/with-push-both-scopes (or id :accuracy)))))
+
 (defn random-uniform
   ([]
    {:macro :random-uniform
@@ -211,3 +220,4 @@
 (defn l2-loss
   ([] {:macro :l2-loss
        :inputs [:$/input]}))
+
