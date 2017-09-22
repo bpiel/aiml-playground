@@ -138,20 +138,22 @@
       [:div "no graph"])))
 
 (defn chart-view
-  [ty data]
-  (case ty
-    :chart [ch/chart data]
-    :histos [hs/histogram-series data]))
+  [ty title data]
+  [:div.summary
+   [:span.title title]
+   (case ty
+     :chart [ch/chart data]
+     :histos [hs/histogram-series data])])
 
 (defn charts-view
   []
   (let [charts @(rf/subscribe [:charts])]
-    (into [:div]
+    (into [:div#summaries]
           (map-indexed
-           (fn [i [ty data]]
-             [:div.summaries
+           (fn [i [ty title data]]
+             [:div.summary-outer
               {:on-click #(rf/dispatch [:click-chart i])}
-              (chart-view ty data)])
+              (chart-view ty title data)])
            charts))))
 
 (defn left-pane
@@ -160,11 +162,11 @@
         charts @(rf/subscribe [:charts])]
     (if (nil? left-mode)
       [graph-view]
-      (let [[ty data] (nth charts
+      (let [[ty title data] (nth charts
                            left-mode) ]
         [:div#big-left
          [:span {:on-click #(rf/dispatch [:click-chart nil])} "[ X close ]"]
-         [chart-view ty data]]))))
+         [chart-view ty title data]]))))
 
 (defn right-pane
   []
@@ -173,7 +175,7 @@
 (defn page []
   [rc/h-box :children
    [[rc/box :size "100%" :child [left-pane]]
-    [rc/box :size "300px" :child [right-pane]]]])
+    [rc/box :size "400px" :child [right-pane]]]])
 
 (defn init! []
   (rf/dispatch-sync [:init-db])

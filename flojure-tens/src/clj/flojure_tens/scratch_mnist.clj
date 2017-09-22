@@ -71,7 +71,7 @@
 
 
 (ft/def-workspace ws1
-  (let [{:keys [data logits classes]}
+  (let [{:keys [data logits hidden classes]}
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
@@ -90,49 +90,10 @@
                    (p/grad-desc-opt :opt))]
     {:auto [:build :train ]
      :build [classes opt]
-     :summaries [loss logits] ;; TODO move to :train
+     :summaries [loss logits hidden] ;; TODO move to :train
      :train {:targets [opt]
              :feed {:data @test-data
                     :labels @test-labels}
              :fetch []
-             :steps 500
-             :log-step-interval 50}}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+             :steps 50
+             :log-step-interval 5}}))

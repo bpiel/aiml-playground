@@ -57,4 +57,5 @@
   
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
 
-  :figwheel {:css-dirs ["resources/public/css"]})
+  :figwheel {:css-dirs ["resources/public/css"
+                        "resources/public/assets/app/css"]})

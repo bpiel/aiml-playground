@@ -9,7 +9,7 @@ body{
 }
 
 #summaries {
-    width: 90%;
+    width: 100%;
 }
 
 #big-left {
@@ -17,15 +17,24 @@ body{
     width: 100%;
 }
 
+.summary {
+    padding: 20px px 20px 0;
+    border-bottom: black solid 1px;
+}
 
-#big-left div {
+.summary .title{
+    font-size: 20px;
+    padding-left: 20px;
+    font-weight: 700;
+}
+
+#big-left .summary, #big-left .bb {
     height: 700px;
     width: 100%;
 }
 
 
-
-#big-left svg {
+#big-left > svg {
     height: 700px;
 }
 
@@ -34,6 +43,9 @@ body{
     width: 20px !important;
 }
 
+#big-left .histos{
+    height: 500px;
+}
 
 .container{
     border: none;

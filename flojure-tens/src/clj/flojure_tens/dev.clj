@@ -224,7 +224,7 @@
 
 (defn ->chart-map
   [d]
-  {:config {}
+  {:config {:transition {:duration 0}}
    :data {:type "area"
           :x "x"
           :columns [(into [:x] (map :x d))
@@ -237,11 +237,11 @@
     (vec
      (for [[id d] data]
        (if (-> d first :bins)
-         [:histos
+         [:histos id
           {:mode "offset"
            :timeProperty "step"
            :data d}]
-         [:chart (->chart-map d)])))))
+         [:chart id (->chart-map d)])))))
 
 #_(w-mk-histos $s/selected $s/log)
 

@@ -30,7 +30,7 @@
     (println id)
     [:div
      [:div {:id "tooltip"}]
-     [:svg {:id id}
+     [:svg {:id id :class "histos"}
       [:g
        [:g {:class "axis x"}]
        [:g {:class "axis y"}]

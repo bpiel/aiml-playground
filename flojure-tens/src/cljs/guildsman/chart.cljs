@@ -5,16 +5,22 @@
 
 (defn chart-state->bb-gen-map
   [state {:keys [id config data]}]
+  (println "!!!!!!!!1 chart-state->bb-gen-map !!!!!!!!")
+  (println (clj->js (assoc config
+                           :data data
+                           :bindto (str "#" (:id @state)))))
+
   (clj->js (assoc config
                   :data data
                   :bindto (str "#" (:id @state)))))
 
 (defn chart-comp-did-mount
   [state value this]
-  (vreset! state
-           (assoc value
-                  :instance
-                  (.generate js/bb (chart-state->bb-gen-map state value)))))
+  (vswap! state
+           (fn [{:keys [id]}]
+             (assoc value
+                    :id id
+                    :instance (.generate js/bb (chart-state->bb-gen-map state value))))))
 
 (defn chart-reagent-render
   [state value]
@@ -25,10 +31,11 @@
 
 (defn chart-comp-will-update
   [state this [_ new-value]]
-  (vreset! state
-           (assoc new-value
-                  :instance
-                  (:instance @state))))
+  (vswap! state
+          (fn [{:keys [id instance]}]
+            (assoc new-value
+                   :id id
+                   :instance instance))))
 
 (defn chart-comp-did-update
   [state this [_ {:keys [config data highlighted selected] :as old-val}]]
