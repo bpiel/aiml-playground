@@ -205,6 +205,9 @@
   (call-plugins :write-tb m)
   true)
 
+(def last-ex (atom nil))
+#_ (clojure.pprint/pprint last-ex)
+
 (defn ws-train
   [{:keys [state ws-def] :as ws}]
   (let [{:keys [train]} ws-def
@@ -215,18 +218,21 @@
                       (apply concat fetch)
                       distinct)]
       (future
-        (do (ut/$- ->> fetch'
-                   (fetch-map session $ feed)
-                   (future (call-plugins :log-step ws {:train $} 0))))
-        (dotimes [step steps]
-          (let [step+1 (inc step)]
-            (if (or (= step 0)
-                    (= (mod step+1 (or log-step-interval 1)) 0)
-                    (= step+1 steps))
-              (do (ut/$- ->> fetch'
-                         (fetch-map session $ feed targets)
-                         (future (call-plugins :log-step ws {:train $} step+1))))
-              (run-all session targets feed))))))
+        (try
+          (do (ut/$- ->> fetch'
+                     (fetch-map session $ feed)
+                     (future (call-plugins :log-step ws {:train $} 0))))
+          (dotimes [step steps]
+            (let [step+1 (inc step)]
+              (if (or (= step 0)
+                      (= (mod step+1 (or log-step-interval 1)) 0)
+                      (= step+1 steps))
+                (do (ut/$- ->> fetch'
+                           (fetch-map session $ feed targets)
+                           (future (call-plugins :log-step ws {:train $} step+1))))
+                (run-all session targets feed))))
+          (catch Exception ex
+            (reset! last-ex ex)))))
     true))
 
 (defn ws-train-test
@@ -239,18 +245,20 @@
     (let [fetch' (->> (call-plugins :train-fetch ws)
                       (apply concat fetch)
                       distinct)]
-      (future (dotimes [step steps]
-                (let [step+1 (inc step)]
-                  (if (or (= step 0)
-                          (= (mod step+1 (or log-step-interval 1)) 0)
-                          (= step+1 steps))
-                    (let [train-fetch (fetch-map session fetch' feed targets)
-                          test-fetch (fetch-map session fetch' test-feed)]
-                      (future (call-plugins :log-step ws
-                                            {:train train-fetch
-                                             :test test-fetch}
-                                            step+1)))
-                    (run-all session targets feed))))))
+      (future (try (dotimes [step steps]
+                     (let [step+1 (inc step)]
+                       (if (or (= step 0)
+                               (= (mod step+1 (or log-step-interval 1)) 0)
+                               (= step+1 steps))
+                         (let [train-fetch (fetch-map session fetch' feed targets)
+                               test-fetch (fetch-map session fetch' test-feed)]
+                           (future (call-plugins :log-step ws
+                                                 {:train train-fetch
+                                                  :test test-fetch}
+                                                 step+1)))
+                         (run-all session targets feed))))
+                   (catch Exception ex
+                     (reset! last-ex ex)))))
     true))
 
 (defn- ws-do-auto
