@@ -9,7 +9,9 @@
             [cognitect.transit :as t]
             [guildsman.chart :as ch]
             [guildsman.histogram-series :as hs]
-            [guildsman.cytoscape :as cy])
+            [guildsman.cytoscape :as cy]
+            [goog.string :as gstring]
+            [goog.string.format])
   (:import goog.History))
 
 (enable-console-print!)
@@ -143,10 +145,25 @@
       [cy/cytoscape graph]
       [:div "no graph"])))
 
+(defn data-point-view
+  [{:keys [x test train]}]
+  (->> [(when x
+          [:span.step "step"
+           [:span.val x]])
+        (when train
+          [:span.train "train"
+           [:span.val (gstring/format "%.3f" train)]])
+        (when test
+          [:span.test "test"
+           [:span.val (gstring/format "%.3f" test)]])]
+       (remove nil?)
+       (into [:div.last-point])))
+
 (defn chart-view
   [ty title data]
   [:div.summary
    [:span.title title]
+   [data-point-view (->> data :data :columns (mapv (juxt first last)) (into {}))]
    (case ty
      :chart [ch/chart data]
      :histos [hs/histogram-series data])])
@@ -171,7 +188,7 @@
       (let [[ty title data] (nth charts
                            left-mode) ]
         [:div#big-left
-         [:span {:on-click #(rf/dispatch [:click-chart nil])} "[ X close ]"]
+         [:span.close-btn {:on-click #(rf/dispatch [:click-chart nil])} "[ X close ]"]
          [chart-view ty title data]]))))
 
 (defn right-pane

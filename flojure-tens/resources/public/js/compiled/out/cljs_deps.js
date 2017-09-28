@@ -110,6 +110,6 @@ goog.addDependency("../devtools/formatters.js", ['devtools.formatters'], ['devto
 goog.addDependency("../cljs/stacktrace.js", ['cljs.stacktrace'], ['goog.string', 'cljs.core', 'clojure.string']);
 goog.addDependency("../devtools/hints.js", ['devtools.hints'], ['cljs.stacktrace', 'cljs.core', 'devtools.context', 'devtools.prefs']);
 goog.addDependency("../devtools/core.js", ['devtools.core'], ['devtools.toolbox', 'devtools.util', 'cljs.core', 'devtools.async', 'devtools.formatters', 'devtools.hints', 'devtools.defaults', 'devtools.prefs']);
-goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['guildsman.histogram_series', 're_com.core', 'reagent.core', 'cljs.core', 'guildsman.chart', 'goog.history.EventType', 'goog.History', 'guildsman.cytoscape', 'cognitect.transit', 'figwheel.client', 'devtools.core', 'goog.events', 're_frame.core']);
+goog.addDependency("../guildsman/core.js", ['guildsman.core'], ['guildsman.histogram_series', 're_com.core', 'goog.string', 'reagent.core', 'cljs.core', 'guildsman.chart', 'goog.history.EventType', 'goog.History', 'guildsman.cytoscape', 'cognitect.transit', 'figwheel.client', 'goog.string.format', 'devtools.core', 'goog.events', 're_frame.core']);
 goog.addDependency("../process/env.js", ['process.env'], ['cljs.core']);
 goog.addDependency("../devtools/preload.js", ['devtools.preload'], ['cljs.core', 'devtools.core', 'devtools.prefs']);

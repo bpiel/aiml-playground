@@ -18,14 +18,25 @@ body{
 }
 
 .summary {
-    padding: 20px px 20px 0;
-    border-bottom: black solid 1px;
+    font-family: Roboto, sans-serif;
+    letter-spacing: 2px;
+    padding: 0 0 5px 0;
+    margin: 0 0 20px 0;
+    border-bottom: #999 solid 2px;
+    border-left: #999 solid 2px;
+    cursor: pointer;
 }
 
 .summary .title{
-    font-size: 20px;
-    padding-left: 20px;
-    font-weight: 700;
+    font-size: 18px;
+    padding: 5px 20px 5px 10px;
+    font-weight: 400;
+    color: white;
+    background-color: #999;
+}
+
+#big-left .summary{
+    border: 0;
 }
 
 #big-left .summary, #big-left .bb {
@@ -73,6 +84,46 @@ input{
     background-color: #111111;
     color: white;
 }
+
+.last-point{
+    margin: 5px;
+    font-size: 15px;
+}
+
+.last-point .step{
+    color: black;
+}
+
+.last-point .train{
+    color: blue;
+}
+
+.last-point .test{
+    color: orange;
+}
+
+.last-point .val {
+    font-size: 30px;
+    margin: 0 20px 0 2px;
+}
+
+
+#big-left .last-point .val {
+    font-size: 50px;
+    margin: 0 20px 0 2px;
+}
+
+.close-btn{
+    font-family: monospace;
+    margin-right: 20px;
+    font-size: 20px;
+    float: right;
+    color: white;
+    background-color: #833;
+    cursor: pointer;
+}
+
+
 
 #viewleft, #viewright{
     height: 100%;

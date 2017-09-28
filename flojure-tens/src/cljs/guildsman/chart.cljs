@@ -6,6 +6,7 @@
 (defn chart-state->bb-gen-map
   [state {:keys [id config data]}]
   (println "!!!!!!!!1 chart-state->bb-gen-map !!!!!!!!")
+
   (clj->js (assoc config
                   :transition {:duration 0}
                   :data data

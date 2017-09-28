@@ -271,7 +271,7 @@
    :style [{:selector "node"
             :style {:content "data(name)"
                     :border-width 3
-                    :border-color "#CC9"
+                    :border-color "#333"
                     :font-size 35
                     :background-color "#FFC"
                     :shape "ellipsis"
@@ -284,7 +284,7 @@
                     "curve-style" "unbundled-bezier"
                     :control-point-distances [0]
                     :control-point-weights [0.5]
-                    :line-color "#AAA"
+                    :line-color "#888"
                     :arrow-scale 1.5
                     :target-arrow-color "#d00"
                     :target-arrow-shape "triangle"}}
@@ -292,7 +292,7 @@
             :style {:font-size 40
                     :background-color "#FFC"
                     :border-width 5
-                    :border-color "#CC9"
+                    :border-color "#333"
                     :shape "rectangle"
                     :height 100
                     :width 300
