@@ -49,7 +49,7 @@
       (throw (Exception. "NOT IMPLEMENTED"))))
 
 #_ (activate-dev-mode true)
-
+(count @$.ws1/$log)
 (defn- mk-ns-sym [sym] (->> sym name (str "$.") symbol))
 
 (defn release-dev-ns

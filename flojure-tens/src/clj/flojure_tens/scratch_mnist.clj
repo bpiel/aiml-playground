@@ -103,6 +103,39 @@
             :feed {:data (take 100 (reverse @test-data))
                    :labels (take 100 (reverse @test-labels))}}}))
 
+(ft/def-workspace ws1
+  (let [{:keys [data logits hidden classes]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 784])
+                   (l/dense {:id :logits
+                             :units 10})
+                   (o/arg-max :classes $ 1))
+        {:keys [labels loss opt]}
+        (ut/id$->> (o/placeholder :labels
+                                  dt/int-kw
+                                  [-1])
+                   (p/one-hot $ 10)
+                   (o/softmax-cross-entropy-with-logits logits)
+                   (p/reduce-mean :loss)
+                   (p/grad-desc-opt :opt {:alpha 0.2} ))
+        acc (p/accuracy :acc
+                        (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
+                                   classes)
+                        labels)]
+    {:auto [:build :train-test ]
+     :build [acc opt]
+     :train {:summaries [acc loss logits]
+             :targets [opt]
+             :feed {:data (take 200 @train-data)
+                    :labels (take 200 @train-labels)}
+             :fetch []
+             :steps 100
+             :log-step-interval 10}
+     :test {;:summaries [acc loss logits]
+            :targets []
+            :feed {:data (take 100 (reverse @test-data))
+                   :labels (take 100 (reverse @test-labels))}}}))
 
 (ft/def-workspace ws1
   (let [{:keys [data dense-1 logits hidden classes]}
@@ -110,7 +143,8 @@
                                   dt/float-kw
                                   [-1 784])
                    (l/dense {:id :dense-1
-                             :units 1000})
+                             :units 1024})
+                   (p/dropout (o/placeholder :keep dt/float-kw []))
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
@@ -131,15 +165,17 @@
      :build [acc opt]
      :train {:summaries [acc loss logits dense-1 ]
              :targets [opt]
-             :feed {:data (take 100 @train-data)
-                    :labels (take 100 @train-labels)}
+             :feed {:data (take 10000 @train-data)
+                    :labels (take 10000 @train-labels)
+                    :keep 0.2}
              :fetch []
              :steps 200
              :log-step-interval 10}
      :test {                            ;:summaries [acc loss logits]
             :targets []
             :feed {:data (take 100 (reverse @test-data))
-                   :labels (take 100 (reverse @test-labels))}}}))
+                   :labels (take 100 (reverse @test-labels))
+                   :keep 1.0}}}))
 
 (ft/def-workspace ws1
   (let [{:keys [data logits hidden classes]}
@@ -183,12 +219,12 @@
      :build [acc opt]
      :train {:summaries [data acc loss logits]
              :targets [opt]
-             :feed {:data (take 100 @train-data)   ;; start with 100 => 200
-                    :labels (take 100 @train-labels) 
-                    :keep 0.1}
+             :feed {:data (take 200 @train-data)   ;; start with 100 => 200
+                    :labels (take 200 @train-labels) 
+                    :keep 0.2}
              :fetch []
              :steps 200
-             :log-step-interval 10}
+             :log-step-interval 20}
      :test {                            ;:summaries [acc loss logits]
             :targets []
             :feed {:data (take 100 (reverse @test-data))
