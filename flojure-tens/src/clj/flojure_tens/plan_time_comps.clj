@@ -221,3 +221,16 @@
   ([] {:macro :l2-loss
        :inputs [:$/input]}))
 
+
+(defn truncated-normal
+  ([]
+   {:macro :truncated-normal
+    :attrs {:shape :$/shape
+            :dtype :$/dtype}})
+  ([dtype shape mean stddev]
+   {:macro :truncated-normal
+    :attrs {:shape shape
+            :dtype dtype
+            :mean mean
+            :stddev stddev}}))
+

@@ -12,6 +12,7 @@
             [flojure-tens.data-type :as dt]
             [flojure-tens.graph :as gr]
             [flojure-tens.webapp.server :as wsvr]
+            [flojure-tens.tf-record :as tfr]
             [flatland.protobuf.core :as pr])
   (:import [flojure_tens.common Graph Op]
            [flojure_tens.session Session]
@@ -77,6 +78,7 @@
   (let [ns-sym (mk-ns-sym ws-name)
         _ (release-dev-ns ns-sym)
         dev-ns (create-ns ns-sym)]
+    (swap! dev-nses conj ns-sym)
     (swap! state assoc-in [::dev :ns]
            dev-ns)
     (intern dev-ns '$log (atom []))
@@ -323,11 +325,46 @@
     (catch Exception e
       nil)))
 
+(def spacer-atom (atom {:last-f nil
+                        :last-ts 0
+                        :fut nil}))
+
+(defn spacer*
+  [space]
+  (Thread/sleep space)
+  ((:last-f @spacer-atom))
+  (reset! spacer-atom
+          {:last-f nil
+           :last-ts (System/currentTimeMillis)
+           :fut nil}))
+
+(defn spacer
+  [f]
+  (let [space 500
+        {:keys [last-f last-ts fut]} @spacer-atom
+        ts (System/currentTimeMillis)]
+    (cond (> (- ts last-ts) space) (do (reset! spacer-atom
+                                               {:last-f nil
+                                                :last-ts ts
+                                                :fut nil})
+                                       (f))
+          (nil? fut) (reset! spacer-atom {:last-f f
+                                          :last-ts last-ts
+                                          :fut (future (spacer* space))})
+          :else (reset! spacer-atom
+                        {:last-f f
+                         :last-ts last-ts
+                         :fut fut}))))
+
 (defn w-update*
   [^Graph g dev-ns log selected]
   (let [charts (w-mk-summaries selected log)
         sel-op (find-selected-op dev-ns selected)]
-    
+    #_    (spacer #(wsvr/update-view
+                    {:graph (w-mk-cyto (w-mk-graph-def2 g))
+                     :charts (if (nil? charts) [] charts)
+                     :selected selected
+                     :form (some->> sel-op meta :form (mapv str))}))
     (wsvr/update-view
      {:graph (w-mk-cyto (w-mk-graph-def2 g))
       :charts (if (nil? charts) [] charts)
@@ -508,6 +545,14 @@
                                          train)) 
             :step step})
     (w-update graph dev-ns @log-atom @wsvr/selected-node)))
+
+(defmethod ft/call-plugin [::dev :write-tb]
+  [_ {:keys [state ws-def]}]
+  (let [dev-ns (-> @state ::dev :ns)
+        {:keys [tb-out]} ws-def
+        graph (-> @state :session :graph)]
+    (tfr/write-graphdef-to-events-file graph tb-out)))
+
 
 (defn w-push
   [data]

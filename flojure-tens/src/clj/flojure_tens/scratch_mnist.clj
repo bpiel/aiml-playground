@@ -26,7 +26,7 @@
       (DataInputStream.)))
 
 (defn normalize-img-byte [x]
-  (float (- (/ x 255.0) 0. #_0.5)))
+  (float (- (/ x 255.0) 0.5)))
 
 (defn read-mnist-data
   [res-name n size]
@@ -54,18 +54,18 @@
     (vec (for [i (range n)]
            (int (.readUnsignedByte data-input-stream))))))
 
-(defonce train-data (future (read-mnist-data "/train-images-idx3-ubyte"
+(def train-data (future (read-mnist-data "/train-images-idx3-ubyte"
                                          TRAIN-CASE-COUNT
                                          SIZE)))
 
-(defonce train-labels (future (read-mnist-labels "/train-labels-idx1-ubyte"
+(def train-labels (future (read-mnist-labels "/train-labels-idx1-ubyte"
                                            TRAIN-CASE-COUNT)))
 
-(defonce test-data (future (read-mnist-data "/t10k-images-idx3-ubyte"
+(def test-data (future (read-mnist-data "/t10k-images-idx3-ubyte"
                                          TEST-CASE-COUNT
                                          SIZE)))
 
-(defonce test-labels (future (read-mnist-labels "/t10k-labels-idx1-ubyte"
+(def test-labels (future (read-mnist-labels "/t10k-labels-idx1-ubyte"
                                       TEST-CASE-COUNT)))
 
 
@@ -103,6 +103,43 @@
             :feed {:data (take 100 (reverse @test-data))
                    :labels (take 100 (reverse @test-labels))}}}))
 
+
+(ft/def-workspace ws1
+  (let [{:keys [data dense-1 logits hidden classes]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 784])
+                   (l/dense {:id :dense-1
+                             :units 10})
+                   (l/dense {:id :logits
+                             :units 10})
+                   (o/arg-max :classes $ 1))
+        {:keys [labels loss opt]}
+        (ut/id$->> (o/placeholder :labels
+                                  dt/int-kw
+                                  [-1])
+                   (p/one-hot $ 10)
+                   (o/softmax-cross-entropy-with-logits logits)
+                   (p/reduce-mean :loss)
+                   (p/grad-desc-opt :opt {:alpha 0.01} ))
+        acc (p/accuracy :acc
+                        (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
+                                   classes)
+                        labels)]
+    {:auto [:build :train-test]
+     ;:tb-out "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop"
+     :build [acc opt]
+     :train {:summaries [acc loss logits dense-1]
+             :targets [opt]
+             :feed {:data (take 6 @train-data)
+                    :labels (take 6 @train-labels)}
+             :fetch []
+             :steps 20
+             :log-step-interval 1}
+     :test {;:summaries [acc loss logits]
+            :targets []
+            :feed {:data (take 6 (reverse @test-data))
+                   :labels (take 6 (reverse @test-labels))}}}))
 
 (ft/def-workspace ws1
   (let [{:keys [data logits hidden classes]}

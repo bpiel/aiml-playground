@@ -63,8 +63,68 @@
                         :dtype dtype}
                        shape)]))
 
+(defmethod mc/build-macro :truncated-normal
+  [^Graph g {:keys [id attrs] :as args}]
+  (let [{:keys [shape dtype mean stddev]} attrs]
+    [(-> (o/truncated-normal {:dtype dtype
+                              :seed (rand-int Integer/MAX_VALUE)
+                              :seed2 (rand-int Integer/MAX_VALUE)}
+                             shape)
+         (o/mul stddev)
+         (o/add mean))]))
+
 (defmethod mc/build-macro :l2-loss
   [^Graph g {:keys [id attrs inputs] :as args}]
   [(o/l2-loss id
               (or attrs {})
               (first inputs))])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

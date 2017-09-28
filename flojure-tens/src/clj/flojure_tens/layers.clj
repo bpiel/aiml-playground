@@ -57,14 +57,18 @@
 (defn glorot-uniform-initializer
   [shape]
   (let [[fan-in fan-out] (compute-fans shape)
-        scale (Math/sqrt (/ 1.0
-                            (max 1.
-                                 (/ (+ fan-in fan-out)
-                                    2.))))]
-    (o/mul (o/sub (o/random-uniform {:dtype dt/float-kw}
-                                    shape)
-                  (/ scale 2.))
-           scale)))
+        scale-stddev (Math/sqrt (/ 1.0
+                                   (max 1.
+                                        (/ (+ fan-in fan-out)
+                                           2.))))]
+    #_    (o/mul (o/sub (o/random-uniform {:dtype dt/float-kw}
+                                          shape)
+                        (/ scale 2.))
+                 scale)
+    (p/truncated-normal dt/float-kw shape 0.
+                        scale-stddev)))
+
+
 
 (defn- mk-kernel
   [{:keys [input-shape filters kernel-size dtype]}]

@@ -199,6 +199,12 @@
     (call-plugins :post-build m)
     true))
 
+;; TODO wrong way to do this
+(defn ws-write-tb
+  [{:keys [state ws-def] :as m}]
+  (call-plugins :write-tb m)
+  true)
+
 (defn ws-train
   [{:keys [state ws-def] :as ws}]
   (let [{:keys [train]} ws-def
@@ -208,15 +214,19 @@
     (let [fetch' (->> (call-plugins :train-fetch ws)
                       (apply concat fetch)
                       distinct)]
-      (future (dotimes [step steps]
-                (let [step+1 (inc step)]
-                  (if (or (= step 0)
-                          (= (mod step+1 (or log-step-interval 1)) 0)
-                          (= step+1 steps))
-                    (do (ut/$- ->> fetch'
-                               (fetch-map session $ feed targets)
-                               (future (call-plugins :log-step ws {:train $} step+1))))
-                    (run-all session targets feed))))))
+      (future
+        (do (ut/$- ->> fetch'
+                   (fetch-map session $ feed)
+                   (future (call-plugins :log-step ws {:train $} 0))))
+        (dotimes [step steps]
+          (let [step+1 (inc step)]
+            (if (or (= step 0)
+                    (= (mod step+1 (or log-step-interval 1)) 0)
+                    (= step+1 steps))
+              (do (ut/$- ->> fetch'
+                         (fetch-map session $ feed targets)
+                         (future (call-plugins :log-step ws {:train $} step+1))))
+              (run-all session targets feed))))))
     true))
 
 (defn ws-train-test
@@ -248,6 +258,7 @@
   (doseq [a (:auto ws-def)]
     (case a
       :build (ws-build ws)
+      :write-tb (ws-write-tb ws)
       :train (ws-train ws)
       :train-test (ws-train-test ws)
       (throw (Exception. (str "Unknown auto " a))))))
@@ -271,6 +282,13 @@
 #_
 (def-workspace ws1
   {:what :who})
+
+
+
+
+
+
+
 
 
 
