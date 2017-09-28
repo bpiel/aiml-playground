@@ -58,9 +58,23 @@ body{
     height: 500px;
 }
 
-#footer span{
-    margin: 3px 10px;
-    font-size: 20px;
+#desc {
+    border-bottom: #999 solid 2px;
+}
+
+#desc pre{
+    font-family: monospace;
+    margin: 2px;
+    padding: 3px;
+    width: 49%;
+}
+
+#desc .loc{
+    font-size: 15px;
+    width: 49%;
+    float: right;
+    text-align: right;
+    margin: 5px 15px 0 0;
 }
 
 .container{

@@ -195,16 +195,15 @@
   []
   [charts-view])
 
-(defn footer []
+(defn desc []
   (when-let [[form ns-name pos] @(rf/subscribe [:form])]
-    [:div#footer
-     [:span form]
-     [:span ns-name]
-     [:span pos]]))
+    [:div#desc
+     [:div.loc ns-name " : " pos]
+     [:pre form]]))
 
 (defn page []
   [rc/h-box :children
-   [[rc/v-box :size "100%" :children [[rc/box :size "40px" :child [footer]]
+   [[rc/v-box :size "100%" :children [[rc/box :size "40px" :child [desc]]
                                       [rc/box :size "100%" :child [left-pane]]]]
     [rc/box :size "400px" :child [right-pane]]]])
 

@@ -155,7 +155,7 @@
 
 (defn- wrap-bind-form
   [orig-form form]
-  `(binding [*enclosing-form* ['~orig-form (str *ns*) ~(meta orig-form)]]
+  `(binding [*enclosing-form* ['~orig-form (str *ns*) ~(some-> orig-form meta :line)]]
      ~form))
 
 (defn- id$->>**
