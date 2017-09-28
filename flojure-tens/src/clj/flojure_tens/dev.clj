@@ -355,12 +355,12 @@
   (clojure.pprint/pprint ["w-update*" selected])
   (let [charts (w-mk-summaries selected log)
         sel-op (find-selected-op dev-ns selected)]
-    #_    (spacer #(wsvr/update-view
+        (spacer #(wsvr/update-view
                     {:graph (w-mk-cyto (w-mk-graph-def2 g))
                      :charts (if (nil? charts) [] charts)
                      :selected selected
                      :form (some->> sel-op meta :form (mapv str))}))
-    (wsvr/update-view
+    #_(wsvr/update-view
      {:graph (w-mk-cyto (w-mk-graph-def2 g))
       :charts (if (nil? charts) [] charts)
       :selected selected
@@ -371,7 +371,6 @@
   (w-update* g dev-ns log selected nil)
   (-> (partial w-update* g dev-ns log)
       set-selected-node-watcher))
-
 
 
 (defmethod ft/call-plugin [::dev :init]
