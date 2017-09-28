@@ -273,3 +273,71 @@
                          :bins (hist-bytes->histo-bins h7)}])
 
 
+(let [a (p/v :a 0.)
+      {:keys [out opt]}
+      (ut/id$->> (o/sub a 2.)
+                 (o/abs :out)
+                 (p/grad-desc-opt :opt))]
+  (let [{:keys [graph] :as s} (ft/build-all->session [opt])]
+    (tfr/write-graphdef-to-events-file graph "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")
+    (ft/run-global-vars-init s)
+    (ft/run-all s (repeat 200 opt))
+    (ft/produce s a)))
+
+(let [a (p/v :a 0.)
+      out (->> (o/sub a 2.)
+               o/abs)]
+  (let [{:keys [graph] :as s} (ft/build-all->session [out])]
+    (tfr/write-graphdef-to-events-file graph "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop")))
+
+(let [a (p/v :a 0.)]
+  (-> (o/sub a 2.)
+      o/abs
+      g/build->session
+      g/run-global-vars-init
+      (g/produce a)))
+
+(let [a (p/v :a 0.)]
+  (-> (o/sub a 2.)
+      o/abs
+      ft/build->session
+      ft/run-global-vars-init
+      (ft/produce a)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

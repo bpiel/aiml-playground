@@ -121,7 +121,7 @@
 
 
 
-
+j
 ;; just test data
 (let [{:keys [logits classes]}
       (ut/id$->> @test-data
@@ -143,7 +143,7 @@
                                (* 4 784)])
                  (l/dense {:activation o/relu
                            :units 1024})
-                 (p/dropout 0.4)
+                 #_(p/dropout 0.4)
                  (l/dense {:id :logits
                            :units 10})
                  (o/arg-max :classes $ 1))
@@ -152,8 +152,9 @@
                  (take 6)
                  (p/one-hot $ 10)
                  (o/softmax-cross-entropy-with-logits logits)
-                 (p/reduce-mean :loss)
-                 (p/grad-desc-opt2 :opt $))]
+                 (o/mean :loss $ [0])
+                 #_(p/reduce-mean :loss)
+                 (p/grad-desc-opt :opt {:alpha 0.005}))]
   (ft/with-close-let [{:keys [graph] :as s} (ft/build-all->session [opt  classes])]
     (ft/run-global-vars-init s)
     #_(spit-gd (:graph s))

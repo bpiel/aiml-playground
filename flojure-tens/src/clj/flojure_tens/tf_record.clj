@@ -121,3 +121,9 @@
             mk-graphdef-event)]
        events->tf-recs-bytes
        byte-arrays->tf-rec-byte-array))
+
+(defn write-graphdef-to-events-file
+  [^Graph g filename]
+  (->> g
+       graph->event-ba
+       (spit-bytes filename)))

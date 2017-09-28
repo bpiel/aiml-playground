@@ -102,3 +102,56 @@
             :targets []
             :feed {:data (take 100 (reverse @test-data))
                    :labels (take 100 (reverse @test-labels))}}}))
+
+
+(ft/def-workspace ws1
+  (let [{:keys [data logits hidden classes]}
+        (ut/id$->> (o/placeholder :data
+                                  dt/float-kw
+                                  [-1 784])
+                   (o/reshape $ [-1 28 28 1])
+                   (l/conv2d {:filters 32
+                              :kernel-size [5 5]
+                              :padding "SAME" ;; TODO
+                              :activation o/relu})
+                   (l/max-pooling2d {:pool-size [2 2]
+                                     :strides [2 2]})
+                   (l/conv2d {:filters 64
+                              :kernel-size [5 5]
+                              :padding "SAME" ;; TODO
+                              :activation o/relu})
+                   (l/max-pooling2d {:pool-size [2 2]
+                                     :strides [2 2]})
+                   (o/reshape $ [-1
+                                 (* 4 784)])
+                   (l/dense {:activation o/relu
+                             :units 1024})
+                   #_(p/dropout 0.4)
+                   (l/dense {:id :logits
+                             :units 10})
+                   (o/arg-max :classes $ 1))
+        {:keys [labels loss opt]}
+        (ut/id$->> (o/placeholder :labels
+                                  dt/int-kw
+                                  [-1])
+                   (p/one-hot $ 10)
+                   (o/softmax-cross-entropy-with-logits logits)
+                   (p/reduce-mean :loss)
+                   (p/grad-desc-opt :opt {:alpha 0.005} ))
+        acc (p/accuracy :acc
+                        (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
+                                   classes)
+                        labels)]
+    {:auto [:build :train ]
+     :build [acc opt]
+     :train {:summaries [data acc loss logits]
+             :targets [opt]
+             :feed {:data (take 100 @train-data)
+                    :labels (take 100 @train-labels)}
+             :fetch []
+             :steps 21
+             :log-step-interval 1}
+     :test {                            ;:summaries [acc loss logits]
+            :targets []
+            :feed {:data (take 100 (reverse @test-data))
+                   :labels (take 100 (reverse @test-labels))}}}))
