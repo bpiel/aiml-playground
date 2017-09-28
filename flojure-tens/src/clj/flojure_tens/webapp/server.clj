@@ -18,7 +18,24 @@
 (def view (atom {:graph nil
                  :right [:div]
                  :selected nil}))
+
 (def selected-node (atom nil))
+
+(def selected-node-receiver (atom nil))
+
+(defn selected-node-watcher
+  [k r old-val new-val]
+  (when-let [f @selected-node-receiver]
+    (f new-val old-val)))
+
+(defn init-selected-node
+  []
+  (def selected-node (atom nil))
+  (add-watch selected-node
+             ::selected-node-watcher
+             #'selected-node-watcher))
+
+(init-selected-node)
 
 (defn read-transit-string
   [s]

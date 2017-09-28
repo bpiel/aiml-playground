@@ -26,15 +26,9 @@
 
 (def ^:dynamic *default-ns* '$g) ;; TODO drop this
 
-(defonce selected-node-watcher (atom nil))
-
 (defn set-selected-node-watcher
   [f]
-  (when-let [w @selected-node-watcher]
-    (remove-watch wsvr/selected-node w))
-  (reset! selected-node-watcher f)
-  (add-watch wsvr/selected-node f
-             (fn [_ _ _ selected] (f selected))))
+  (reset! wsvr/selected-node-receiver f))
 
 (defn rebuild-op-fns
   [& [debug-mode?]]
@@ -357,7 +351,8 @@
                          :fut fut}))))
 
 (defn w-update*
-  [^Graph g dev-ns log selected]
+  [^Graph g dev-ns log selected old-selected]
+  (clojure.pprint/pprint ["w-update*" selected])
   (let [charts (w-mk-summaries selected log)
         sel-op (find-selected-op dev-ns selected)]
     #_    (spacer #(wsvr/update-view
@@ -373,7 +368,7 @@
 
 (defn w-update
   [^Graph g dev-ns log selected]
-  (w-update* g dev-ns log selected)
+  (w-update* g dev-ns log selected nil)
   (-> (partial w-update* g dev-ns log)
       set-selected-node-watcher))
 
