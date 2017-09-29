@@ -148,6 +148,7 @@
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
+        alpha (o/placeholder :alpha dt/float-kw [])
         {:keys [labels loss opt]}
         (ut/id$->> (o/placeholder :labels
                                   dt/int-kw
@@ -155,7 +156,7 @@
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt :opt {:alpha 0.05} ))
+                   (p/grad-desc-opt :opt alpha))
         acc (p/accuracy :acc
                         (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
                                    classes)
@@ -163,11 +164,12 @@
     {:auto [:build :train-test]
                                         ;:tb-out "/home/bill/tf-logs/events.out.tfevents.1505700427.bill-desktop"
      :build [acc opt]
-     :train {:summaries [acc loss logits dense-1 ]
+     :train {:summaries [alpha acc loss logits dense-1 ]
              :targets [opt]
              :feed {:data (take 100 @train-data)
                     :labels (take 100 @train-labels)
-                    :keep 0.2}
+                    :keep 0.2
+                    :alpha #_#(* 0.1 (Math/pow 0.99 %)) 0.05}
              :fetch []
              :steps 200
              :log-step-interval 10}
@@ -175,7 +177,8 @@
             :targets []
             :feed {:data (take 100 (reverse @test-data))
                    :labels (take 100 (reverse @test-labels))
-                   :keep 1.0}}}))
+                   :keep 1.0
+                   :alpha 0.05}}}))
 
 (ft/def-workspace ws1
   (let [{:keys [data logits hidden classes]}
@@ -203,6 +206,7 @@
                    (l/dense {:id :logits
                              :units 10})
                    (o/arg-max :classes $ 1))
+        alpha (o/placeholder :alpha dt/float-kw [])
         {:keys [labels loss opt]}
         (ut/id$->> (o/placeholder :labels
                                   dt/int-kw
@@ -210,23 +214,71 @@
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt :opt {:alpha 0.05} ))  ;; start with 0.05??
+                   (p/grad-desc-opt :opt alpha )) ;; start with 0.05??
         acc (p/accuracy :acc
                         (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
                                    classes)
                         labels)]
     {:auto [:build :train-test ]
      :build [acc opt]
-     :train {:summaries [data acc loss logits]
+     :train {:summaries [data acc loss logits alpha]
              :targets [opt]
-             :feed {:data (take 200 @train-data)   ;; start with 100 => 200
-                    :labels (take 200 @train-labels) 
-                    :keep 0.2}
+             :feed {:data (take 400 @train-data) ;; start with 100 => 200
+                    :labels (take 400 @train-labels) 
+                    :keep 0.15
+                    :alpha #(* 0.1 (Math/pow 0.99 %)) #_0.05}
              :fetch []
-             :steps 30
-             :log-step-interval 20}
+             :steps 100
+             :log-step-interval 5}
      :test {                            ;:summaries [acc loss logits]
             :targets []
             :feed {:data (take 100 (reverse @test-data))
                    :labels (take 100 (reverse @test-labels))
-                   :keep 1.}}}))
+                   :keep 1.
+                   :alpha 0.05}}}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -122,12 +122,13 @@
         x' (decorate-outputs x outputs)]
     (update x' :collector conj 
             (o/apply-gradient-descent node
-                                      ((-> node
+                                      #_((-> node
                                            opn/get-desc-of-output
                                            :dtype
                                            dt/kw->dt
                                            :scalar-fn)
                                        alpha)
+                                      alpha
                                       (first (outputs->grads x' outputs node))))))
 
 
@@ -192,8 +193,8 @@
 (defmethod mc/build-macro :grad-desc-opt
   [^Graph g plan]
   (let [{:keys [id inputs scope alpha]} plan
-        alpha' (or alpha 0.01)
-        [input] inputs
+;        alpha' (or alpha 0.01)
+        [input alpha] inputs
         [v-a v-b] (:inputs input)]
     [(sc/with-push-both-scopes scope
        (o/no-op id
@@ -201,4 +202,4 @@
                  (mk-applicators 
                   (find-vari-paths (-> g :state deref)
                                    (-> plan :inputs first))
-                  alpha')}))]))
+                  alpha)}))]))

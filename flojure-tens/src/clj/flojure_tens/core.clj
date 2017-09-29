@@ -235,6 +235,14 @@
             (reset! last-ex ex)))))
     true))
 
+(defn update-alpha
+  [{:keys [alpha] :as feed} step]
+  (cond (nil? alpha)
+        feed
+        (fn? alpha)
+        (assoc feed :alpha (alpha step))
+        :else feed))
+
 (defn ws-train-test
   [{:keys [state ws-def] :as ws}]
   (let [{:keys [train test]} ws-def
@@ -246,17 +254,18 @@
                       (apply concat fetch)
                       distinct)]
       (future (try (dotimes [step steps]
-                     (let [step+1 (inc step)]
+                     (let [step+1 (inc step)
+                           feed' (update-alpha feed step+1)]
                        (if (or (= step 0)
                                (= (mod step+1 (or log-step-interval 1)) 0)
                                (= step+1 steps))
-                         (let [train-fetch (fetch-map session fetch' feed targets)
+                         (let [train-fetch (fetch-map session fetch' feed' targets)
                                test-fetch (fetch-map session fetch' test-feed)]
                            (future (call-plugins :log-step ws
                                                  {:train train-fetch
                                                   :test test-fetch}
                                                  step+1)))
-                         (run-all session targets feed))))
+                         (run-all session targets feed'))))
                    (catch Exception ex
                      (reset! last-ex ex)))))
     true))
