@@ -49,7 +49,7 @@
       (throw (Exception. "NOT IMPLEMENTED"))))
 
 #_ (activate-dev-mode true)
-(count @$.ws1/$log)
+
 (defn- mk-ns-sym [sym] (->> sym name (str "$.") symbol))
 
 (defn release-dev-ns
@@ -152,7 +152,9 @@
             (and (= (nil? (re-find #"gradient" (:source data)))
                     (nil? (re-find #"gradient" (:target data))))
                  (= (nil? (re-find #"summaries" (:source data)))
-                    (nil? (re-find #"summaries" (:target data))))))
+                    (nil? (re-find #"summaries" (:target data))))
+                 (= (nil? (re-find #"Const" (:source data)))
+                    (nil? (re-find #"Const" (:target data))))))
           edges))
 
 (defn filter-cyto-nodes
@@ -267,14 +269,14 @@
 
 (defn w-mk-cyto
   [elements]
-  {:layout {:name "dagre"}
+  {:layout {:name "preset"}
    :style [{:selector "node"
             :style {:content "data(name)"
                     :border-width 3
                     :border-color "#333"
                     :font-size 35
                     :background-color "#FFC"
-                    :shape "ellipsis"
+                    :shape "ellipse"
                     :height 80
                     :width 200
                     :text-valign "center"
@@ -302,7 +304,7 @@
             :style {:font-size 80
                     :background-color "white"
                     :text-valign "top"
-                    :border-color "CC9"
+                    :border-color "#CC9"
                     :border-width 10
                     }}
            {:selector ":selected"

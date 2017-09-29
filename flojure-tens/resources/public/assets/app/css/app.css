@@ -62,17 +62,17 @@ body{
     border-bottom: #999 solid 2px;
 }
 
-#desc pre{
+#desc .form{
+    font-size: 18px;
     font-family: monospace;
     margin: 2px;
     padding: 3px;
-    width: 49%;
+    width:100%;
 }
 
 #desc .loc{
+    width:100%;
     font-size: 15px;
-    width: 49%;
-    float: right;
     text-align: right;
     margin: 5px 15px 0 0;
 }

@@ -58,7 +58,6 @@
   (let [c (js/cytoscape (cyto-state->cyto-gen-map state'))]
     (vreset! c1 c)
     (println  "gen-cyto POST vreset")
-    (println c)
     c))
 
 (defn dist

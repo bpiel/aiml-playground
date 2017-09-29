@@ -115,7 +115,7 @@
         (ut/id$->> (o/placeholder :labels
                                   dt/int-kw
                                   [-1])
-                   (p/one-hot $ 10)
+                   (p/one-hot :hottie $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
                    (p/grad-desc-opt :opt {:alpha 0.2} ))
@@ -165,8 +165,8 @@
      :build [acc opt]
      :train {:summaries [acc loss logits dense-1 ]
              :targets [opt]
-             :feed {:data (take 10000 @train-data)
-                    :labels (take 10000 @train-labels)
+             :feed {:data (take 100 @train-data)
+                    :labels (take 100 @train-labels)
                     :keep 0.2}
              :fetch []
              :steps 200
@@ -223,7 +223,7 @@
                     :labels (take 200 @train-labels) 
                     :keep 0.2}
              :fetch []
-             :steps 200
+             :steps 30
              :log-step-interval 20}
      :test {                            ;:summaries [acc loss logits]
             :targets []

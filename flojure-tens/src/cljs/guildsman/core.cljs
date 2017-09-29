@@ -61,7 +61,7 @@
 (rf/reg-event-db
  :ws-inbound
  (fn [db [_ {:keys [graph charts selected form] :as p}]]
-   (println p)
+#_   (println p)
    (merge db
           (when graph
             {:graph graph})
@@ -80,7 +80,7 @@
 (rf/reg-event-db
  :ws-send
  (fn ws-send [db [_ data]]
-   (println data)
+#_   (println data)
    (.send (:ws db)
           (t/write json-writer data))
    db))
@@ -198,13 +198,13 @@
 (defn desc []
   (when-let [[form ns-name pos] @(rf/subscribe [:form])]
     [:div#desc
-     [:div.loc ns-name " : " pos]
-     [:pre form]]))
+     [:pre.form form]
+     [:div.loc ns-name " : " pos]]))
 
 (defn page []
   [rc/h-box :children
-   [[rc/v-box :size "100%" :children [[rc/box :size "40px" :child [desc]]
-                                      [rc/box :size "100%" :child [left-pane]]]]
+   [[rc/v-box :size "100%" :children [[rc/box :size "1 1 80px"  :child [desc]]
+                                      [rc/box :size "100 1 500px" :child [left-pane]]]]
     [rc/box :size "400px" :child [right-pane]]]])
 
 (defn init! []

@@ -14,7 +14,6 @@
 
 (defn gen-histos
   [state']
-  (println  (histos-state->histos-gen-map state'))
   (js/histogramSeries (histos-state->histos-gen-map state')))
 
 (defn histos-comp-did-mount
