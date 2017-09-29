@@ -304,40 +304,20 @@
       ft/run-global-vars-init
       (ft/produce a)))
 
+(let [x (p/v :x 0.)
+      loss (->> (o/sub x 2.)
+                o/abs)
+      opt (p/grad-desc-opt :opt 0.5 loss)
+      sess (g/build->session opt)]
+  (g/run-global-vars-init sess)
+  (g/run-all sess (repeat 4 opt))
+  (g/produce sess x))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(let [x (p/v :x 0.)
+      loss (->> (o/sub x 2.)
+                o/abs)
+      opt (p/grad-desc-opt :opt 0.5 loss)
+      sess (ft/build->session opt)]
+  (ft/run-global-vars-init sess)
+  (ft/run-all sess (repeat 4 opt))
+  (ft/produce sess x))
