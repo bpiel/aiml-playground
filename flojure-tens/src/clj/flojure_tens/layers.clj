@@ -27,8 +27,9 @@
 (defn mk-activation-plan
   [template input]
   (if-not (nil? template)
-    (w/postwalk-replace {:$/input input}
-                        template)
+    (sc/assoc-scopes-to-plan
+     (w/postwalk-replace {:$/input input}
+                         template))
     input))
 
 (defn ru [shape]

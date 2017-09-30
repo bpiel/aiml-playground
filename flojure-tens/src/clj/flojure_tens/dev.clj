@@ -381,10 +381,11 @@
     (intern dev-ns 'graph graph)
     (intern dev-ns 'session session)))
 
-(defn op->summary-id [op]
-  (->> op
-       :id
-       (str "summaries/")))
+(defn op->summary-id [op & [suffix]]
+  (ut/$- ->> op
+         :id
+         (str "summaries/")
+         (str $ suffix)))
 
 (defn find-ops-to-summarize
   [^Graph g target]
@@ -401,29 +402,81 @@
                 (filter #(-> % :op #{:VariableV2})
                         $)))))
 
+(defn agd->delta-ratio-smry
+  [^Graph g smry-id {[v-id alpha-id delta-id] :inputs}]
+  (let [c 0.0000001
+        v (opn/find-op g v-id)
+        delta (opn/find-op g delta-id)
+        alpha (opn/find-op g alpha-id)]
+    (when (and v delta alpha)
+      (o/scalar-summary {:id smry-id} smry-id
+                        (sc/with-push-both-scopes :summaries
+                          (p/reduce-mean
+                           (o/div (o/add c
+                                         (o/sqrt
+                                          (p/reduce-sum
+                                           (o/mul (o/mul alpha
+                                                         (o/abs delta))
+                                                  (o/mul alpha
+                                                         (o/abs delta))))))
+                                  (o/add c
+                                         (o/sqrt
+                                          (p/reduce-sum
+                                           (o/mul v v))))))
+                          #_(o/div (o/add c
+                                          (p/reduce-mean (o/abs delta)))
+                                   (o/add c
+                                          (p/reduce-mean (o/abs v)))))))))
+
 (defn mk-summary-plan
-  [^Graph g target]
+  [^Graph g vari->agd target]
   (let [smry-id (op->summary-id target)
+        agd (some-> target :id vari->agd first) ;; TODO `first` is bad?
+        agd-smry-id (when agd
+                      (op->summary-id target "/update_ratio"))
         scalar? (-> target
                     opn/get-desc-of-output
                     :shape
-                    sh/scalar?)]
-    (when-not ((gr/id->node g) smry-id)
-      (if scalar?
-        (o/scalar-summary {:id smry-id} smry-id target)
-        (o/histogram-summary {:id smry-id} smry-id target)))))
+                    sh/scalar?)
+        id->node (gr/id->node g)]
+    [(when-not (id->node smry-id)
+       (if scalar?
+         (o/scalar-summary {:id smry-id} smry-id target)
+         (o/histogram-summary {:id smry-id} smry-id target)))
+     (when (and agd (-> agd-smry-id id->node nil?))
+       (agd->delta-ratio-smry g agd-smry-id agd))]))
 
-(defn mk-summary-plans
-  [g target]
+#_(defn mk-summary-plans
+  [g vari->agd target]
   (if-let [target' (opn/find-op g target)]
     [(mk-summary-plan g target')]
     (keep (partial mk-summary-plan g)
           (find-ops-to-summarize g target))))
 
+(defn mk-summary-plans
+  [g vari->agd target]
+  (->> (if-let [target' (opn/find-op g target)]
+         [target']
+         (find-ops-to-summarize g target))
+       (map (partial mk-summary-plan g vari->agd))
+       flatten
+       (remove nil?)))
+
+(defn find-gd-appliers
+  [^Graph g]
+  (->> g
+       gr/id->node
+       vals
+       (filter #(-> % :op #{:ApplyGradientDescent}))
+       (group-by #(-> % :inputs first))))
+
 (defn add-summaries
   [^Graph g summaries]
-  (let [added (->> summaries
-                   (mapcat (partial mk-summary-plans g))
+  (let [vari->agd (find-gd-appliers g)
+        _ (clojure.pprint/pprint vari->agd)
+        added (->> summaries
+                   (mapcat (partial mk-summary-plans g
+                                    vari->agd))
                    (remove nil?))]
     (ft/build-all->graph g added)
     added))

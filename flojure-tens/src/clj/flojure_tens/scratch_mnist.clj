@@ -84,7 +84,7 @@
                    (p/one-hot $ 10)
                    (o/softmax-cross-entropy-with-logits logits)
                    (p/reduce-mean :loss)
-                   (p/grad-desc-opt :opt {:alpha 0.2} ))
+                   (p/grad-desc-opt :opt 0.2 ))
         acc (p/accuracy :acc
                         (o/cast-tf {:SrcT dt/long-kw :DstT dt/int-kw}
                                    classes)
@@ -181,18 +181,20 @@
                    :alpha 0.05}}}))
 
 (ft/def-workspace ws1
-  (let [{:keys [data logits hidden classes]}
+  (let [{:keys [data logits hidden conv1 conv2 classes]}
         (ut/id$->> (o/placeholder :data
                                   dt/float-kw
                                   [-1 784])
                    (o/reshape $ [-1 28 28 1])
-                   (l/conv2d {:filters 32
+                   (l/conv2d {:id :conv1
+                              :filters 32
                               :kernel-size [5 5]
                               :padding "SAME" ;; TODO
                               :activation o/relu})
                    (l/max-pooling2d {:pool-size [2 2]
                                      :strides [2 2]})
-                   (l/conv2d {:filters 64
+                   (l/conv2d {:id :conv2
+                              :filters 64
                               :kernel-size [5 5]
                               :padding "SAME" ;; TODO
                               :activation o/relu})
@@ -221,7 +223,7 @@
                         labels)]
     {:auto [:build :train-test ]
      :build [acc opt]
-     :train {:summaries [data acc loss logits alpha]
+     :train {:summaries [data acc loss logits alpha conv1 conv2]
              :targets [opt]
              :feed {:data (take 400 @train-data) ;; start with 100 => 200
                     :labels (take 400 @train-labels) 
@@ -236,49 +238,4 @@
                    :labels (take 100 (reverse @test-labels))
                    :keep 1.
                    :alpha 0.05}}}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
