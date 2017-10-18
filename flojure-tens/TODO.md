@@ -17,9 +17,10 @@ HIGHEST GOALS
 HIGH GOALS
 
 # to enable: light public use
- - FIX grad desc w/ c++ grads
+ x FIX grad desc w/ c++ grads
  - native libs
    - mac
+     - setup osx vm
    - win
    - GPU
  - docs/README
@@ -426,6 +427,11 @@ g++ -std=c++11 -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-
 g++ -std=c++11 -Wl,-rpath,"/tmp" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -I/tmp -fPIC -shared  -o libtensorflow_jni.so *.cc -L/tmp  -ltensorflow
 
 g++ -std=c++11 -Wl,-rpath,"\$ORIGIN" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -I/tmp -fPIC -shared  -o libtensorflow_jni.so *.cc  -ltensorflow
+
+
+g++ -std=c++11 -Wl,-rpath,"\$ORIGIN" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -L/tmp -fPIC -shared  -o libguildsman_jni.so *.cc  -ltensorflow
+
+
 -----
 
 ldd ./src_native/libtensorflow_jni.so
