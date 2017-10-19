@@ -19,7 +19,7 @@ HIGH GOALS
 # to enable: light public use
  x FIX grad desc w/ c++ grads
  - native libs
-   - mac
+   ~ mac
      - setup osx vm
    - win
    - GPU
@@ -74,12 +74,17 @@ HIGH GOALS
 ========================================
 LOW-LEVEL TODOS
 
+- export .so files for manual install?
+- make tensorndarray immutable???
+- CHANGELOG
+- update so to 1.4.0-rc0
 - plugins added to ws, not globally
 - split out dev tools????????????????????
 - better tensor mem mgmt -- scopes?
 - batch normalization?????
 - c++ grads
   - SoftmaxCrossEntropyWithLogits
+- indicate whether op has grad in docstring
 - op attrs as map instead of vecs????
 - placeholder defaults to float
 - use `intern` to create op fn vars??
@@ -438,6 +443,15 @@ g++ -std=c++11 -Wl,-rpath,"\$ORIGIN" -I/usr/lib/jvm/java-8-openjdk-amd64/include
 
 
 g++ -std=c++11 -Wl,-rpath,"\$ORIGIN" -I/usr/lib/jvm/java-8-openjdk-amd64/include/ -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux -L/tmp -fPIC -shared  -o libguildsman_jni.so *.cc  -ltensorflow
+
+osx:
+g++ -std=c++11 '-Wl,-rpath,/private/tmp' -I/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/ -L/tmp -fPIC -shared  -o libguildsman_jni.so *.cc  -ltensorflow
+..but libs still have to live in /usr/local/lib
+
+osx: actually works???!?!?!
+g++ -std=c++11 '-Wl,-rpath,@loader_path' -I/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/ -L/tmp -fPIC -shared  -o libguildsman_jni.so *.cc  -ltensorflow
+
+
 
 
 -----
