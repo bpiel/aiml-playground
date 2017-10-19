@@ -23,19 +23,26 @@ HIGH GOALS
      - setup osx vm
    - win
    - GPU
+ - example projects
+   - what doesn't work????
+     - dropout (no grad for floor)
+     - softmax-cross-entropy-with-logits-var-var (no grad)
  - docs/README
    - overview
    - point to example projects
  - docstrings (in core.clj)
- - example projects
  - solid TB experience
  - videos?
  - web app fixes/improvements
  - canned goods?
+ - fn api cleanup?
+   - consistency issues?
+ - move things to core? split files
  
 # to enable: public contributions 
  - c++ grads docs
-   - prioritize grads
+   x grep for missing grads
+   x  prioritize grads
    - more docs/examples
  - docstrings (all nses)
  - docs/README
@@ -67,6 +74,7 @@ HIGH GOALS
 ========================================
 LOW-LEVEL TODOS
 
+- plugins added to ws, not globally
 - split out dev tools????????????????????
 - better tensor mem mgmt -- scopes?
 - batch normalization?????
@@ -698,5 +706,12 @@ x     12 tf.one_hot
 
 
 abdeglnoruwy
+
+
+
+
+grep -rh -o -P "(?<=RegisterGradient\(\")\w+" | sort > ~/pygrads.txt
+
+grep -rh -o -P "(?<=REGISTER_GRADIENT_OP\(\")\w+" | sort > ~/ccgrad.txt
 
 
