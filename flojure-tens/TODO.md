@@ -40,6 +40,7 @@ HIGH GOALS
    - what doesn't work????
      - dropout (no grad for floor)
      - softmax-cross-entropy-with-logits-var-var (no grad)
+     - find alternate loss op
  - docs/README
    - overview
    - point to example projects
