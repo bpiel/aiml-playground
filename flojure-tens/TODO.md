@@ -12,6 +12,19 @@ HIGHEST GOALS
 
 ========================================
 
+~~~~~~~~~~~~~~~~
+
+10/21
+
+x make java use ".so" for osx
+- random path?
+x switch linux to libtf 1.4-rc0 w/ libtf_fw
+x merge to master
+- example project
+- clojars
+
+
+~~~~~~~~~~~~~~~~
 
 ========================================
 HIGH GOALS
@@ -19,8 +32,8 @@ HIGH GOALS
 # to enable: light public use
  x FIX grad desc w/ c++ grads
  - native libs
-   ~ mac
-     - setup osx vm
+   x mac
+     x setup osx vm
    - win
    - GPU
  - example projects
@@ -451,7 +464,8 @@ g++ -std=c++11 '-Wl,-rpath,/private/tmp' -I/System/Library/Frameworks/JavaVM.fra
 osx: actually works???!?!?!
 g++ -std=c++11 '-Wl,-rpath,@loader_path' -I/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers/ -L/tmp -fPIC -shared  -o libguildsman_jni.so *.cc  -ltensorflow
 
-
+https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-${TF_TYPE}-${OS}-x86_64-1.3.0.tar.gz
+https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-1.4.0-rc0.tar.gz
 
 
 -----
