@@ -1,3 +1,7 @@
+x make java use ".so" for osx
+x switch linux to libtf 1.4-rc0 w/ libtf_fw
+
+
 ===============================================
 ^^^ DONE ^^^
 ===============================================
@@ -14,12 +18,12 @@ HIGHEST GOALS
 
 ~~~~~~~~~~~~~~~~
 
-10/21
+10/24
 
-x make java use ".so" for osx
-- random path?
-x switch linux to libtf 1.4-rc0 w/ libtf_fw
-x merge to master
+- MSE
+ - try in test ns
+ - write
+ - make test
 - example project
 - clojars
 
@@ -44,7 +48,7 @@ HIGH GOALS
  - docs/README
    - overview
    - point to example projects
- - docstrings (in core.clj)
+ ~ docstrings (in core.clj)
  - solid TB experience
  - videos?
  - web app fixes/improvements
@@ -88,10 +92,10 @@ HIGH GOALS
 ========================================
 LOW-LEVEL TODOS
 
+- random path?
 - export .so files for manual install?
 - make tensorndarray immutable???
 - CHANGELOG
-- update so to 1.4.0-rc0
 - plugins added to ws, not globally
 - split out dev tools????????????????????
 - better tensor mem mgmt -- scopes?
